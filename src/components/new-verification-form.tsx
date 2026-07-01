@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { bookVerification } from "@/lib/actions/verifications";
 import {
   egetUttag, egenInsattning, fSkatt, kopMotKvitto, milersattning, representation,
-  type QuickEventResult,
+  traktamente, type QuickEventResult,
 } from "@/lib/posting/quick-events";
+import { linkAttachment } from "@/lib/actions/inbox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,10 +27,12 @@ export function NewVerificationForm({
   accounts,
   seriesCodes,
   rules,
+  inboxAttachmentId = null,
 }: {
   accounts: Account[];
   seriesCodes: string[];
   rules: Record<string, number>;
+  inboxAttachmentId?: string | null;
 }) {
   const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
@@ -62,8 +65,12 @@ export function NewVerificationForm({
       toast.error(res.error);
       return;
     }
+    const verId = "verificationId" in res ? res.verificationId : "";
+    if (inboxAttachmentId && verId) {
+      await linkAttachment(inboxAttachmentId, verId);
+    }
     toast.success(`Verifikat ${"label" in res ? res.label : ""} bokfört`);
-    router.push(`/verifikat/${"verificationId" in res ? res.verificationId : ""}`);
+    router.push(`/verifikat/${verId}`);
   }
 
   function submitManual() {
@@ -90,6 +97,9 @@ export function NewVerificationForm({
   const [qeMil, setQeMil] = useState("");
   const [qePersons, setQePersons] = useState("2");
   const [qePrivate, setQePrivate] = useState(false);
+  const [qeDays, setQeDays] = useState("1");
+  const [qeHalfDays, setQeHalfDays] = useState("0");
+  const [qeNights, setQeNights] = useState("0");
 
   function buildQuickEvent(): QuickEventResult | null {
     const amount = parseFloat(qeAmount) || 0;
@@ -107,6 +117,16 @@ export function NewVerificationForm({
       case "mil": {
         const mil = parseFloat(qeMil) || 0;
         return mil > 0 ? milersattning(mil, rules["milersattning"] ?? 25) : null;
+      }
+      case "traktamente": {
+        const d = parseInt(qeDays) || 0, h = parseInt(qeHalfDays) || 0, n = parseInt(qeNights) || 0;
+        return d + h + n > 0
+          ? traktamente(d, h, n, {
+              helt: rules["traktamente_helt"] ?? 300,
+              halvt: rules["traktamente_halvt"] ?? 150,
+              natt: rules["traktamente_natt"] ?? 150,
+            })
+          : null;
       }
       case "representation":
         return amount > 0
@@ -158,6 +178,7 @@ export function NewVerificationForm({
                     <SelectItem value="kvitto">Köp mot kvitto</SelectItem>
                     <SelectItem value="mil">Milersättning egen bil</SelectItem>
                     <SelectItem value="representation">Representation (måltid)</SelectItem>
+                    <SelectItem value="traktamente">Traktamente (tjänsteresa)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -167,7 +188,22 @@ export function NewVerificationForm({
               </div>
             </div>
 
-            {qeType === "mil" ? (
+            {qeType === "traktamente" ? (
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label>Hela dagar ({rules["traktamente_helt"] ?? 300} kr)</Label>
+                  <Input type="number" min="0" value={qeDays} onChange={(e) => setQeDays(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Halva dagar ({rules["traktamente_halvt"] ?? 150} kr)</Label>
+                  <Input type="number" min="0" value={qeHalfDays} onChange={(e) => setQeHalfDays(e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Nätter ({rules["traktamente_natt"] ?? 150} kr)</Label>
+                  <Input type="number" min="0" value={qeNights} onChange={(e) => setQeNights(e.target.value)} />
+                </div>
+              </div>
+            ) : qeType === "mil" ? (
               <div className="space-y-1">
                 <Label>Antal mil ({rules["milersattning"] ?? 25} kr/mil skattefritt)</Label>
                 <Input type="number" value={qeMil} onChange={(e) => setQeMil(e.target.value)} />
@@ -226,6 +262,13 @@ export function NewVerificationForm({
                     <Label>Antal personer</Label>
                     <Input type="number" min="1" value={qePersons}
                       onChange={(e) => setQePersons(e.target.value)} />
+                  </div>
+                )}
+                {qeType === "representation" && (
+                  <div className="col-span-2 space-y-1">
+                    <Label>Syfte och deltagare (SKV-krav)</Label>
+                    <Input value={qeText} onChange={(e) => setQeText(e.target.value)}
+                      placeholder="T.ex. Kundlunch Haus Media — Oliver, Anna (affärsförhandling)" />
                   </div>
                 )}
               </div>

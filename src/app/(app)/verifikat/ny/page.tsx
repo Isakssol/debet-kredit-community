@@ -1,7 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { NewVerificationForm } from "@/components/new-verification-form";
 
-export default async function NewVerificationPage() {
+export default async function NewVerificationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ underlag?: string }>;
+}) {
+  const { underlag } = await searchParams;
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
@@ -31,6 +36,7 @@ export default async function NewVerificationPage() {
         }))}
         seriesCodes={(series ?? []).map((s) => s.code)}
         rules={ruleMap}
+        inboxAttachmentId={underlag ?? null}
       />
     </div>
   );

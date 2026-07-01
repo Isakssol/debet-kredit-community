@@ -82,6 +82,33 @@ export function milersattning(mil: number, kronorPerMil: number): QuickEventResu
 }
 
 /**
+ * Traktamente vid tjänsteresa med övernattning (schablonavdrag för ökade
+ * levnadskostnader): D 5831 / K 2018. Kräver resa med övernattning > 50 km
+ * från bostaden/verksamhetsorten.
+ */
+export function traktamente(
+  wholeDays: number,
+  halfDays: number,
+  nights: number,
+  rates: { helt: number; halvt: number; natt: number }
+): QuickEventResult {
+  const amount =
+    Math.round((wholeDays * rates.helt + halfDays * rates.halvt + nights * rates.natt) * 100) / 100;
+  const parts = [
+    wholeDays > 0 ? `${wholeDays} hel dag à ${rates.helt} kr` : null,
+    halfDays > 0 ? `${halfDays} halv dag à ${rates.halvt} kr` : null,
+    nights > 0 ? `${nights} natt à ${rates.natt} kr` : null,
+  ].filter(Boolean).join(", ");
+  return {
+    description: `Traktamente tjänsteresa (${parts})`,
+    rows: [
+      { account: 5831, debit: amount, credit: 0, note: "Schablonavdrag ökade levnadskostnader" },
+      { account: 2018, debit: 0, credit: amount, note: "Egen insättning" },
+    ],
+  };
+}
+
+/**
  * Representation (måltid): måltidskostnad är EJ avdragsgill inkomstskattemässigt,
  * men moms får lyftas på underlag upp till maxUnderlagKr (300 kr) per person.
  * Överskjutande moms + hela nettot → 6072 ej avdragsgill.

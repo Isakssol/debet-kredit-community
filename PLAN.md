@@ -235,7 +235,36 @@ Företagsuppgifter, logotyp, momsmetod + momsperiod, fakturadefaults (villkor, p
 | **4. Rapporter + SIE** | Alla rapporter med drill-down, exports, SIE 4E | Revisorssäkert |
 | **5. Årsavslut** | Anläggningsregister + avskrivningar, checklista, K1-bokslut, NE-bilaga, skatteplanering, uttagssimulator, årsrullning | Hela året stängs i programmet |
 
-**Medvetet senare (v2+):** bankkoppling (datamodellen förberedd: betalningar är egna entiteter), e-faktura/Peppol, AI-tolkning av kvitton, ROT/RUT, offert→order, återkommande fakturor, SRU-filinlämning, räntefakturor, revisorsinloggning, flervaluta, OSS.
+**Medvetet senare (v2+):** bankkoppling via PSD2 (datamodellen förberedd: betalningar är egna entiteter), e-faktura/Peppol, AI-tolkning av kvitton, ROT/RUT, offert→order, SRU-filinlämning, räntefakturor, revisorsinloggning, flervaluta, OSS.
+
+---
+
+## 7b. Kompletteringsanalys (2026-07-01, efter fas 2)
+
+Luckor identifierade utöver ursprungsplanen — krävs för att programmet ska vara *komplett*:
+
+| # | Komplettering | Varför | Fas |
+|---|---|---|---|
+| 1 | **Inställningssida** — företagsuppgifter (orgnr, VAT-nr SE…01, adress, bankgiro, logotyp), fakturadefaults, periodlåsnings-UI, hantering av räkenskapsår + serier | Utan orgnr/bankgiro är faktura-PDF:n inte ens laglig — fakturakraven kräver säljarens uppgifter. **Blockerar skarp användning.** | **3** |
+| 2 | **Ingående balanser / migrering** — SIE-import eller manuell IB-registrering + verifikat för historik jan–jun 2026 | Firman har redan bokföring för 2026 någonstans — den måste in innan systemet kan ta över. | **3–4** |
+| 3 | **E-postutskick av faktura** (Resend, kräver API-nyckel + domänverifiering getshield/haus) | Planerat men ej byggt — nu bara PDF-nedladdning. | 3 |
+| 4 | **Påminnelse-PDF + dröjsmålsränta** — nu registreras påminnelser bara som poster | Komplett kravflöde: påminnelse 1, 2, med avgift + ränta enligt räntelagen | 4 |
+| 5 | **Arkivexport** — zip med SIE + alla verifikat-PDF + underlag per räkenskapsår | 7 års arkiveringsplikt: datan får inte vara fånge i en databas | 4 |
+| 6 | **Körjournal** — mil, datum, syfte, resmål | Skattefri milersättning kräver körjournal som underlag vid granskning | 5 |
+| 7 | **Traktamente-snabbhändelse** (belopp finns redan i regelvärden) | Komplettering av snabbhändelserna | 3 |
+| 8 | **Representation: syfte + deltagarlista** på snabbhändelsen | SKV-krav på underlag för representation | 3 |
+| 9 | **Underlagsinkorg** — ladda upp kvitton först, bokför senare (Fortnox-mönstret) | Vardagsflödet: fota nu, bokför på söndag | 5 |
+| 10 | **CSV-import av kontoutdrag** + matchning mot reskontror/förslag | 80 % av bankkopplingens nytta utan PSD2-avtal — mellansteg tills riktig koppling | 6 |
+| 11 | **Periodiseringar** (förutbetalda kostnader 1710/1790/2990) | Konton finns; enkel guide vid bokslut räcker för K1 | 5 |
+| 12 | **Periodisk sammanställning** (EU-tjänsteförsäljning ruta 39) | Lagkrav om EU-kunder faktureras — trimtech kan ha det | 3 |
+| 13 | **Preliminär inkomstdeklaration-underlag** — jämför bokfört resultat mot debiterad F-skatt löpande | Undvika kvarskatt/överinbetalning; hör ihop med uttagssimulatorn | 5 |
+| 14 | **Global sökning** (verifikat, fakturor, belopp, motpart) | Hygienfunktion när volymen växer | 6 |
+| 15 | **Mobilanpassning** (responsiv sidebar, kvittofoto via mobilkamera) | Kvitton fotas med mobilen i verkligheten | 6 |
+| 16 | **Enhetstester** för posting engine, momsberäkning, OCR, momsrapportens rutmappning | Bokföringslogik får inte regressa — golden tests | 3+ |
+| 17 | **Deploy** — Vercel + Supabase cloud, stark auth, backupstrategi | Molnprojekt = säker lagring + åtkomst överallt | 6 |
+| 18 | **Återkommande fakturor** (tabell finns, UI saknas) | Månadsavtal faktureras automatiskt | 6 |
+
+Avskrivningar/anläggningsregister var redan planerat (fas 5): 30/20-regeln, direktavdrag < 29 600 kr, K1-regeln om hela underlaget ≤ halvt prisbasbelopp, avyttring/utrangering med 3973/7973.
 
 ---
 

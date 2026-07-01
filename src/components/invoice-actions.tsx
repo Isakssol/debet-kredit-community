@@ -7,6 +7,7 @@ import {
   bookInvoice, registerPayment, createCreditInvoice, markInvoiceSent,
   createReminder, deleteDraft,
 } from "@/lib/actions/invoices";
+import { sendInvoiceEmail } from "@/lib/actions/email";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
@@ -66,8 +67,18 @@ export function InvoiceActions({
         </>
       )}
 
-      {status === "booked" && (
+      {(status === "booked" || status === "sent") && type === "debit" && (
         <Button variant="outline" disabled={busy}
+          onClick={() => run(async () => {
+            const r = await sendInvoiceEmail(invoiceId);
+            return r.error ? r : { ...r };
+          }, "Faktura skickad via e-post")}>
+          Skicka via e-post
+        </Button>
+      )}
+
+      {status === "booked" && (
+        <Button variant="ghost" disabled={busy}
           onClick={() => run(() => markInvoiceSent(invoiceId), "Markerad som skickad")}>
           Markera som skickad
         </Button>
@@ -116,8 +127,12 @@ export function InvoiceActions({
 
       {canPay && (
         <Button variant="outline" disabled={busy}
-          onClick={() => run(() => createReminder(invoiceId, 60), "Påminnelse registrerad (avgift 60 kr)")}>
-          Registrera påminnelse
+          onClick={() => run(async () => {
+            const r = await createReminder(invoiceId, 60);
+            if (!r.error) window.open(`/fakturor/${invoiceId}/paminnelse`, "_blank");
+            return r;
+          }, "Påminnelse skapad — PDF öppnas")}>
+          Skapa påminnelse (PDF)
         </Button>
       )}
 

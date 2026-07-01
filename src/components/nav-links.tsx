@@ -4,16 +4,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-const sections: { title: string; links: { href: string; label: string; soon?: boolean }[] }[] = [
+const sections: { title: string; links: { href: string; label: string }[] }[] = [
   {
     title: "",
-    links: [{ href: "/", label: "Översikt" }],
+    links: [
+      { href: "/", label: "Översikt" },
+      { href: "/sok", label: "Sök" },
+    ],
   },
   {
     title: "Bokföring",
     links: [
       { href: "/verifikat", label: "Verifikat" },
       { href: "/verifikat/ny", label: "Ny verifikation" },
+      { href: "/underlag", label: "Underlagsinkorg" },
       { href: "/kontoplan", label: "Kontoplan" },
     ],
   },
@@ -27,20 +31,33 @@ const sections: { title: string; links: { href: string; label: string; soon?: bo
     ],
   },
   {
+    title: "Utgifter",
+    links: [
+      { href: "/leverantorer", label: "Leverantörer" },
+      { href: "/korjournal", label: "Körjournal" },
+      { href: "/anlaggningar", label: "Anläggningar" },
+    ],
+  },
+  {
+    title: "Skatt & moms",
+    links: [
+      { href: "/moms", label: "Moms" },
+      { href: "/skatt", label: "Skatt & eget uttag" },
+      { href: "/arsavslut", label: "Årsavslut" },
+    ],
+  },
+  {
     title: "Rapporter",
     links: [
+      { href: "/rapporter", label: "Rapporter & export" },
       { href: "/rapporter/resultat", label: "Resultatrapport" },
       { href: "/rapporter/balans", label: "Balansrapport" },
       { href: "/rapporter/huvudbok", label: "Huvudbok" },
     ],
   },
   {
-    title: "Kommer snart",
-    links: [
-      { href: "#", label: "Leverantörer", soon: true },
-      { href: "#", label: "Moms", soon: true },
-      { href: "#", label: "Årsavslut", soon: true },
-    ],
+    title: "",
+    links: [{ href: "/installningar", label: "Inställningar" }],
   },
 ];
 
@@ -56,22 +73,15 @@ export function NavLinks() {
             </div>
           )}
           <div className="space-y-0.5">
-            {section.links.map((link) =>
-              link.soon ? (
-                <div key={link.label}
-                  className="px-2 py-1.5 text-sm rounded text-muted-foreground/50 cursor-default">
-                  {link.label}
-                </div>
-              ) : (
-                <Link key={link.href} href={link.href}
-                  className={cn(
-                    "block px-2 py-1.5 text-sm rounded hover:bg-accent",
-                    pathname === link.href && "bg-accent font-medium"
-                  )}>
-                  {link.label}
-                </Link>
-              )
-            )}
+            {section.links.map((link) => (
+              <Link key={link.href} href={link.href}
+                className={cn(
+                  "block px-2 py-1.5 text-sm rounded hover:bg-accent",
+                  pathname === link.href && "bg-accent font-medium"
+                )}>
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
       ))}

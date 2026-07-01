@@ -880,6 +880,7 @@ export type Database = {
           attachment_path: string | null
           created_at: string
           due_date: string
+          expense_account: number | null
           id: string
           invoice_date: string
           invoice_no: string | null
@@ -889,12 +890,14 @@ export type Database = {
           supplier_id: string
           total_amount: number
           vat_amount: number
+          vat_rate: number
           verification_id: string | null
         }
         Insert: {
           attachment_path?: string | null
           created_at?: string
           due_date: string
+          expense_account?: number | null
           id?: string
           invoice_date: string
           invoice_no?: string | null
@@ -904,12 +907,14 @@ export type Database = {
           supplier_id: string
           total_amount: number
           vat_amount?: number
+          vat_rate?: number
           verification_id?: string | null
         }
         Update: {
           attachment_path?: string | null
           created_at?: string
           due_date?: string
+          expense_account?: number | null
           id?: string
           invoice_date?: string
           invoice_no?: string | null
@@ -919,9 +924,17 @@ export type Database = {
           supplier_id?: string
           total_amount?: number
           vat_amount?: number
+          vat_rate?: number
           verification_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_invoices_expense_account_fkey"
+            columns: ["expense_account"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["number"]
+          },
           {
             foreignKeyName: "supplier_invoices_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -1115,6 +1128,54 @@ export type Database = {
           type?: string
         }
         Relationships: []
+      }
+      trips: {
+        Row: {
+          created_at: string
+          from_location: string
+          id: string
+          km: number
+          purpose: string
+          to_location: string
+          trip_date: string
+          verification_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          from_location: string
+          id?: string
+          km: number
+          purpose: string
+          to_location: string
+          trip_date: string
+          verification_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          from_location?: string
+          id?: string
+          km?: number
+          purpose?: string
+          to_location?: string
+          trip_date?: string
+          verification_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_verification_id_fkey"
+            columns: ["verification_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_entries"
+            referencedColumns: ["verification_id"]
+          },
+          {
+            foreignKeyName: "trips_verification_id_fkey"
+            columns: ["verification_id"]
+            isOneToOne: false
+            referencedRelation: "verifications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vat_codes: {
         Row: {

@@ -1,0 +1,103 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+
+const settingsSchema = z.object({
+  company_name: z.string().min(1),
+  org_number: z.string().optional(),
+  vat_number: z.string().optional(),
+  address: z.string().optional(),
+  postal_code: z.string().optional(),
+  city: z.string().optional(),
+  email: z.string().optional(),
+  phone: z.string().optional(),
+  bankgiro: z.string().optional(),
+  plusgiro: z.string().optional(),
+  iban: z.string().optional(),
+  bic: z.string().optional(),
+  vat_period: z.enum(["manad", "kvartal", "helar"]),
+  eu_trade: z.boolean(),
+  default_payment_terms: z.number().int().min(0).max(90),
+  reminder_fee: z.number().min(0),
+  late_interest_rate: z.number().nullable(),
+  municipal_tax_rate: z.number().min(25).max(40),
+});
+
+export async function saveSettings(input: unknown) {
+  const parsed = settingsSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  // Härled VAT-nummer från personnummer om det saknas (SE + 12 siffror + 01)
+  const values = { ...parsed.data };
+  if (values.org_number && !values.vat_number) {
+    const digits = values.org_number.replace(/\D/g, "");
+    if (digits.length === 10) values.vat_number = `SE${digits.length === 10 ? "19" + digits : digits}01`;
+    if (digits.length === 12) values.vat_number = `SE${digits}01`;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("settings").update(values).eq("id", 1);
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function toggleAccountingMethod(fiscalYearId: string, method: string) {
+  if (!["faktureringsmetoden", "kontantmetoden"].includes(method)) {
+    return { error: "Ogiltig metod." };
+  }
+  const supabase = await createClient();
+  // Metodbyte endast om året saknar verifikat (annars blir momsredovisningen fel)
+  const { count } = await supabase.from("verifications")
+    .select("id", { count: "exact", head: true }).eq("fiscal_year_id", fiscalYearId);
+  if ((count ?? 0) > 0) {
+    return { error: "Bokföringsmetoden kan inte bytas när året har verifikat." };
+  }
+  const { error } = await supabase.from("fiscal_years")
+    .update({ accounting_method: method }).eq("id", fiscalYearId);
+  if (error) return { error: error.message };
+  revalidatePath("/installningar");
+  return { ok: true };
+}
+
+export async function toggleMonthLock(fiscalYearId: string, month: number, lock: boolean) {
+  const supabase = await createClient();
+  if (lock) {
+    const { error } = await supabase.from("period_locks")
+      .insert({ fiscal_year_id: fiscalYearId, month, reason: "manual" });
+    if (error) return { error: error.message };
+  } else {
+    // Endast manuella lås får låsas upp — momslåsta perioder är definitiva
+    const { data: existing } = await supabase.from("period_locks")
+      .select("id, reason").eq("fiscal_year_id", fiscalYearId).eq("month", month).single();
+    if (!existing) return { error: "Perioden är inte låst." };
+    if (existing.reason !== "manual") {
+      return { error: "Perioden är låst av momsrapporten och kan inte låsas upp." };
+    }
+    const { error } = await supabase.from("period_locks").delete().eq("id", existing.id);
+    if (error) return { error: error.message };
+  }
+  revalidatePath("/installningar");
+  return { ok: true };
+}
+
+/** Registrera ingående balanser (vid migrering från annat system). */
+export async function bookOpeningBalances(input: {
+  date: string;
+  rows: { account: number; debit: number; credit: number }[];
+}) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("book_verification", {
+    p_series_code: "A",
+    p_date: input.date,
+    p_description: "Ingående balanser",
+    p_rows: input.rows,
+    p_source: "opening_balance",
+  });
+  if (error) return { error: error.message };
+  const result = Array.isArray(data) ? data[0] : data;
+  revalidatePath("/", "layout");
+  return { ok: true, label: `A${result?.out_number}` };
+}
