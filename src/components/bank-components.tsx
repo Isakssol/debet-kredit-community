@@ -21,15 +21,15 @@ import {
 const fmt = (n: number) =>
   n.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-/* ---------- Bankkoppling (PSD2 via GoCardless) ---------- */
+/* ---------- Bankkoppling (PSD2 via Enable Banking) ---------- */
 
 export function BankConnect({
   configured,
-  justConnected,
+  callbackCode,
   connections,
 }: {
   configured: boolean;
-  justConnected: boolean;
+  callbackCode: string | null;
   connections: {
     id: string; institutionName: string; status: string;
     iban: string | null; lastSynced: string | null; consentExpires: string | null;
@@ -37,8 +37,9 @@ export function BankConnect({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [banks, setBanks] = useState<{ id: string; name: string }[] | null>(null);
+  const [banks, setBanks] = useState<{ id: string; name: string; maxConsentSeconds?: number }[] | null>(null);
   const [selectedBank, setSelectedBank] = useState("");
+  const [psuType, setPsuType] = useState<"personal" | "business">("personal");
 
   async function loadBanks() {
     setBusy(true);
@@ -52,15 +53,16 @@ export function BankConnect({
     const bank = banks?.find((b) => b.id === selectedBank);
     if (!bank) return;
     setBusy(true);
-    const res = await connectBank(bank.id, bank.name, window.location.origin);
+    const res = await connectBank(bank.id, bank.maxConsentSeconds ?? 0, window.location.origin, psuType);
     setBusy(false);
     if (res.error) toast.error(res.error);
     else if (res.link) window.location.href = res.link; // BankID hos banken
   }
 
   async function finalize() {
+    if (!callbackCode) return;
     setBusy(true);
-    const res = await finalizeBankConnection();
+    const res = await finalizeBankConnection(callbackCode);
     setBusy(false);
     if (res.error) toast.error(res.error);
     else {
@@ -75,16 +77,16 @@ export function BankConnect({
       <CardHeader>
         <CardTitle className="text-base">Bankkoppling (PSD2)</CardTitle>
         <CardDescription>
-          Hämtar transaktioner automatiskt — du godkänner med BankID hos din bank,
-          samtycket gäller ca 90 dagar.
+          Hämtar transaktioner automatiskt via Enable Banking — du godkänner med BankID
+          hos din bank, samtycket gäller upp till 180 dagar.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
-        {justConnected && (
+        {callbackCode && (
           <div className="rounded border bg-accent p-2.5 flex items-center justify-between">
-            <span>Klar hos banken? Slutför kopplingen:</span>
+            <span>BankID godkänt — slutför kopplingen:</span>
             <Button size="sm" onClick={finalize} disabled={busy}>
-              {busy ? "Hämtar…" : "Slutför"}
+              {busy ? "Hämtar konton…" : "Slutför"}
             </Button>
           </div>
         )}
@@ -120,11 +122,14 @@ export function BankConnect({
 
         {!configured ? (
           <div className="text-muted-foreground text-xs leading-relaxed">
-            <p className="font-medium text-foreground text-sm mb-1">Kom igång (5 min, gratis):</p>
-            1. Skapa konto på <strong>bankaccountdata.gocardless.com</strong><br />
-            2. Skapa &quot;User secret&quot; under Developers → User secrets<br />
-            3. Lägg in i <code>.env.local</code>: <code>GOCARDLESS_SECRET_ID</code> och{" "}
-            <code>GOCARDLESS_SECRET_KEY</code><br />
+            <p className="font-medium text-foreground text-sm mb-1">Kom igång (gratis för egna konton):</p>
+            1. Skapa konto på <strong>enablebanking.com</strong> → Control Panel → Applications<br />
+            2. Generera RSA-nyckelpar (<code>openssl genrsa -out privat.pem 4096</code> +{" "}
+            <code>openssl req -new -x509 -key privat.pem -out cert.pem -days 3650</code>),
+            ladda upp <code>cert.pem</code> och aktivera appen (production, redirect-URL:{" "}
+            <code>{typeof window !== "undefined" ? window.location.origin : ""}/bank</code>)<br />
+            3. Lägg in i <code>.env.local</code>: <code>ENABLE_BANKING_APP_ID</code> och{" "}
+            <code>ENABLE_BANKING_PRIVATE_KEY</code> (PEM-innehållet)<br />
             4. Starta om appen — sedan kopplar du Nordea/Swedbank/SEB m.fl. med BankID här.
           </div>
         ) : banks === null ? (
@@ -132,18 +137,25 @@ export function BankConnect({
             {busy ? "Hämtar banker…" : "+ Koppla bankkonto"}
           </Button>
         ) : (
-          <div className="flex gap-2">
-            <Select value={selectedBank} onValueChange={setSelectedBank}>
-              <SelectTrigger className="flex-1"><SelectValue placeholder="Välj din bank…" /></SelectTrigger>
-              <SelectContent>
-                {banks.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button onClick={connect} disabled={busy || !selectedBank}>
-              Anslut med BankID
-            </Button>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Select value={selectedBank} onValueChange={setSelectedBank}>
+                <SelectTrigger className="flex-1"><SelectValue placeholder="Välj din bank…" /></SelectTrigger>
+                <SelectContent>
+                  {banks.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={connect} disabled={busy || !selectedBank}>
+                Anslut med BankID
+              </Button>
+            </div>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <input type="checkbox" checked={psuType === "business"}
+                onChange={(e) => setPsuType(e.target.checked ? "business" : "personal")} />
+              Företagskonto (enskild firma-konton är oftast tekniskt privatkonton — lämna urbockad om osäker)
+            </label>
           </div>
         )}
       </CardContent>

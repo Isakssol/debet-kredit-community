@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { gocardlessConfigured } from "@/lib/bank/gocardless";
+import { enableBankingConfigured } from "@/lib/bank/enable-banking";
 import { suggestMatch, type OpenInvoice, type OpenSupplierInvoice, type BookedCandidate } from "@/lib/bank/matching";
 import { BankConnect, BankCsvUpload, BankTxRow } from "@/components/bank-components";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +11,9 @@ const fmt = (n: number) =>
 export default async function BankPage({
   searchParams,
 }: {
-  searchParams: Promise<{ connected?: string; visa?: string }>;
+  searchParams: Promise<{ code?: string; visa?: string }>;
 }) {
-  const { connected, visa } = await searchParams;
+  const { code, visa } = await searchParams;
   const supabase = await createClient();
 
   const [
@@ -106,8 +106,8 @@ export default async function BankPage({
 
       <div className="grid grid-cols-2 gap-4">
         <BankConnect
-          configured={gocardlessConfigured()}
-          justConnected={connected === "1"}
+          configured={enableBankingConfigured()}
+          callbackCode={code ?? null}
           connections={(connections ?? []).map((c) => ({
             id: c.id,
             institutionName: c.institution_name ?? "Bank",

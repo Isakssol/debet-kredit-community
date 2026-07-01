@@ -4,10 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { parseBankCsv } from "@/lib/bank/csv-parser";
 import {
-  gocardlessConfigured, listSwedishBanks, createRequisition,
-  getRequisitionAccounts, getAccountDetails, getAccountTransactions,
-  describeTransaction,
-} from "@/lib/bank/gocardless";
+  enableBankingConfigured, listSwedishBanks, startAuth, createSession,
+  getAccountTransactions, txSignedAmount, describeTransaction, txCounterpart,
+} from "@/lib/bank/enable-banking";
 import { registerPayment } from "@/lib/actions/invoices";
 import { paySupplierInvoice } from "@/lib/actions/suppliers";
 
@@ -46,58 +45,67 @@ export async function importBankCsv(formData: FormData) {
 /* ---------- GoCardless (PSD2) ---------- */
 
 export async function getBankList() {
-  if (!gocardlessConfigured()) {
-    return { error: "Bankkoppling kräver GoCardless-nycklar — se instruktionerna på banksidan." };
+  if (!enableBankingConfigured()) {
+    return { error: "Bankkoppling kräver Enable Banking-nycklar — se instruktionerna på banksidan." };
   }
   try {
     const banks = await listSwedishBanks();
-    return { banks: banks.map((b) => ({ id: b.id, name: b.name, logo: b.logo })) };
+    return {
+      banks: banks.map((b) => ({
+        id: b.name, // Enable Banking identifierar banken med namn + land
+        name: b.name,
+        maxConsentSeconds: b.maximum_consent_validity,
+      })),
+    };
   } catch (e) {
     return { error: (e as Error).message };
   }
 }
 
-export async function connectBank(institutionId: string, institutionName: string, appUrl: string) {
-  if (!gocardlessConfigured()) return { error: "GoCardless-nycklar saknas." };
+export async function connectBank(
+  aspspName: string,
+  maxConsentSeconds: number,
+  appUrl: string,
+  psuType: "personal" | "business" = "personal"
+) {
+  if (!enableBankingConfigured()) return { error: "Enable Banking-nycklar saknas." };
   try {
-    const { requisitionId, link } = await createRequisition(
-      institutionId, `${appUrl}/bank?connected=1`);
+    const { url } = await startAuth(aspspName, `${appUrl}/bank`, maxConsentSeconds, psuType);
     const supabase = await createClient();
     const { error } = await supabase.from("bank_connections").insert({
-      provider: "gocardless",
-      institution_id: institutionId,
-      institution_name: institutionName,
-      requisition_id: requisitionId,
+      provider: "enablebanking",
+      institution_id: aspspName,
+      institution_name: aspspName,
       status: "pending",
     });
     if (error) return { error: error.message };
-    return { ok: true, link };
+    return { ok: true, link: url };
   } catch (e) {
     return { error: (e as Error).message };
   }
 }
 
-/** Efter BankID-godkännande: hämta konto-id + kör första synken */
-export async function finalizeBankConnection() {
+/** Efter BankID hos banken: växla callback-koden mot session + kör första synken */
+export async function finalizeBankConnection(code: string) {
   const supabase = await createClient();
   const { data: pending } = await supabase.from("bank_connections")
     .select("*").eq("status", "pending").order("created_at", { ascending: false }).limit(1);
   const conn = pending?.[0];
-  if (!conn?.requisition_id) return { error: "Ingen väntande koppling." };
+  if (!conn) return { error: "Ingen väntande koppling — börja om med Koppla bankkonto." };
 
   try {
-    const req = await getRequisitionAccounts(conn.requisition_id);
-    if (req.status !== "LN" || !req.accounts.length) {
-      return { error: `Kopplingen är inte klar hos banken ännu (status ${req.status}). Slutför BankID-flödet och försök igen.` };
+    const session = await createSession(code);
+    if (!session.accounts.length) {
+      return { error: "Banken returnerade inga konton — kontrollera att kontot valdes i BankID-flödet." };
     }
-    const accountId = req.accounts[0];
-    const details = await getAccountDetails(accountId);
+    const account = session.accounts[0];
     const expires = new Date();
-    expires.setDate(expires.getDate() + 90); // PSD2-samtycke, typiskt 90 dagar
+    expires.setDate(expires.getDate() + 180); // Enable Banking: upp till 180 dagars samtycke
 
     await supabase.from("bank_connections").update({
-      account_id: accountId,
-      account_iban: details.iban ?? null,
+      requisition_id: session.sessionId,
+      account_id: account.uid,
+      account_iban: account.account_id?.iban ?? null,
       status: "linked",
       consent_expires_at: expires.toISOString(),
     }).eq("id", conn.id);
@@ -124,12 +132,12 @@ export async function syncBankTransactions(connectionId: string) {
     for (const t of txs) {
       const { error } = await supabase.from("bank_transactions").insert({
         connection_id: conn.id,
-        external_id: t.transactionId ?? t.internalTransactionId ?? null,
-        booking_date: t.bookingDate,
-        amount: parseFloat(t.transactionAmount.amount),
-        currency: t.transactionAmount.currency,
+        external_id: t.entry_reference ?? null,
+        booking_date: t.booking_date!,
+        amount: txSignedAmount(t),
+        currency: t.transaction_amount.currency,
         description: describeTransaction(t),
-        counterpart: t.creditorName ?? t.debtorName ?? null,
+        counterpart: txCounterpart(t),
       });
       if (!error) imported++;
       // 23505 = dublett, ignoreras tyst
