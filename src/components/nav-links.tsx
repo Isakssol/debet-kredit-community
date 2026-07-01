@@ -18,6 +18,15 @@ const sections: { title: string; links: { href: string; label: string; soon?: bo
     ],
   },
   {
+    title: "Fakturering",
+    links: [
+      { href: "/fakturor", label: "Fakturor" },
+      { href: "/fakturor/ny", label: "Ny faktura" },
+      { href: "/kunder", label: "Kunder" },
+      { href: "/artiklar", label: "Artiklar" },
+    ],
+  },
+  {
     title: "Rapporter",
     links: [
       { href: "/rapporter/resultat", label: "Resultatrapport" },
@@ -28,7 +37,6 @@ const sections: { title: string; links: { href: string; label: string; soon?: bo
   {
     title: "Kommer snart",
     links: [
-      { href: "#", label: "Fakturering", soon: true },
       { href: "#", label: "Leverantörer", soon: true },
       { href: "#", label: "Moms", soon: true },
       { href: "#", label: "Årsavslut", soon: true },
