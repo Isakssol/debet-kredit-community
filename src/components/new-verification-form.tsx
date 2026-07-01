@@ -9,6 +9,7 @@ import {
   traktamente, type QuickEventResult,
 } from "@/lib/posting/quick-events";
 import { linkAttachment } from "@/lib/actions/inbox";
+import { savePostingTemplate } from "@/lib/actions/templates";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,11 +29,13 @@ export function NewVerificationForm({
   seriesCodes,
   rules,
   inboxAttachmentId = null,
+  templates = [],
 }: {
   accounts: Account[];
   seriesCodes: string[];
   rules: Record<string, number>;
   inboxAttachmentId?: string | null;
+  templates?: { id: string; name: string; rows: { account: number; side: "debit" | "credit"; share: number }[] }[];
 }) {
   const router = useRouter();
   const today = new Date().toISOString().slice(0, 10);
@@ -43,6 +46,37 @@ export function NewVerificationForm({
   const [description, setDescription] = useState("");
   const [counterparty, setCounterparty] = useState("");
   const [rows, setRows] = useState<FormRow[]>([emptyRow(), emptyRow()]);
+
+  const [templateAmount, setTemplateAmount] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+
+  function applyTemplate() {
+    const t = templates.find((x) => x.id === selectedTemplate);
+    const total = parseFloat(templateAmount) || 0;
+    if (!t || total <= 0) return toast.error("Välj mall och ange belopp.");
+    setRows(t.rows.map((r) => ({
+      account: String(r.account),
+      debit: r.side === "debit" ? (Math.round(total * r.share * 100) / 100).toFixed(2) : "",
+      credit: r.side === "credit" ? (Math.round(total * r.share * 100) / 100).toFixed(2) : "",
+    })));
+    if (!description) setDescription(t.name);
+  }
+
+  async function saveAsTemplate() {
+    const name = prompt("Namn på konteringsmallen:");
+    if (!name) return;
+    const parsed = rows
+      .filter((r) => r.account && (parseFloat(r.debit) > 0 || parseFloat(r.credit) > 0))
+      .map((r) => ({
+        account: parseInt(r.account),
+        debit: parseFloat(r.debit) || 0,
+        credit: parseFloat(r.credit) || 0,
+      }));
+    if (parsed.length < 2) return toast.error("Fyll i raderna först.");
+    const res = await savePostingTemplate({ name, rows: parsed });
+    if (res.error) toast.error(res.error);
+    else toast.success(`Mallen "${name}" sparad`);
+  }
 
   const selectable = accounts.filter((a) => !a.blocked);
   const totalDebit = rows.reduce((s, r) => s + (parseFloat(r.debit) || 0), 0);
@@ -306,6 +340,27 @@ export function NewVerificationForm({
       <TabsContent value="manuell">
         <Card>
           <CardContent className="pt-4 space-y-4">
+            {templates.length > 0 && (
+              <div className="flex items-end gap-2 rounded border bg-muted/30 p-2.5">
+                <div className="space-y-1 flex-1">
+                  <Label className="text-xs">Konteringsmall</Label>
+                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                    <SelectTrigger><SelectValue placeholder="Välj mall…" /></SelectTrigger>
+                    <SelectContent>
+                      {templates.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1 w-36">
+                  <Label className="text-xs">Totalbelopp (kr)</Label>
+                  <Input type="number" step="0.01" value={templateAmount}
+                    onChange={(e) => setTemplateAmount(e.target.value)} />
+                </div>
+                <Button type="button" variant="outline" onClick={applyTemplate}>Använd</Button>
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label>Datum (affärshändelsen)</Label>
@@ -352,10 +407,15 @@ export function NewVerificationForm({
                 </div>
               ))}
               <div className="flex items-center justify-between">
-                <Button type="button" variant="outline" size="sm"
-                  onClick={() => setRows((p) => [...p, emptyRow()])}>
-                  + Lägg till rad
-                </Button>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" size="sm"
+                    onClick={() => setRows((p) => [...p, emptyRow()])}>
+                    + Lägg till rad
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" onClick={saveAsTemplate}>
+                    Spara som mall
+                  </Button>
+                </div>
                 <div className={`text-sm tabular-nums ${balanced ? "text-green-600" : "text-destructive"}`}>
                   Debet {totalDebit.toFixed(2)} / Kredit {totalCredit.toFixed(2)}
                   {balanced ? " ✓" : ` (diff ${(totalDebit - totalCredit).toFixed(2)})`}

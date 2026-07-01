@@ -10,7 +10,7 @@ export default async function NewVerificationPage({
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: accounts }, { data: series }, { data: rules }] = await Promise.all([
+  const [{ data: accounts }, { data: series }, { data: rules }, { data: templates }] = await Promise.all([
     supabase.from("accounts").select("number, name, default_vat_rate, blocked, description")
       .eq("active", true).order("number"),
     supabase.from("verification_series")
@@ -20,6 +20,7 @@ export default async function NewVerificationPage({
     supabase.from("rule_values").select("key, value")
       .lte("valid_from", today)
       .or(`valid_to.gte.${today},valid_to.is.null`),
+    supabase.from("posting_templates").select("id, name, rows").order("name"),
   ]);
 
   const ruleMap = Object.fromEntries((rules ?? []).map((r) => [r.key, Number(r.value)]));
@@ -37,6 +38,10 @@ export default async function NewVerificationPage({
         seriesCodes={(series ?? []).map((s) => s.code)}
         rules={ruleMap}
         inboxAttachmentId={underlag ?? null}
+        templates={(templates ?? []).map((t) => ({
+          id: t.id, name: t.name,
+          rows: t.rows as { account: number; side: "debit" | "credit"; share: number }[],
+        }))}
       />
     </div>
   );

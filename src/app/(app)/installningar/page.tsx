@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "@/components/settings-form";
 import { PeriodLocks } from "@/components/period-locks";
 import { OpeningBalances } from "@/components/opening-balances";
+import { SieImport } from "@/components/sie-import";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -52,6 +53,8 @@ export default async function SettingsPage() {
           fiscalYearId: l.fiscal_year_id, month: l.month, reason: l.reason,
         }))}
       />
+
+      <SieImport />
 
       <OpeningBalances
         accounts={(accounts ?? []).map((a) => ({ number: a.number, name: a.name }))}

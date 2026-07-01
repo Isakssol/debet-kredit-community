@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Search, BookOpen, PlusCircle, Inbox, ListTree,
+  LayoutDashboard, Search, BookOpen, PlusCircle, Inbox, ListTree, Scale,
   FileText, FilePlus, Users, Package, Truck, Car, Boxes,
   Percent, Calculator, CalendarCheck, BarChart3, Settings,
   type LucideIcon,
@@ -27,6 +27,7 @@ const sections: {
       { href: "/verifikat", label: "Verifikat", icon: BookOpen },
       { href: "/verifikat/ny", label: "Ny verifikation", icon: PlusCircle },
       { href: "/underlag", label: "Underlagsinkorg", icon: Inbox },
+      { href: "/avstamning", label: "Avstämning", icon: Scale },
       { href: "/kontoplan", label: "Kontoplan", icon: ListTree },
     ],
   },

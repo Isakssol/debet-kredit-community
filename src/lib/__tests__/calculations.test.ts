@@ -6,6 +6,7 @@ import { representation, fSkatt, kopMotKvitto, milersattning } from "../posting/
 import { computeVatBoxes, vatClosingRows, generateEskd, vatPeriods } from "../vat/report";
 import { calculateEfTax } from "../tax/calc";
 import { generateSie4 } from "../sie/export";
+import { parseSie } from "../sie/import";
 
 describe("money", () => {
   it("plockar ut moms ur bruttobelopp", () => {
@@ -246,5 +247,65 @@ describe("SIE 4E", () => {
     expect(sie).toContain("#TRANS 2611 {} -3000.00");
     // Verifikatets rader balanserar
     expect(15000 - 3000 - 12000).toBe(0);
+  });
+
+  it("rundtur: export → import ger samma data tillbaka", () => {
+    const sie = generateSie4({
+      companyName: "Oliver Isaksson (trimtech)",
+      orgNumber: "900101-1234",
+      generatedDate: "20260701",
+      fiscalYear: { year: 2026, start: "2026-01-01", end: "2026-12-31" },
+      accounts: [
+        { number: 1930, name: "Företagskonto" },
+        { number: 2010, name: "Eget kapital" },
+        { number: 3011, name: "Försäljning tjänster 25 %" },
+      ],
+      openingBalances: [
+        { account: 1930, amount: 50000 },
+        { account: 2010, amount: -50000 },
+      ],
+      closingBalances: [{ account: 1930, amount: 65000 }],
+      results: [{ account: 3011, amount: -12000 }],
+      verifications: [{
+        series: "B", number: 1, date: "2026-07-01",
+        description: "Kundfaktura 1 — Åäö & Co", registeredDate: "2026-07-01",
+        rows: [
+          { account: 1510, amount: 15000 },
+          { account: 2611, amount: -3000 },
+          { account: 3011, amount: -12000 },
+        ],
+      }],
+    });
+
+    const parsed = parseSie(sie);
+    expect(parsed.companyName).toBe("Oliver Isaksson (trimtech)");
+    expect(parsed.orgNumber).toBe("900101-1234");
+    expect(parsed.fiscalYears[0]).toEqual({ index: 0, start: "2026-01-01", end: "2026-12-31" });
+    expect(parsed.accounts).toHaveLength(3);
+    expect(parsed.openingBalances).toEqual([
+      { account: 1930, amount: 50000 },
+      { account: 2010, amount: -50000 },
+    ]);
+    expect(parsed.verifications).toHaveLength(1);
+    expect(parsed.verifications[0].description).toBe("Kundfaktura 1 — Åäö & Co");
+    expect(parsed.verifications[0].rows).toEqual([
+      { account: 1510, amount: 15000 },
+      { account: 2611, amount: -3000 },
+      { account: 3011, amount: -12000 },
+    ]);
+    expect(parsed.warnings).toHaveLength(0);
+  });
+
+  it("import: obalanserade verifikat hoppas över med varning", () => {
+    const parsed = parseSie(`#FLAGGA 0
+#SIETYP 4
+#VER A 1 20260315 "Trasigt verifikat"
+{
+   #TRANS 1930 {} 100.00
+   #TRANS 3011 {} -50.00
+}
+`);
+    expect(parsed.verifications).toHaveLength(0);
+    expect(parsed.warnings).toHaveLength(1);
   });
 });

@@ -158,6 +158,55 @@ export function vatPeriods(
   });
 }
 
+/**
+ * Rimlighetskontroller av momsrapporten (branschstandard):
+ * utgående moms ska motsvara momssatsen på underlaget per skattesats.
+ */
+export function computeVatChecks(entries: VatEntry[]): { label: string; ok: boolean; detail: string }[] {
+  const underlagByRate = new Map<number, number>(); // ören, per sats
+  const vatByBox = new Map<string, number>();
+
+  for (const e of entries) {
+    const debit = kronorToOre(Number(e.debit));
+    const credit = kronorToOre(Number(e.credit));
+    if (e.vat_code === "SALES_25") underlagByRate.set(25, (underlagByRate.get(25) ?? 0) + credit - debit);
+    if (e.vat_code === "SALES_12") underlagByRate.set(12, (underlagByRate.get(12) ?? 0) + credit - debit);
+    if (e.vat_code === "SALES_6") underlagByRate.set(6, (underlagByRate.get(6) ?? 0) + credit - debit);
+    const box = VAT_ACCOUNT_BOX[e.account];
+    if (box) {
+      const amount = box === "48" ? debit - credit : credit - debit;
+      vatByBox.set(box, (vatByBox.get(box) ?? 0) + amount);
+    }
+  }
+
+  const checks: { label: string; ok: boolean; detail: string }[] = [];
+  const rateBox: [number, string][] = [[25, "10"], [12, "11"], [6, "12"]];
+  for (const [rate, box] of rateBox) {
+    const underlag = underlagByRate.get(rate) ?? 0;
+    const actualVat = vatByBox.get(box) ?? 0;
+    if (underlag === 0 && actualVat === 0) continue;
+    const expectedVat = Math.round((underlag * rate) / 100);
+    const diff = Math.abs(actualVat - expectedVat);
+    checks.push({
+      label: `Utgående moms ${rate} % stämmer mot underlaget`,
+      ok: diff <= 100, // tolerans 1 kr för öresavrundningar
+      detail: diff <= 100
+        ? `${oreToKronor(actualVat).toLocaleString("sv-SE")} kr = ${rate} % av ${oreToKronor(underlag).toLocaleString("sv-SE")} kr`
+        : `Bokförd moms ${oreToKronor(actualVat).toLocaleString("sv-SE")} kr men ${rate} % av underlaget är ${oreToKronor(expectedVat).toLocaleString("sv-SE")} kr — kontrollera konteringen`,
+    });
+  }
+
+  const ingMoms = vatByBox.get("48") ?? 0;
+  if (ingMoms < 0) {
+    checks.push({
+      label: "Ingående moms är negativ",
+      ok: false,
+      detail: "Konto 2640/2645 har kreditsaldo — kontrollera felbokningar.",
+    });
+  }
+  return checks;
+}
+
 /** Rutornas beskrivningar (för rapportvyn och PDF) */
 export const BOX_LABELS: Record<string, string> = {
   "05": "Momspliktig försäljning som inte ingår i ruta 06, 07 eller 08",

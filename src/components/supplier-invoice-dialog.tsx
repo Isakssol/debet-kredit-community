@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { registerSupplierInvoice } from "@/lib/actions/suppliers";
+import { registerSupplierInvoice, attachSupplierFile } from "@/lib/actions/suppliers";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
@@ -31,6 +31,7 @@ export function SupplierInvoiceDialog({
   const today = new Date().toISOString().slice(0, 10);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [f, setF] = useState({
     supplierId: "", invoiceNo: "", ocr: "", invoiceDate: today,
     dueDate: addDays(today, 30), totalAmount: "", vatRate: "25",
@@ -64,6 +65,13 @@ export function SupplierInvoiceDialog({
     setBusy(false);
     if (res.error) toast.error(res.error);
     else {
+      const file = fileRef.current?.files?.[0];
+      if (file && res.id) {
+        const fd = new FormData();
+        fd.set("file", file);
+        const att = await attachSupplierFile(res.id, fd);
+        if (att.error) toast.error("Faktura bokförd men bilagan misslyckades: " + att.error);
+      }
       toast.success("Leverantörsfaktura registrerad och bokförd");
       setOpen(false);
       setF({
@@ -136,6 +144,10 @@ export function SupplierInvoiceDialog({
                 <SelectItem value="0">0 % (momsfri)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="col-span-2 space-y-1">
+            <Label>Bilaga (fakturan som PDF/bild — arkiveras 7 år)</Label>
+            <Input ref={fileRef} type="file" accept="image/*,.pdf" />
           </div>
           <div className="col-span-2 space-y-1">
             <Label>Kostnadskonto *</Label>

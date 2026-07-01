@@ -100,6 +100,32 @@ export async function registerSupplierInvoice(input: unknown) {
   return { ok: true, id: created.id };
 }
 
+/** Bifoga fakturabilden/PDF:en till leverantörsfakturan (arkiveras 7 år) */
+export async function attachSupplierFile(supplierInvoiceId: string, formData: FormData) {
+  const file = formData.get("file") as File | null;
+  if (!file) return { error: "Ingen fil." };
+  const supabase = await createClient();
+  const { data: inv } = await supabase.from("supplier_invoices")
+    .select("verification_id").eq("id", supplierInvoiceId).single();
+  if (!inv) return { error: "Fakturan finns inte." };
+
+  const path = `leverantorsfakturor/${supplierInvoiceId}/${file.name}`;
+  const { error: upErr } = await supabase.storage.from("underlag")
+    .upload(path, file, { contentType: file.type, upsert: true });
+  if (upErr) return { error: upErr.message };
+
+  await supabase.from("supplier_invoices")
+    .update({ attachment_path: path }).eq("id", supplierInvoiceId);
+  await supabase.from("attachments").insert({
+    verification_id: inv.verification_id,
+    storage_path: path,
+    file_name: file.name,
+    mime_type: file.type,
+  });
+  revalidatePath("/leverantorer");
+  return { ok: true };
+}
+
 export async function paySupplierInvoice(input: {
   supplierInvoiceId: string;
   paymentDate: string;

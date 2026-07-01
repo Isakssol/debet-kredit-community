@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getVatEntries } from "@/lib/actions/vat";
-import { computeVatBoxes, vatPeriods, BOX_LABELS, BOX_ORDER } from "@/lib/vat/report";
+import { computeVatBoxes, computeVatChecks, vatPeriods, BOX_LABELS, BOX_ORDER } from "@/lib/vat/report";
 import { VatPeriodActions } from "@/components/vat-period-actions";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +41,7 @@ export default async function VatPage({
 
   const isApproved = report?.status === "approved";
   const payable = boxes["49"] ?? 0;
+  const checks = computeVatChecks(entries);
 
   return (
     <div className="max-w-3xl space-y-4">
@@ -110,6 +111,21 @@ export default async function VatPage({
                 ? `${(-payable).toLocaleString("sv-SE")} kr att få tillbaka.`
                 : "Ingen moms att redovisa för perioden."}
           </div>
+
+          {checks.length > 0 && (
+            <div className="rounded border bg-muted/30 p-3 space-y-1">
+              <div className="text-sm font-medium">Momskontroller</div>
+              {checks.map((c) => (
+                <div key={c.label} className="text-sm flex gap-2">
+                  <span>{c.ok ? "✅" : "⚠️"}</span>
+                  <span>
+                    {c.label}
+                    <span className="block text-xs text-muted-foreground">{c.detail}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <VatPeriodActions
             periodStart={selected.start}

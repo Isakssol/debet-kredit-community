@@ -735,6 +735,30 @@ export type Database = {
           },
         ]
       }
+      posting_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          rows: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          rows: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          rows?: Json
+        }
+        Relationships: []
+      }
       recurring_invoices: {
         Row: {
           active: boolean
