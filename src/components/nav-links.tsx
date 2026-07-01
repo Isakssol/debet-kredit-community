@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Search, BookOpen, PlusCircle, Inbox, ListTree, Scale,
   FileText, FilePlus, Users, Package, Truck, Car, Boxes,
-  Percent, Calculator, CalendarCheck, BarChart3, Settings,
+  Percent, Calculator, CalendarCheck, BarChart3, Settings, Landmark,
   type LucideIcon,
 } from "lucide-react";
 
@@ -43,6 +43,7 @@ const sections: {
   {
     title: "Utgifter",
     links: [
+      { href: "/bank", label: "Bank", icon: Landmark },
       { href: "/leverantorer", label: "Leverantörer", icon: Truck },
       { href: "/korjournal", label: "Körjournal", icon: Car },
       { href: "/anlaggningar", label: "Anläggningar", icon: Boxes },

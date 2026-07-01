@@ -316,6 +316,126 @@ export type Database = {
           },
         ]
       }
+      bank_connections: {
+        Row: {
+          account_iban: string | null
+          account_id: string | null
+          consent_expires_at: string | null
+          created_at: string
+          id: string
+          institution_id: string | null
+          institution_name: string | null
+          last_synced_at: string | null
+          ledger_account: number
+          provider: string
+          requisition_id: string | null
+          status: string
+        }
+        Insert: {
+          account_iban?: string | null
+          account_id?: string | null
+          consent_expires_at?: string | null
+          created_at?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          last_synced_at?: string | null
+          ledger_account?: number
+          provider?: string
+          requisition_id?: string | null
+          status?: string
+        }
+        Update: {
+          account_iban?: string | null
+          account_id?: string | null
+          consent_expires_at?: string | null
+          created_at?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          last_synced_at?: string | null
+          ledger_account?: number
+          provider?: string
+          requisition_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_connections_ledger_account_fkey"
+            columns: ["ledger_account"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["number"]
+          },
+        ]
+      }
+      bank_transactions: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          booking_date: string
+          connection_id: string | null
+          counterpart: string | null
+          currency: string
+          description: string
+          external_id: string | null
+          id: string
+          imported_at: string
+          status: string
+          verification_id: string | null
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          booking_date: string
+          connection_id?: string | null
+          counterpart?: string | null
+          currency?: string
+          description: string
+          external_id?: string | null
+          id?: string
+          imported_at?: string
+          status?: string
+          verification_id?: string | null
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          booking_date?: string
+          connection_id?: string | null
+          counterpart?: string | null
+          currency?: string
+          description?: string
+          external_id?: string | null
+          id?: string
+          imported_at?: string
+          status?: string
+          verification_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transactions_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "bank_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_verification_id_fkey"
+            columns: ["verification_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_entries"
+            referencedColumns: ["verification_id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_verification_id_fkey"
+            columns: ["verification_id"]
+            isOneToOne: false
+            referencedRelation: "verifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           active: boolean
