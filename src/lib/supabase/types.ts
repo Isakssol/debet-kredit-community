@@ -960,6 +960,7 @@ export type Database = {
           late_interest_rate: number | null
           logo_path: string | null
           municipal_tax_rate: number
+          onboarded_at: string | null
           org_number: string | null
           phone: string | null
           plusgiro: string | null
@@ -984,6 +985,7 @@ export type Database = {
           late_interest_rate?: number | null
           logo_path?: string | null
           municipal_tax_rate?: number
+          onboarded_at?: string | null
           org_number?: string | null
           phone?: string | null
           plusgiro?: string | null
@@ -1008,6 +1010,7 @@ export type Database = {
           late_interest_rate?: number | null
           logo_path?: string | null
           municipal_tax_rate?: number
+          onboarded_at?: string | null
           org_number?: string | null
           phone?: string | null
           plusgiro?: string | null

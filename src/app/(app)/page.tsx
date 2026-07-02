@@ -1,10 +1,15 @@
 import Link from "next/link";
+import { Landmark, TrendingUp, HandCoins } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { taxDeadlines } from "@/lib/tax-calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { GettingStarted } from "@/components/getting-started";
+import { MonthlyChart } from "@/components/monthly-chart";
 import { formatSEK, kronorToOre } from "@/lib/money";
+
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"];
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -12,7 +17,8 @@ export default async function DashboardPage() {
   const [
     { data: fy }, { data: balances }, { data: recent }, { data: settings },
     { data: vatReports }, { data: openInvoices }, { data: openSupplierInvoices },
-    { data: inboxFiles },
+    { count: customerCount }, { count: articleCount }, { count: invoiceCount },
+    { count: verCount }, { count: bankTxCount }, { data: resultEntries },
   ] = await Promise.all([
     supabase.from("fiscal_years").select("*").eq("status", "open")
       .order("year", { ascending: false }).limit(1).single(),
@@ -20,26 +26,78 @@ export default async function DashboardPage() {
     supabase.from("verifications")
       .select("id, verification_date, description, number, verification_series(code)")
       .order("registered_at", { ascending: false }).limit(6),
-    supabase.from("settings").select("vat_period, eu_trade").eq("id", 1).single(),
+    supabase.from("settings").select("vat_period, eu_trade, org_number, bankgiro").eq("id", 1).single(),
     supabase.from("vat_reports").select("period_start, status"),
-    supabase.from("invoices").select("id, invoice_no, due_date, total_amount, customer_snapshot, invoice_payments(amount)")
+    supabase.from("invoices").select("id, due_date, total_amount, invoice_payments(amount)")
       .in("status", ["booked", "sent", "partially_paid"]).eq("type", "debit"),
-    supabase.from("supplier_invoices").select("id, due_date, total_amount, suppliers(name)")
-      .neq("status", "paid"),
-    supabase.from("attachments").select("id", { count: "exact", head: true })
-      .is("verification_id", null),
+    supabase.from("supplier_invoices").select("id, due_date").neq("status", "paid"),
+    supabase.from("customers").select("id", { count: "exact", head: true }),
+    supabase.from("articles").select("id", { count: "exact", head: true }),
+    supabase.from("invoices").select("id", { count: "exact", head: true }),
+    supabase.from("verifications").select("id", { count: "exact", head: true }),
+    supabase.from("bank_transactions").select("id", { count: "exact", head: true }),
+    supabase.from("ledger_entries").select("verification_date, debit, credit, account")
+      .gte("account", 3000).lte("account", 8998),
   ]);
 
   const today = new Date().toISOString().slice(0, 10);
   const bal = balances ?? [];
   const bankSaldo = bal.filter((b) => b.account! >= 1910 && b.account! <= 1940)
     .reduce((s, b) => s + kronorToOre(Number(b.balance)), 0);
-  const resultat = bal.filter((b) => b.class! >= 3)
+  const resultat = bal.filter((b) => b.class! >= 3 && b.account !== 8999)
     .reduce((s, b) => s - kronorToOre(Number(b.balance)), 0);
   const uttag = bal.filter((b) => [2011, 2012, 2013].includes(b.account!))
     .reduce((s, b) => s + kronorToOre(Number(b.balance)), 0);
 
-  // Att göra-lista
+  // Månatligt resultat för diagrammet
+  const monthly = MONTH_LABELS.map((label) => ({ label, value: 0 }));
+  for (const e of resultEntries ?? []) {
+    const m = parseInt(e.verification_date!.slice(5, 7)) - 1;
+    monthly[m].value += Number(e.credit) - Number(e.debit);
+  }
+  const hasChartData = monthly.some((m) => m.value !== 0);
+
+  // Kom igång-checklistan (Fortnox-mönstret)
+  const checklist = [
+    {
+      label: "Fyll i företagsuppgifterna",
+      done: !!settings?.org_number && !!settings?.bankgiro,
+      href: "/installningar",
+      hint: "Personnummer och bankgiro krävs på fakturorna",
+    },
+    {
+      label: "Lägg upp din första kund",
+      done: (customerCount ?? 0) > 0,
+      href: "/kunder",
+      hint: "Namn och e-post räcker",
+    },
+    {
+      label: "Skapa en artikel",
+      done: (articleCount ?? 0) > 0,
+      href: "/artiklar",
+      hint: "T.ex. ditt timarvode",
+    },
+    {
+      label: "Skicka din första faktura",
+      done: (invoiceCount ?? 0) > 0,
+      href: "/fakturor/ny",
+      hint: "Bokförs automatiskt med moms",
+    },
+    {
+      label: "Bokför en händelse",
+      done: (verCount ?? 0) > 0,
+      href: "/verifikat/ny",
+      hint: "Prova en snabbhändelse — t.ex. eget uttag",
+    },
+    {
+      label: "Koppla banken eller importera CSV",
+      done: (bankTxCount ?? 0) > 0,
+      href: "/bank",
+      hint: "Transaktionerna matchas mot fakturor automatiskt",
+    },
+  ];
+
+  // Att göra-listan
   const overdueInvoices = (openInvoices ?? []).filter((i) => i.due_date < today);
   const dueSuppliers = (openSupplierInvoices ?? []).filter((i) => i.due_date <= today);
   const upcoming = taxDeadlines(
@@ -58,8 +116,14 @@ export default async function DashboardPage() {
   const daysUntil = (date: string) =>
     Math.ceil((new Date(date).getTime() - new Date(today).getTime()) / 86400000);
 
+  const kpis = [
+    { title: "Bank & kassa", value: bankSaldo, icon: Landmark, sub: "enligt bokföringen" },
+    { title: "Resultat i år", value: resultat, icon: TrendingUp, sub: `räkenskapsår ${fy?.year ?? ""}` },
+    { title: "Egna uttag i år", value: uttag, icon: HandCoins, sub: "inkl. F-skatt" },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Översikt</h1>
@@ -71,32 +135,37 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      <GettingStarted items={checklist} />
+
       <div className="grid grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Bank & kassa (enligt bokföringen)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">{formatSEK(bankSaldo)}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Resultat hittills i år
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">{formatSEK(resultat)}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Egna uttag i år (inkl. F-skatt)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">{formatSEK(uttag)}</CardContent>
-        </Card>
+        {kpis.map((kpi) => (
+          <Card key={kpi.title}>
+            <CardContent className="pt-4 flex items-start justify-between">
+              <div>
+                <div className="text-sm text-muted-foreground">{kpi.title}</div>
+                <div className={`text-2xl font-semibold tabular-nums mt-1 ${kpi.value < 0 ? "text-destructive" : ""}`}>
+                  {formatSEK(kpi.value)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">{kpi.sub}</div>
+              </div>
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+                <kpi.icon className="h-4.5 w-4.5" />
+              </span>
+            </CardContent>
+          </Card>
+        ))}
       </div>
+
+      {hasChartData && (
+        <Card>
+          <CardHeader className="pb-0">
+            <CardTitle className="text-base">Resultat per månad</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MonthlyChart months={monthly} />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <Card>
@@ -114,7 +183,6 @@ export default async function DashboardPage() {
                 <span>💸 {dueSuppliers.length} leverantörsfakturor att betala</span>
               </Link>
             )}
-            {(inboxFiles as unknown as { count?: number } | null) && false}
             {upcoming.map((d) => (
               <Link key={d.title + d.dueDate}
                 href={d.type === "moms" ? "/moms" : d.type === "inkomstdeklaration" ? "/arsavslut" : "/skatt"}

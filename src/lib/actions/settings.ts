@@ -44,6 +44,18 @@ export async function saveSettings(input: unknown) {
   return { ok: true };
 }
 
+/** Första-gången-wizarden: spara grundinställningar och markera onboarding klar */
+export async function completeOnboarding(input: unknown): Promise<{ ok?: boolean; error?: string }> {
+  const res = await saveSettings(input);
+  if (res.error) return res;
+  const supabase = await createClient();
+  const { error } = await supabase.from("settings")
+    .update({ onboarded_at: new Date().toISOString() }).eq("id", 1);
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function toggleAccountingMethod(fiscalYearId: string, method: string) {
   if (!["faktureringsmetoden", "kontantmetoden"].includes(method)) {
     return { error: "Ogiltig metod." };

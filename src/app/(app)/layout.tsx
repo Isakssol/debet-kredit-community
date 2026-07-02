@@ -1,8 +1,15 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { NavLinks } from "@/components/nav-links";
 import { LogoutButton } from "@/components/logout-button";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+  const { data: settings } = await supabase.from("settings")
+    .select("onboarded_at").eq("id", 1).single();
+  if (settings && !settings.onboarded_at) redirect("/kom-igang");
+
   return (
     <div className="flex min-h-screen">
       <aside className="w-60 shrink-0 bg-sidebar text-sidebar-foreground flex flex-col">
