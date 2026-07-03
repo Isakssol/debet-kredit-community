@@ -50,7 +50,10 @@ export function InboxItemActions({ attachmentId }: { attachmentId: string }) {
         Visa
       </Button>
       <Button variant="outline" size="sm" asChild>
-        <Link href={`/verifikat/ny?underlag=${attachmentId}`}>Bokför</Link>
+        <Link href={`/ai?underlag=${attachmentId}`}>✨ Tolka med AI</Link>
+      </Button>
+      <Button variant="ghost" size="sm" asChild>
+        <Link href={`/verifikat/ny?underlag=${attachmentId}`}>Bokför manuellt</Link>
       </Button>
       <Button variant="ghost" size="sm" onClick={async () => {
         if (!confirm("Radera filen från inkorgen?")) return;
