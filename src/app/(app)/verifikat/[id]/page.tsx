@@ -7,6 +7,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { AttachmentUpload } from "@/components/attachment-upload";
+import { AttachmentList } from "@/components/attachment-list";
 import { CorrectionDialog } from "@/components/correction-dialog";
 
 export default async function VerificationDetailPage({
@@ -143,11 +144,7 @@ export default async function VerificationDetailPage({
         </CardHeader>
         <CardContent className="space-y-3">
           {(v.attachments as { id: string; file_name: string }[])?.length ? (
-            <ul className="text-sm space-y-1">
-              {(v.attachments as { id: string; file_name: string }[]).map((a) => (
-                <li key={a.id}>📎 {a.file_name}</li>
-              ))}
-            </ul>
+            <AttachmentList attachments={v.attachments as { id: string; file_name: string }[]} />
           ) : (
             <p className="text-sm text-muted-foreground">
               Inget underlag uppladdat — bifoga kvitto/faktura (arkiveras 7 år).
