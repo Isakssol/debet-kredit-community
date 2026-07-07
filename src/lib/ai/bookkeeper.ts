@@ -88,6 +88,36 @@ SVARA ENDAST MED JSON i exakt detta format:
 }`;
 }
 
+/** Användarprompt för batchanalys av en inköpslista (CSV/tabell) */
+export function buildBatchPrompt(csvContent: string): string {
+  return `Här är en INKÖPSLISTA (CSV) med flera inköp som alla ska bokföras.
+Analysera VARJE inköpsrad för sig och föreslå kontering per inköp.
+
+VIKTIGT FÖR LISTOR:
+- Använd EXAKT beloppen från listan (pris, moms, netto) — räkna inte om dem.
+- Rader med omvänd moms/reverse charge från utlandet (moms = 0, utländsk
+  leverantör): netto på 4515 (EU-varor)/4535 (EU-tjänster)/4531 (utanför EU),
+  PLUS utgående moms 25 % av netto på 2614 (kredit) OCH beräknad ingående moms
+  samma belopp på 2645 (debet). Betalningen (kredit 1930) = det betalda beloppet.
+- Inköp där kommentaren säger att momsen sannolikt EJ är avdragsgill (t.ex. B2C
+  via OSS, utländsk moms): bokför HELA beloppet inkl. moms som kostnad, ingen
+  2640-rad, och varna.
+- Kommentarer som "verifiera avdragsrätt": bokför med moms enligt listan men
+  lägg en varning.
+- Inventarier/utrustning ÖVER direktavdragsgränsen exkl. moms → 1220 (tillgång),
+  och varna att den ska in i anläggningsregistret. Under gränsen → 5410.
+- Summeringsrader (TOTALT) och tomma rader ska IGNORERAS.
+- Anta betalning från företagskontot (1930) om inget annat anges.
+- Datum: tolka svenska datum ("4 juli 2026" → 2026-07-04; bara "juli 2026" →
+  2026-07-01 med varning om osäkert datum).
+
+CSV-INNEHÅLL:
+${csvContent}
+
+SVARA ENDAST MED JSON: {"inkop": [ <ett förslag per inköpsrad enligt formatet> ]}
+Lägg till fältet "radnummer" (CSV-radens nummer) i varje förslag.`;
+}
+
 export type ValidatedSuggestion =
   | { ok: true; suggestion: AiSuggestion }
   | { ok: false; error: string };

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { aiConfigured, callAi, extractJson, type AiFile } from "@/lib/ai/provider";
 import {
-  buildSystemPrompt, validateSuggestion, type AiSuggestion,
+  buildSystemPrompt, buildBatchPrompt, validateSuggestion, type AiSuggestion,
 } from "@/lib/ai/bookkeeper";
 
 export type AnalyzeResult =
@@ -94,6 +94,105 @@ export async function analyzePurchase(formData: FormData): Promise<AnalyzeResult
   } catch (e) {
     return { error: (e as Error).message };
   }
+}
+
+export type BatchAnalyzeResult =
+  | { ok: true; suggestions: AiSuggestion[]; rejected: string[]; provider: string }
+  | { error: string };
+
+/** Analysera en hel inköpslista (CSV) — ett konteringsförslag per inköpsrad */
+export async function analyzePurchaseCsv(formData: FormData): Promise<BatchAnalyzeResult> {
+  if (!aiConfigured()) {
+    return { error: "Ingen AI-nyckel konfigurerad — lägg in ANTHROPIC_API_KEY i .env.local." };
+  }
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) return { error: "Ingen CSV-fil vald." };
+  if (file.size > 1024 * 1024) return { error: "Filen är för stor (max 1 MB)." };
+
+  const csvContent = Buffer.from(await file.arrayBuffer()).toString("utf-8");
+  const { today, accounts, rules } = await loadContext();
+
+  try {
+    const response = await callAi(
+      buildSystemPrompt(accounts, rules, today),
+      buildBatchPrompt(csvContent),
+      undefined,
+      8000
+    );
+    const raw = extractJson(response) as { inkop?: unknown[] };
+    const items = Array.isArray(raw?.inkop) ? raw.inkop : [];
+    if (!items.length) return { error: "AI:n hittade inga inköpsrader i filen." };
+
+    const validAccounts = new Set(accounts.map((a) => a.number));
+    const suggestions: AiSuggestion[] = [];
+    const rejected: string[] = [];
+    for (const item of items) {
+      const v = validateSuggestion(item, validAccounts);
+      if (v.ok) suggestions.push(v.suggestion);
+      else rejected.push(`${(item as { beskrivning?: string })?.beskrivning ?? "Okänd rad"}: ${v.error}`);
+    }
+    if (!suggestions.length) {
+      return { error: `Alla ${items.length} förslag underkändes: ${rejected[0]}` };
+    }
+    return {
+      ok: true,
+      suggestions,
+      rejected,
+      provider: aiConfigured()!.provider === "anthropic" ? "Claude" : "OpenAI",
+    };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+}
+
+/** Bokför flera granskade förslag i följd */
+export async function bookAiBatch(suggestionsJson: string): Promise<{
+  ok?: boolean; error?: string;
+  results?: { beskrivning: string; label?: string; error?: string }[];
+}> {
+  let suggestions: AiSuggestion[];
+  try {
+    suggestions = JSON.parse(suggestionsJson);
+  } catch {
+    return { error: "Ogiltig data." };
+  }
+  if (!Array.isArray(suggestions) || !suggestions.length) {
+    return { error: "Inga förslag att bokföra." };
+  }
+
+  const { supabase, accounts } = await loadContext();
+  const validAccounts = new Set(accounts.map((a) => a.number));
+  const results: { beskrivning: string; label?: string; error?: string }[] = [];
+
+  for (const s of suggestions) {
+    const v = validateSuggestion(s, validAccounts);
+    if (!v.ok) {
+      results.push({ beskrivning: s.beskrivning ?? "?", error: v.error });
+      continue;
+    }
+    const { data, error } = await supabase.rpc("book_verification", {
+      p_series_code: "A",
+      p_date: v.suggestion.datum,
+      p_description: v.suggestion.beskrivning,
+      p_rows: v.suggestion.rader.map((r) => ({
+        account: r.account, debit: r.debit, credit: r.credit, note: r.motivering,
+      })),
+      p_counterparty: v.suggestion.motpart || undefined,
+      p_source: "quick_event",
+    });
+    if (error) {
+      results.push({ beskrivning: v.suggestion.beskrivning, error: error.message });
+    } else {
+      const result = Array.isArray(data) ? data[0] : data;
+      results.push({
+        beskrivning: v.suggestion.beskrivning,
+        label: `${result?.out_series}${result?.out_number}`,
+      });
+    }
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true, results };
 }
 
 /** Bokför det granskade AI-förslaget + arkivera underlaget på verifikatet */

@@ -158,6 +158,19 @@ describe("momsdeklarationen", () => {
     expect(xml).toContain("<MomsBetala>20000</MomsBetala>");
     expect(xml).toContain("<ForsTjSkskAnnatEg>20000</ForsTjSkskAnnatEg>");
   });
+  it("omvänd skattskyldighet på inventarie (1220) → underlaget härleds till ruta 20", () => {
+    const { boxes } = computeVatBoxes([
+      // EU-köpt utrustning bokförd direkt som tillgång — inget 45xx-konto
+      { account: 1220, vat_code: null, debit: 64743, credit: 0 },
+      { account: 2614, vat_code: null, debit: 0, credit: 16185.75 },
+      { account: 2645, vat_code: null, debit: 16185.75, credit: 0 },
+    ]);
+    expect(boxes["20"]).toBe(64743);
+    expect(boxes["30"]).toBe(16185);
+    expect(boxes["48"]).toBe(16185);
+    expect(boxes["49"]).toBe(0); // omvänd moms nettar ut
+  });
+
   it("kvartalens deklarationsdatum (12:e, 17:e i jan/aug)", () => {
     const periods = vatPeriods(2026, "kvartal", false);
     expect(periods.map((p) => p.dueDate)).toEqual([

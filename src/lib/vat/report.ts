@@ -62,6 +62,17 @@ export function computeVatBoxes(entries: VatEntry[]): {
     }
   }
 
+  // Omvänd skattskyldighet: om utgående moms (ruta 30) finns men underlaget
+  // inte fångats via 45xx-konton (t.ex. EU-inköp bokfört direkt på 1220 som
+  // inventarie) härleds underlaget från momsen och läggs i ruta 20.
+  const reverseVat = oreBoxes.get("30") ?? 0;
+  const reverseBase = ["20", "21", "22", "23", "24"]
+    .reduce((s, b) => s + (oreBoxes.get(b) ?? 0), 0);
+  const expectedBase = Math.round(reverseVat / 0.25);
+  if (reverseVat > 0 && expectedBase - reverseBase > 100) {
+    oreBoxes.set("20", (oreBoxes.get("20") ?? 0) + (expectedBase - reverseBase));
+  }
+
   // Hela kronor, öretal slopas (Skatteverkets regel)
   const boxes: VatBoxes = {};
   for (const [box, ore] of oreBoxes) {

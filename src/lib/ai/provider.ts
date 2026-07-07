@@ -17,18 +17,19 @@ export function aiConfigured(): { provider: "anthropic" | "openai" } | null {
 export async function callAi(
   systemPrompt: string,
   userPrompt: string,
-  file?: AiFile
+  file?: AiFile,
+  maxTokens = 2000
 ): Promise<string> {
   const config = aiConfigured();
   if (!config) throw new Error("Ingen AI-nyckel konfigurerad.");
 
   if (config.provider === "anthropic") {
-    return callAnthropic(systemPrompt, userPrompt, file);
+    return callAnthropic(systemPrompt, userPrompt, file, maxTokens);
   }
-  return callOpenAi(systemPrompt, userPrompt, file);
+  return callOpenAi(systemPrompt, userPrompt, file, maxTokens);
 }
 
-async function callAnthropic(system: string, prompt: string, file?: AiFile): Promise<string> {
+async function callAnthropic(system: string, prompt: string, file?: AiFile, maxTokens = 2000): Promise<string> {
   const content: unknown[] = [];
   if (file) {
     if (file.mimeType === "application/pdf") {
@@ -54,7 +55,7 @@ async function callAnthropic(system: string, prompt: string, file?: AiFile): Pro
     },
     body: JSON.stringify({
       model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6",
-      max_tokens: 2000,
+      max_tokens: maxTokens,
       system,
       messages: [{ role: "user", content }],
     }),
@@ -64,7 +65,7 @@ async function callAnthropic(system: string, prompt: string, file?: AiFile): Pro
   return data.content?.[0]?.text ?? "";
 }
 
-async function callOpenAi(system: string, prompt: string, file?: AiFile): Promise<string> {
+async function callOpenAi(system: string, prompt: string, file?: AiFile, maxTokens = 2000): Promise<string> {
   if (file?.mimeType === "application/pdf") {
     throw new Error(
       "OpenAI-nyckeln kan inte läsa PDF direkt — ladda upp en bild (foto/skärmdump) i stället, " +
@@ -88,7 +89,7 @@ async function callOpenAi(system: string, prompt: string, file?: AiFile): Promis
     },
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL ?? "gpt-4o",
-      max_tokens: 2000,
+      max_tokens: maxTokens,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: system },
@@ -105,8 +106,11 @@ async function callOpenAi(system: string, prompt: string, file?: AiFile): Promis
 export function extractJson(text: string): unknown {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
+  const objStart = candidate.indexOf("{");
+  const arrStart = candidate.indexOf("[");
+  const useArray = arrStart >= 0 && (objStart < 0 || arrStart < objStart);
+  const start = useArray ? arrStart : objStart;
+  const end = useArray ? candidate.lastIndexOf("]") : candidate.lastIndexOf("}");
   if (start < 0 || end < 0) throw new Error("AI-svaret innehöll ingen JSON.");
   return JSON.parse(candidate.slice(start, end + 1));
 }

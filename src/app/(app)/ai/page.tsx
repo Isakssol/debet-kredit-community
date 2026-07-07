@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { aiConfigured } from "@/lib/ai/provider";
 import { AiBookkeeper } from "@/components/ai-bookkeeper";
+import { AiBatchImport } from "@/components/ai-batch-import";
 
 export default async function AiPage({
   searchParams,
@@ -38,6 +39,7 @@ export default async function AiPage({
         inboxAttachmentId={underlag && inboxFileName ? underlag : null}
         inboxFileName={inboxFileName}
       />
+      <AiBatchImport configured={!!config} />
     </div>
   );
 }
