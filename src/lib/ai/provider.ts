@@ -48,6 +48,7 @@ async function callAnthropic(system: string, prompt: string, file?: AiFile, maxT
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
+    signal: AbortSignal.timeout(90_000), // häng aldrig — hellre tydligt fel än evig spinner
     headers: {
       "x-api-key": process.env.ANTHROPIC_API_KEY!,
       "anthropic-version": "2023-06-01",
@@ -59,6 +60,10 @@ async function callAnthropic(system: string, prompt: string, file?: AiFile, maxT
       system,
       messages: [{ role: "user", content }],
     }),
+  }).catch((e: Error) => {
+    throw e.name === "TimeoutError"
+      ? new Error("AI-anropet tog för lång tid (>90 s) — prova igen, gärna med en mindre bild.")
+      : e;
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${await res.text()}`);
   const data = await res.json();

@@ -25,6 +25,32 @@ const CONFIDENCE: Record<string, { label: string; variant: "default" | "secondar
   lag: { label: "Låg säkerhet — kontrollera noga", variant: "destructive" },
 };
 
+/** Skala ner stora kvittofoton innan uppladdning: mobilfoton på 5–15 MB blir
+ *  en JPEG under ~1 MB. Håller oss under server actions body-gräns och
+ *  AI-leverantörens bildgräns. PDF:er och små bilder skickas orörda. */
+async function prepareFile(file: File): Promise<File> {
+  const MAX_EDGE = 2000;
+  const COMPRESS_OVER_BYTES = 1.5 * 1024 * 1024;
+  if (!file.type.startsWith("image/") || file.type === "image/gif") return file;
+  if (file.size <= COMPRESS_OVER_BYTES) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.8)
+    );
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch {
+    return file; // kan inte avkodas (t.ex. HEIC i vissa webbläsare) — låt servern validera
+  }
+}
+
 export function AiBookkeeper({
   configured,
   providerName,
@@ -53,30 +79,43 @@ export function AiBookkeeper({
     }
     setAnalyzing(true);
     setSuggestion(null);
-    const fd = new FormData();
-    if (file) fd.set("file", file);
-    if (text.trim()) fd.set("text", text.trim());
-    if (inboxAttachmentId) fd.set("inboxAttachmentId", inboxAttachmentId);
-    const res = await analyzePurchase(fd);
-    setAnalyzing(false);
-    if ("error" in res) return toast.error(res.error);
-    setSuggestion(res.suggestion);
-    if (file) setFileName(file.name);
+    try {
+      const fd = new FormData();
+      if (file) fd.set("file", await prepareFile(file));
+      if (text.trim()) fd.set("text", text.trim());
+      if (inboxAttachmentId) fd.set("inboxAttachmentId", inboxAttachmentId);
+      const res = await analyzePurchase(fd);
+      if ("error" in res) return toast.error(res.error);
+      setSuggestion(res.suggestion);
+      if (file) setFileName(file.name);
+    } catch (e) {
+      toast.error(
+        `Analysen misslyckades: ${(e as Error).message || "okänt fel"}. ` +
+        "Prova igen — eller med en mindre bild."
+      );
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
   async function book() {
     if (!suggestion) return;
     setBooking(true);
-    const fd = new FormData();
-    fd.set("suggestion", JSON.stringify(suggestion));
-    const file = fileRef.current?.files?.[0];
-    if (file) fd.set("file", file);
-    if (inboxAttachmentId) fd.set("inboxAttachmentId", inboxAttachmentId);
-    const res = await bookAiSuggestion(fd);
-    setBooking(false);
-    if (res.error) return toast.error(res.error);
-    toast.success(`Verifikat ${res.label} bokfört med underlag`);
-    router.push(`/verifikat/${res.verificationId}`);
+    try {
+      const fd = new FormData();
+      fd.set("suggestion", JSON.stringify(suggestion));
+      const file = fileRef.current?.files?.[0];
+      if (file) fd.set("file", await prepareFile(file));
+      if (inboxAttachmentId) fd.set("inboxAttachmentId", inboxAttachmentId);
+      const res = await bookAiSuggestion(fd);
+      if (res.error) return toast.error(res.error);
+      toast.success(`Verifikat ${res.label} bokfört med underlag`);
+      router.push(`/verifikat/${res.verificationId}`);
+    } catch (e) {
+      toast.error(`Bokföringen misslyckades: ${(e as Error).message || "okänt fel"}.`);
+    } finally {
+      setBooking(false);
+    }
   }
 
   const updateRow = (i: number, field: "account" | "debit" | "credit", value: string) => {
