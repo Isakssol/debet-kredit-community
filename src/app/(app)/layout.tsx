@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { NavLinks } from "@/components/nav-links";
 import { LogoutButton } from "@/components/logout-button";
+import { AutoRefresh } from "@/components/auto-refresh";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -31,7 +32,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <LogoutButton />
         </div>
       </aside>
-      <main className="flex-1 p-6 max-w-6xl">{children}</main>
+      <main className="flex-1 p-6 max-w-6xl">
+        <AutoRefresh />
+        {children}
+      </main>
     </div>
   );
 }

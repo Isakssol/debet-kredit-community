@@ -19,7 +19,7 @@ export default async function DashboardPage() {
     { data: vatReports }, { data: openInvoices }, { data: openSupplierInvoices },
     { count: customerCount }, { count: articleCount }, { count: invoiceCount },
     { count: verCount }, { count: bankTxCount }, { data: resultEntries },
-    { data: salesVers },
+    { data: salesVers }, { data: attachCheck },
   ] = await Promise.all([
     supabase.from("fiscal_years").select("*").eq("status", "open")
       .order("year", { ascending: false }).limit(1).single(),
@@ -43,6 +43,9 @@ export default async function DashboardPage() {
       .select("id, verification_rows!inner(account)")
       .neq("source", "correction")
       .gte("verification_rows.account", 3000).lte("verification_rows.account", 3799),
+    supabase.from("verifications")
+      .select("id, attachments(id)")
+      .neq("source", "correction"),
   ]);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -134,6 +137,9 @@ export default async function DashboardPage() {
     return true;
   }).slice(0, 5);
 
+  const missingAttachments = (attachCheck ?? [])
+    .filter((v) => (v.attachments as { id: string }[]).length === 0).length;
+
   const daysUntil = (date: string) =>
     Math.ceil((new Date(date).getTime() - new Date(today).getTime()) / 86400000);
 
@@ -165,8 +171,9 @@ export default async function DashboardPage() {
           <p className="text-sm text-muted-foreground">Räkenskapsår {fy?.year ?? "—"}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" asChild><Link href="/fakturor/ny">Ny faktura</Link></Button>
-          <Button asChild><Link href="/verifikat/ny">Ny verifikation</Link></Button>
+          <Button variant="outline" asChild><Link href="/analys">Analys</Link></Button>
+          <Button variant="outline" asChild><Link href="/verifikat/ny">Ny verifikation</Link></Button>
+          <Button asChild><Link href="/ai">Bokför kvitto (AI)</Link></Button>
         </div>
       </div>
 
@@ -221,6 +228,11 @@ export default async function DashboardPage() {
             {overdueInvoices.length > 0 && (
               <Link href="/fakturor" className="flex justify-between hover:underline">
                 <span>🔴 {overdueInvoices.length} förfallna kundfakturor att påminna</span>
+              </Link>
+            )}
+            {missingAttachments > 0 && (
+              <Link href="/analys" className="flex justify-between hover:underline">
+                <span>📎 {missingAttachments} verifikat saknar underlag</span>
               </Link>
             )}
             {dueSuppliers.length > 0 && (

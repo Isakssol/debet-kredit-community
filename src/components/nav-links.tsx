@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Search, Sparkles, BookOpen, PlusCircle, Inbox, ListTree, Scale,
+  LayoutDashboard, Search, Sparkles, BookOpen, PlusCircle, Inbox, ListTree, Scale, LineChart,
   FileText, FilePlus, Users, Package, Truck, Car, Boxes,
   Percent, Calculator, CalendarCheck, BarChart3, Settings, Landmark,
   type LucideIcon,
@@ -18,6 +18,7 @@ const sections: {
     title: "",
     links: [
       { href: "/", label: "Översikt", icon: LayoutDashboard },
+      { href: "/analys", label: "Analys", icon: LineChart },
       { href: "/ai", label: "AI-bokföring", icon: Sparkles },
       { href: "/sok", label: "Sök", icon: Search },
     ],
