@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Landmark, TrendingUp, HandCoins } from "lucide-react";
+import { Landmark, TrendingUp, HandCoins, BarChart3, CalendarRange, Receipt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { taxDeadlines } from "@/lib/tax-calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,7 @@ export default async function DashboardPage() {
     { data: vatReports }, { data: openInvoices }, { data: openSupplierInvoices },
     { count: customerCount }, { count: articleCount }, { count: invoiceCount },
     { count: verCount }, { count: bankTxCount }, { data: resultEntries },
+    { data: salesVers },
   ] = await Promise.all([
     supabase.from("fiscal_years").select("*").eq("status", "open")
       .order("year", { ascending: false }).limit(1).single(),
@@ -38,6 +39,10 @@ export default async function DashboardPage() {
     supabase.from("bank_transactions").select("id", { count: "exact", head: true }),
     supabase.from("ledger_entries").select("verification_date, debit, credit, account")
       .gte("account", 3000).lte("account", 8998),
+    supabase.from("verifications")
+      .select("id, verification_rows!inner(account)")
+      .neq("source", "correction")
+      .gte("verification_rows.account", 3000).lte("verification_rows.account", 3799),
   ]);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -49,13 +54,29 @@ export default async function DashboardPage() {
   const uttag = bal.filter((b) => [2011, 2012, 2013].includes(b.account!))
     .reduce((s, b) => s + kronorToOre(Number(b.balance)), 0);
 
-  // Månatligt resultat för diagrammet
+  // Månatligt resultat + omsättning för diagram och KPI:er
   const monthly = MONTH_LABELS.map((label) => ({ label, value: 0 }));
+  const monthlyRevenue = MONTH_LABELS.map((label) => ({ label, value: 0 }));
+  let revenueYear = 0;
   for (const e of resultEntries ?? []) {
     const m = parseInt(e.verification_date!.slice(5, 7)) - 1;
-    monthly[m].value += Number(e.credit) - Number(e.debit);
+    const net = Number(e.credit) - Number(e.debit);
+    monthly[m].value += net;
+    if (e.account! >= 3000 && e.account! <= 3799) {
+      monthlyRevenue[m].value += net;
+      revenueYear += net;
+    }
   }
   const hasChartData = monthly.some((m) => m.value !== 0);
+  const thisMonth = new Date().getMonth();
+  const revenueThisMonth = monthlyRevenue[thisMonth].value;
+  const revenuePrevMonth = thisMonth > 0 ? monthlyRevenue[thisMonth - 1].value : 0;
+  const growth = revenuePrevMonth > 0
+    ? Math.round(((revenueThisMonth - revenuePrevMonth) / revenuePrevMonth) * 100)
+    : null;
+  // Antal affärer = unika verifikat med intäktsrad (exkl rättelser); snittorder på positiva belopp
+  const salesCount = new Set((salesVers ?? []).map((v) => v.id)).size;
+  const avgOrder = salesCount > 0 ? revenueYear / salesCount : 0;
 
   // Kom igång-checklistan (Fortnox-mönstret)
   const checklist = [
@@ -117,6 +138,20 @@ export default async function DashboardPage() {
     Math.ceil((new Date(date).getTime() - new Date(today).getTime()) / 86400000);
 
   const kpis = [
+    { title: "Omsättning i år", value: kronorToOre(revenueYear), icon: BarChart3, sub: "exkl. moms" },
+    {
+      title: `Omsättning ${MONTH_LABELS[thisMonth].toLowerCase()}`,
+      value: kronorToOre(revenueThisMonth),
+      icon: CalendarRange,
+      sub: growth === null ? "första månaden med försäljning"
+        : `${growth >= 0 ? "+" : ""}${growth} % mot ${MONTH_LABELS[thisMonth - 1].toLowerCase()}`,
+    },
+    {
+      title: "Snittorder",
+      value: kronorToOre(avgOrder),
+      icon: Receipt,
+      sub: `${salesCount} affärer i år`,
+    },
     { title: "Bank & kassa", value: bankSaldo, icon: Landmark, sub: "enligt bokföringen" },
     { title: "Resultat i år", value: resultat, icon: TrendingUp, sub: `räkenskapsår ${fy?.year ?? ""}` },
     { title: "Egna uttag i år", value: uttag, icon: HandCoins, sub: "inkl. F-skatt" },
@@ -157,14 +192,24 @@ export default async function DashboardPage() {
       </div>
 
       {hasChartData && (
-        <Card>
-          <CardHeader className="pb-0">
-            <CardTitle className="text-base">Resultat per månad</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <MonthlyChart months={monthly} />
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-0">
+              <CardTitle className="text-base">Omsättning per månad</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MonthlyChart months={monthlyRevenue} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-0">
+              <CardTitle className="text-base">Resultat per månad</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MonthlyChart months={monthly} />
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       <div className="grid grid-cols-2 gap-4">
