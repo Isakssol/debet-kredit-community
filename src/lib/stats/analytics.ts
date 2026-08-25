@@ -80,7 +80,8 @@ export function buildAnalytics(rows: AnalyticsRow[]) {
     } else if (a >= 4000 && a <= 7999) {
       const m = byMonth.get(month) ?? { revenue: 0, costs: 0 };
       m.costs += netD; byMonth.set(month, m);
-      const party = v.counterparty ?? "(utan motpart)";
+      // Betalavgifter (6570) grupperas under betalväxeln, inte affärens motpart
+      const party = a === 6570 ? "PayPal/Zettle (avgifter)" : (v.counterparty ?? "(utan motpart)");
       const cp = costByParty.get(party) ?? { total: 0, byMonth: new Map() };
       cp.total += netD; cp.byMonth.set(month, (cp.byMonth.get(month) ?? 0) + netD);
       costByParty.set(party, cp);
@@ -109,10 +110,15 @@ export function buildAnalytics(rows: AnalyticsRow[]) {
         month, revenue: r2(m.revenue), costs: r2(m.costs), result: r2(m.revenue - m.costs),
       })),
     by_service: [...byService.entries()].sort((a, b) => b[1].revenue - a[1].revenue)
-      .map(([service, s]) => ({
-        service, count: s.ids.size, revenue: r2(s.revenue),
-        avg_order: s.ids.size ? r2(s.revenue / s.ids.size) : 0,
-      })),
+      .map(([service, s]) => {
+        // Snittorder på positiva affärer: återbetalningspar ska inte dra ner snittet
+        const positive = [...s.ids].length;
+        return {
+          service, count: positive, revenue: r2(s.revenue),
+          avg_order: positive ? r2(Math.max(s.revenue, 0) / positive) : 0,
+          includes_refunds: s.revenue < 0 || undefined,
+        };
+      }),
     by_customer: [...byCustomer.entries()].sort((a, b) => b[1].revenue - a[1].revenue)
       .map(([name, c]) => ({ name, count: c.ids.size, revenue: r2(c.revenue) })),
     costs_by_counterparty: [...costByParty.entries()].sort((a, b) => b[1].total - a[1].total)
