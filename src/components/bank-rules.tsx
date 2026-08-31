@@ -53,7 +53,7 @@ export function BankRules({
   const run = () =>
     startTransition(async () => {
       const res = await runBankRules(false);
-      if (res.error) return toast.error(res.error);
+      if (res.error) { toast.error(res.error); return; }
       toast.success(`${res.booked} transaktion${res.booked === 1 ? "" : "er"} bokförda via regler`);
       res.skipped?.slice(0, 3).forEach((s) => toast.warning(s));
     });
