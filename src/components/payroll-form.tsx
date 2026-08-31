@@ -48,7 +48,7 @@ export function PayrollForm({ hasOrgNumber }: { hasOrgNumber: boolean }) {
             Ange organisationsnummer under Inställningar innan du kör lön — det krävs i AGI-filen.
           </p>
         )}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label className="text-xs">Period (ÅÅÅÅMM)</Label>
             <Input value={f.period} onChange={(e) => setF((p) => ({ ...p, period: e.target.value }))} />

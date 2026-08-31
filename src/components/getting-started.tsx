@@ -27,7 +27,7 @@ export function GettingStarted({ items }: { items: ChecklistItem[] }) {
           <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
         </div>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+      <CardContent className="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
         {items.map((item) => (
           <Link key={item.label} href={item.href}
             className="flex items-start gap-2 py-1 rounded hover:bg-accent px-1 -mx-1">

@@ -103,7 +103,7 @@ export function BankRules({
         )}
 
         {showForm ? (
-          <div className="grid grid-cols-2 gap-3 rounded-lg border p-3">
+          <div className="grid sm:grid-cols-2 gap-3 rounded-lg border p-3">
             <div className="space-y-1">
               <Label className="text-xs">Namn</Label>
               <Input value={form.name} placeholder="T.ex. Bankavgift"
@@ -152,12 +152,12 @@ export function BankRules({
                 <option value="1910">1910 Kassa</option>
               </select>
             </div>
-            <label className="col-span-2 flex items-center gap-2 text-sm">
+            <label className="sm:col-span-2 flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.auto_book}
                 onChange={(e) => setForm((f) => ({ ...f, auto_book: e.target.checked }))} />
               Bokför automatiskt vid synk/import (annars via knappen nedan)
             </label>
-            <div className="col-span-2 flex gap-2">
+            <div className="sm:col-span-2 flex gap-2">
               <Button size="sm" onClick={save}
                 disabled={pending || !form.name || !form.match_text || !form.account}>
                 Spara regel

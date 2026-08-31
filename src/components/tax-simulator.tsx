@@ -66,7 +66,7 @@ export function TaxSimulator({
             {nonDeductible > 0 && <> · Ej avdragsgilla kostnader som återläggs: {fmt(nonDeductible)} kr</>}
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3">
+        <CardContent className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label>Förväntat årsresultat (kr)</Label>
             <Input type="number" value={expectedResult}

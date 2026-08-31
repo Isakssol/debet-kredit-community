@@ -34,16 +34,16 @@ export default function LoginPage() {
       {/* Varumärkespanel */}
       <div className="hidden lg:flex flex-col justify-between bg-sidebar text-sidebar-foreground p-10">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-bold text-xl">
-            t
+          <span className="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-bold text-xl font-heading">
+            &
           </span>
-          <span className="font-semibold text-white">
+          <span className="font-semibold text-sidebar-accent-foreground">
             Debet & Kredit <span className="font-normal text-sidebar-foreground/70">Bokföring</span>
           </span>
         </div>
         <div className="space-y-4">
-          <h2 className="text-3xl font-semibold text-white leading-snug">
-            Hela firmans ekonomi.<br />Ett program. Noll månadskostnad.
+          <h2 className="text-3xl font-semibold text-sidebar-accent-foreground leading-snug">
+            Hela firmans ekonomi.<br />Ett program. Öppen källkod.
           </h2>
           <ul className="space-y-1.5 text-sm text-sidebar-foreground/80">
             <li>✓ Fakturering med OCR och automatisk bokföring</li>

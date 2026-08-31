@@ -91,7 +91,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
           )}
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 gap-3">
+      <CardContent className="grid sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label>Företagsnamn</Label>
           <Input value={f.company_name} onChange={(e) => set("company_name", e.target.value)} />
@@ -114,7 +114,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
           <Label>Adress</Label>
           <Input value={f.address} onChange={(e) => set("address", e.target.value)} />
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid sm:grid-cols-2 gap-2">
           <div className="space-y-1">
             <Label>Postnummer</Label>
             <Input value={f.postal_code} onChange={(e) => set("postal_code", e.target.value)} />
@@ -142,7 +142,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
           <Input value={f.bic} onChange={(e) => set("bic", e.target.value)} />
         </div>
 
-        <div className="col-span-2 border-t pt-3 grid grid-cols-3 gap-3">
+        <div className="sm:col-span-2 border-t pt-3 grid sm:grid-cols-3 gap-3">
           <div className="space-y-1">
             <Label>Momsredovisningsperiod</Label>
             <Select value={f.vat_period} onValueChange={(v) => set("vat_period", v)}>

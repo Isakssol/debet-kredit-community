@@ -126,7 +126,7 @@ export default async function AnalysPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-3 gap-4">
         {kpis.map((k) => (
           <Card key={k.title}>
             <CardContent className="pt-4 flex items-start justify-between">
@@ -186,7 +186,7 @@ export default async function AnalysPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader><CardTitle className="text-base">Försäljning per kund</CardTitle></CardHeader>
           <CardContent>

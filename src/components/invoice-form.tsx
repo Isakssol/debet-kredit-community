@@ -138,8 +138,8 @@ export function InvoiceForm({
   return (
     <div className="space-y-4">
       <Card>
-        <CardContent className="pt-4 grid grid-cols-4 gap-3">
-          <div className="col-span-2 space-y-1">
+        <CardContent className="pt-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="col-span-2 lg:col-span-2 space-y-1">
             <Label>Kund *</Label>
             <Select value={customerId} onValueChange={selectCustomer}>
               <SelectTrigger><SelectValue placeholder="Välj kund…" /></SelectTrigger>
@@ -167,7 +167,7 @@ export function InvoiceForm({
             <Label>Betalningsvillkor (dagar)</Label>
             <Input type="number" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
           </div>
-          <div className="col-span-2 space-y-1">
+          <div className="col-span-2 lg:col-span-2 space-y-1">
             <Label>Er referens</Label>
             <Input value={yourReference} onChange={(e) => setYourReference(e.target.value)} />
           </div>

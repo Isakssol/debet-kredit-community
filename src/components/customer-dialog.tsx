@@ -78,8 +78,8 @@ export function CustomerDialog({ customer }: { customer?: Customer }) {
         <DialogHeader>
           <DialogTitle>{customer ? "Redigera kund" : "Ny kund"}</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2 space-y-1">
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2 space-y-1">
             <Label>Namn *</Label>
             <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
           </div>
@@ -91,7 +91,7 @@ export function CustomerDialog({ customer }: { customer?: Customer }) {
             <Label>E-post</Label>
             <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} />
           </div>
-          <div className="col-span-2 space-y-1">
+          <div className="sm:col-span-2 space-y-1">
             <Label>Adress</Label>
             <Input value={form.address} onChange={(e) => set("address", e.target.value)} />
           </div>
@@ -120,7 +120,7 @@ export function CustomerDialog({ customer }: { customer?: Customer }) {
               onChange={(e) => set("payment_terms", e.target.value)} />
           </div>
           {form.vat_type === "EU_REVERSE" && (
-            <div className="col-span-2 space-y-1">
+            <div className="sm:col-span-2 space-y-1">
               <Label>VAT-nummer * (krävs för omvänd skattskyldighet)</Label>
               <Input value={form.vat_number} placeholder="DE123456789"
                 onChange={(e) => set("vat_number", e.target.value)} />

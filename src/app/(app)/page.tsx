@@ -165,7 +165,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Översikt</h1>
           <p className="text-sm text-muted-foreground">Räkenskapsår {fy?.year ?? "—"}</p>
@@ -179,7 +179,7 @@ export default async function DashboardPage() {
 
       <GettingStarted items={checklist} />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-3 gap-4">
         {kpis.map((kpi) => (
           <Card key={kpi.title}>
             <CardContent className="pt-4 flex items-start justify-between">
@@ -199,7 +199,7 @@ export default async function DashboardPage() {
       </div>
 
       {hasChartData && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="pb-0">
               <CardTitle className="text-base">Omsättning per månad</CardTitle>
@@ -219,7 +219,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Att göra</CardTitle>

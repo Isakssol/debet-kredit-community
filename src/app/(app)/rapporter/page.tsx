@@ -41,7 +41,7 @@ export default async function ReportsPage() {
         <CardHeader>
           <CardTitle className="text-base">Rapporter (PDF) — räkenskapsår {currentYear}</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3">
+        <CardContent className="grid sm:grid-cols-2 gap-3">
           {pdfReports.map((r) => (
             <div key={r.typ} className="flex items-center justify-between border rounded p-3">
               <div>

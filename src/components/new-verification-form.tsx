@@ -200,7 +200,7 @@ export function NewVerificationForm({
             <CardDescription>Vanliga händelser med färdig kontering för enskild firma.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Typ av händelse</Label>
                 <Select value={qeType} onValueChange={setQeType}>
@@ -223,7 +223,7 @@ export function NewVerificationForm({
             </div>
 
             {qeType === "traktamente" ? (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <Label>Hela dagar ({rules["traktamente_helt"] ?? 300} kr)</Label>
                   <Input type="number" min="0" value={qeDays} onChange={(e) => setQeDays(e.target.value)} />
@@ -251,7 +251,7 @@ export function NewVerificationForm({
             )}
 
             {qeType === "kvitto" && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label>Vad köptes?</Label>
                   <Input value={qeText} onChange={(e) => setQeText(e.target.value)}
@@ -278,7 +278,7 @@ export function NewVerificationForm({
             )}
 
             {(qeType === "kvitto" || qeType === "representation") && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label>Momssats</Label>
                   <Select value={qeVat} onValueChange={setQeVat}>
@@ -299,7 +299,7 @@ export function NewVerificationForm({
                   </div>
                 )}
                 {qeType === "representation" && (
-                  <div className="col-span-2 space-y-1">
+                  <div className="sm:col-span-2 space-y-1">
                     <Label>Syfte och deltagare (SKV-krav)</Label>
                     <Input value={qeText} onChange={(e) => setQeText(e.target.value)}
                       placeholder="T.ex. Kundlunch Exempelbolaget — Anna, Johan (affärsförhandling)" />
@@ -361,7 +361,7 @@ export function NewVerificationForm({
                 <Button type="button" variant="outline" onClick={applyTemplate}>Använd</Button>
               </div>
             )}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid sm:grid-cols-3 gap-3">
               <div className="space-y-1">
                 <Label>Datum (affärshändelsen)</Label>
                 <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />

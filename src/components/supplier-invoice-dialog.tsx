@@ -94,8 +94,8 @@ export function SupplierInvoiceDialog({
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Registrera leverantörsfaktura</DialogTitle></DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2 space-y-1">
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2 space-y-1">
             <Label>Leverantör *</Label>
             <Select value={f.supplierId} onValueChange={selectSupplier}>
               <SelectTrigger><SelectValue placeholder="Välj leverantör…" /></SelectTrigger>
@@ -106,7 +106,7 @@ export function SupplierInvoiceDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="col-span-2 space-y-1">
+          <div className="sm:col-span-2 space-y-1">
             <Label>Vad avser fakturan? *</Label>
             <Input value={f.description} onChange={(e) => set("description", e.target.value)}
               placeholder="T.ex. Bredband juli 2026" />
@@ -145,11 +145,11 @@ export function SupplierInvoiceDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="col-span-2 space-y-1">
+          <div className="sm:col-span-2 space-y-1">
             <Label>Bilaga (fakturan som PDF/bild — arkiveras 7 år)</Label>
             <Input ref={fileRef} type="file" accept="image/*,.pdf" />
           </div>
-          <div className="col-span-2 space-y-1">
+          <div className="sm:col-span-2 space-y-1">
             <Label>Kostnadskonto *</Label>
             <Select value={f.expenseAccount} onValueChange={(v) => {
               set("expenseAccount", v);

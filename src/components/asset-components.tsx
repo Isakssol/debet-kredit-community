@@ -59,8 +59,8 @@ export function AssetDialog() {
       <DialogTrigger asChild><Button>Ny tillgång</Button></DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Registrera anläggningstillgång</DialogTitle></DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2 space-y-1">
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2 space-y-1">
             <Label>Benämning *</Label>
             <Input value={f.name} onChange={(e) => set("name", e.target.value)}
               placeholder='T.ex. "MacBook Pro 16"' />

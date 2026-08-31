@@ -83,8 +83,8 @@ export function OnboardingWizard({
 
         {/* Steg 1: Företaget */}
         {step === 0 && (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 space-y-1">
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2 space-y-1">
               <Label>Bolagstyp *</Label>
               <div className="grid grid-cols-3 gap-2">
                 {[
@@ -109,7 +109,7 @@ export function OnboardingWizard({
                 </p>
               )}
             </div>
-            <div className="col-span-2 space-y-1">
+            <div className="sm:col-span-2 space-y-1">
               <Label>Företagsnamn *</Label>
               <Input value={f.company_name} onChange={(e) => set("company_name", e.target.value)} />
             </div>
@@ -125,7 +125,7 @@ export function OnboardingWizard({
               <Label>E-post</Label>
               <Input value={f.email} onChange={(e) => set("email", e.target.value)} />
             </div>
-            <div className="col-span-2 space-y-1">
+            <div className="sm:col-span-2 space-y-1">
               <Label>Adress *</Label>
               <Input value={f.address} onChange={(e) => set("address", e.target.value)} />
             </div>

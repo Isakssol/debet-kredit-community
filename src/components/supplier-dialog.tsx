@@ -53,8 +53,8 @@ export function SupplierDialog({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Ny leverantör</DialogTitle></DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2 space-y-1">
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2 space-y-1">
             <Label>Namn *</Label>
             <Input value={f.name} onChange={(e) => set("name", e.target.value)} />
           </div>

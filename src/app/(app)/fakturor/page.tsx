@@ -47,7 +47,7 @@ export default async function InvoicesPage() {
         <Button asChild><Link href="/fakturor/ny">Ny faktura</Link></Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 max-w-xl">
+      <div className="grid sm:grid-cols-2 gap-4 max-w-xl">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">

@@ -75,7 +75,7 @@ export function ArticleDialog({
         <DialogHeader>
           <DialogTitle>{article ? "Redigera artikel" : "Ny artikel"}</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label>Artikelnummer *</Label>
             <Input value={form.article_no} onChange={(e) => set("article_no", e.target.value)}
@@ -94,7 +94,7 @@ export function ArticleDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="col-span-2 space-y-1">
+          <div className="sm:col-span-2 space-y-1">
             <Label>Benämning *</Label>
             <Input value={form.name} onChange={(e) => set("name", e.target.value)}
               placeholder="T.ex. Konsultarvode systemutveckling" />
@@ -116,7 +116,7 @@ export function ArticleDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="col-span-2 space-y-1">
+          <div className="sm:col-span-2 space-y-1">
             <Label>Försäljningskonto</Label>
             <Select value={form.sales_account} onValueChange={(v) => set("sales_account", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>

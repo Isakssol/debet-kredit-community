@@ -159,7 +159,7 @@ export default async function YearEndPage() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-6 text-sm">
+        <CardContent className="grid sm:grid-cols-2 gap-6 text-sm">
           <div>
             <h3 className="font-medium mb-1">Balansräkning (B)</h3>
             <table className="w-full">
