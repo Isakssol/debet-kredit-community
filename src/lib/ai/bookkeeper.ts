@@ -40,7 +40,7 @@ export type PromptContext = {
   }[];
 };
 
-const COMPANY_TYPE_RULES: Record<CompanyType, string> = {
+export const COMPANY_TYPE_RULES: Record<CompanyType, string> = {
   enskild_firma: `BOLAGSTYP: ENSKILD FIRMA (förenklat årsbokslut K1)
 - Betalt privat / med privat kort: kreditera 2018 Egna insättningar.
 - Ägarens uttag av pengar eller varor: 2013 Övriga egna uttag / 2011 Egna varuuttag.

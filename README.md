@@ -18,6 +18,9 @@ löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
   (inkl. omvänd skattskyldighet för EU-inköp), du granskar och godkänner.
   Egen API-nyckel (Anthropic eller OpenAI), valfri modell, egna konteringsregler
   och automatisk dubblettkontroll mot din tidigare bokföring
+- **Rådgivaren** — inbyggd AI-chatt som svarar på frågor om din bokföring,
+  moms och avdrag. Den slår själv upp saldon, verifikat, momsläge och obetalda
+  fakturor innan den svarar (read-only — den kan aldrig ändra bokföringen)
 - **Moms** — deklaration ruta för ruta (månad/kvartal/helår) + eSKD-fil för
   uppladdning till Skatteverket
 - **Fakturering** — PDF-fakturor, e-postutskick (Resend), påminnelser,
