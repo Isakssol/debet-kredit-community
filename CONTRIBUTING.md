@@ -2,6 +2,13 @@
 
 Kul att du vill bidra! Några riktlinjer:
 
+## Licens för bidrag
+
+Projektet är dubbellicensierat (AGPL-3.0 + kommersiell licens). Genom att
+skicka en pull request godkänner du att ditt bidrag licensieras under
+AGPL-3.0 **och** att projektets upphovsrättsinnehavare får inkludera bidraget
+i den kommersiella licensieringen. Du behåller upphovsrätten till din kod.
+
 ## Grundregler
 
 - **Svenska** i UI-texter och dokumentation; **engelska** i kod, variabelnamn

@@ -158,5 +158,18 @@ instruktioner till modellen.
 
 ## Licens
 
-[AGPL-3.0](LICENSE). Fritt att använda, ändra och självhosta. Driver du det
-som tjänst åt andra måste din version också vara öppen.
+[AGPL-3.0](LICENSE) med möjlighet till kommersiell licens (dubbellicensiering).
+
+**För dig som självhostar till ditt eget företag:** helt fritt. Använd, ändra,
+kör — inga krav utöver licenstexten.
+
+**För dig som vill bygga en kommersiell tjänst på koden** (t.ex. sälja den som
+molntjänst till andra): AGPL kräver då att hela din version, inklusive dina
+ändringar, publiceras öppet under samma licens. Vill du slippa det kravet och
+driva en stängd kommersiell produkt erbjuds en **kommersiell licens** — öppna
+ett ärende i repot eller kontakta upphovsrättsinnehavaren, så kommer vi överens
+om villkoren.
+
+Bidrag till projektet lämnas enligt villkoren i
+[CONTRIBUTING.md](CONTRIBUTING.md), som ger projektet rätt att fortsätta
+erbjuda båda licensspåren.
