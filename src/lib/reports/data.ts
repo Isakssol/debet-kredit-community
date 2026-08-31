@@ -31,7 +31,7 @@ export async function getReportContext(year?: number): Promise<ReportContext | {
     .join("  ");
 
   return {
-    companyName: settings?.company_name ?? "trimtech",
+    companyName: settings?.company_name ?? "Min firma",
     orgNumber: settings?.org_number ?? "—",
     fiscalYear: { id: fy.id, year: fy.year, start: fy.start_date, end: fy.end_date },
     printedAt: new Date().toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" }),

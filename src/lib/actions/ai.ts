@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { aiConfigured, callAi, extractJson, type AiFile } from "@/lib/ai/provider";
+import { resolveAiConfig, callAi, extractJson, type AiFile, type AiConfig } from "@/lib/ai/provider";
 import {
-  buildSystemPrompt, buildBatchPrompt, validateSuggestion, type AiSuggestion,
+  buildSystemPrompt, buildBatchPrompt, validateSuggestion,
+  type AiSuggestion, type CompanyType, type PromptContext,
 } from "@/lib/ai/bookkeeper";
 
 export type AnalyzeResult =
@@ -14,37 +15,65 @@ export type AnalyzeResult =
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
 
+const NO_KEY_ERROR =
+  "Ingen AI-nyckel konfigurerad. Lägg in din API-nyckel under Inställningar → " +
+  "AI-bokföraren (Anthropic sk-ant-… rekommenderas, läser även PDF), eller sätt " +
+  "ANTHROPIC_API_KEY som miljövariabel.";
+
 async function loadContext() {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
-  const [{ data: accounts }, { data: rules }] = await Promise.all([
-    supabase.from("accounts").select("number, name, description")
-      .eq("active", true).eq("blocked", false).order("number"),
-    supabase.from("rule_values").select("key, value")
-      .lte("valid_from", today).or(`valid_to.gte.${today},valid_to.is.null`),
-  ]);
+  const [{ data: accounts }, { data: rules }, { data: settings }, { data: recent }] =
+    await Promise.all([
+      supabase.from("accounts").select("number, name, description")
+        .eq("active", true).eq("blocked", false).order("number"),
+      supabase.from("rule_values").select("key, value")
+        .lte("valid_from", today).or(`valid_to.gte.${today},valid_to.is.null`),
+      supabase.from("settings")
+        .select("company_name, company_type, ai_api_key, ai_model, ai_rules")
+        .eq("id", 1).single(),
+      supabase.from("verifications")
+        .select("number, verification_date, description, counterparty, verification_series(code)")
+        .is("corrected_by_id", null)
+        .order("verification_date", { ascending: false }).order("number", { ascending: false })
+        .limit(30),
+    ]);
+
+  const aiConfig = resolveAiConfig(settings?.ai_api_key, settings?.ai_model);
+  const promptCtx: PromptContext = {
+    companyType: (settings?.company_type as CompanyType) ?? "enskild_firma",
+    companyName: settings?.company_name ?? "företaget",
+    customRules: settings?.ai_rules ?? null,
+    recentVerifications: (recent ?? []).map((v) => ({
+      label: `${(v.verification_series as unknown as { code: string })?.code ?? ""}${v.number}`,
+      date: v.verification_date,
+      description: v.description,
+      counterparty: v.counterparty,
+    })),
+  };
+
   return {
     supabase,
     today,
+    aiConfig,
+    promptCtx,
     accounts: accounts ?? [],
     rules: Object.fromEntries((rules ?? []).map((r) => [r.key, Number(r.value)])),
   };
 }
 
+function providerLabel(config: AiConfig): string {
+  return config.provider === "anthropic" ? `Claude (${config.model})` : `OpenAI (${config.model})`;
+}
+
 /** Analysera ett inköp: kvitto/faktura (bild eller PDF) och/eller textbeskrivning */
 export async function analyzePurchase(formData: FormData): Promise<AnalyzeResult> {
-  if (!aiConfigured()) {
-    return {
-      error: "Ingen AI-nyckel konfigurerad. Lägg in ANTHROPIC_API_KEY (rekommenderas, " +
-        "läser även PDF) eller OPENAI_API_KEY i .env.local och starta om appen.",
-    };
-  }
-
   const file = formData.get("file") as File | null;
   const text = (formData.get("text") as string | null)?.trim() || null;
   const inboxAttachmentId = (formData.get("inboxAttachmentId") as string | null) || null;
 
-  const { supabase, today, accounts, rules } = await loadContext();
+  const { supabase, today, accounts, rules, aiConfig, promptCtx } = await loadContext();
+  if (!aiConfig) return { error: NO_KEY_ERROR };
 
   let aiFile: AiFile | undefined;
   if (inboxAttachmentId) {
@@ -79,7 +108,8 @@ export async function analyzePurchase(formData: FormData): Promise<AnalyzeResult
 
   try {
     const response = await callAi(
-      buildSystemPrompt(accounts, rules, today),
+      aiConfig,
+      buildSystemPrompt(accounts, rules, today, promptCtx),
       userPrompt,
       aiFile
     );
@@ -89,7 +119,7 @@ export async function analyzePurchase(formData: FormData): Promise<AnalyzeResult
     return {
       ok: true,
       suggestion: validated.suggestion,
-      provider: aiConfigured()!.provider === "anthropic" ? "Claude" : "OpenAI",
+      provider: providerLabel(aiConfig),
     };
   } catch (e) {
     return { error: (e as Error).message };
@@ -102,19 +132,18 @@ export type BatchAnalyzeResult =
 
 /** Analysera en hel inköpslista (CSV) — ett konteringsförslag per inköpsrad */
 export async function analyzePurchaseCsv(formData: FormData): Promise<BatchAnalyzeResult> {
-  if (!aiConfigured()) {
-    return { error: "Ingen AI-nyckel konfigurerad — lägg in ANTHROPIC_API_KEY i .env.local." };
-  }
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) return { error: "Ingen CSV-fil vald." };
   if (file.size > 1024 * 1024) return { error: "Filen är för stor (max 1 MB)." };
 
   const csvContent = Buffer.from(await file.arrayBuffer()).toString("utf-8");
-  const { today, accounts, rules } = await loadContext();
+  const { today, accounts, rules, aiConfig, promptCtx } = await loadContext();
+  if (!aiConfig) return { error: NO_KEY_ERROR };
 
   try {
     const response = await callAi(
-      buildSystemPrompt(accounts, rules, today),
+      aiConfig,
+      buildSystemPrompt(accounts, rules, today, promptCtx),
       buildBatchPrompt(csvContent),
       undefined,
       8000
@@ -138,7 +167,7 @@ export async function analyzePurchaseCsv(formData: FormData): Promise<BatchAnaly
       ok: true,
       suggestions,
       rejected,
-      provider: aiConfigured()!.provider === "anthropic" ? "Claude" : "OpenAI",
+      provider: providerLabel(aiConfig),
     };
   } catch (e) {
     return { error: (e as Error).message };

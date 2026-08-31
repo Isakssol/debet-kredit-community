@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { aiConfigured } from "@/lib/ai/provider";
+import { resolveAiConfig } from "@/lib/ai/provider";
 import { AiBookkeeper } from "@/components/ai-bookkeeper";
 import { AiBatchImport } from "@/components/ai-batch-import";
 
@@ -20,7 +20,9 @@ export default async function AiPage({
     inboxFileName = att?.file_name ?? null;
   }
 
-  const config = aiConfigured();
+  const { data: settings } = await supabase.from("settings")
+    .select("ai_api_key, ai_model").eq("id", 1).single();
+  const config = resolveAiConfig(settings?.ai_api_key, settings?.ai_model);
 
   return (
     <div className="max-w-3xl space-y-4">

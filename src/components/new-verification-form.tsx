@@ -302,7 +302,7 @@ export function NewVerificationForm({
                   <div className="col-span-2 space-y-1">
                     <Label>Syfte och deltagare (SKV-krav)</Label>
                     <Input value={qeText} onChange={(e) => setQeText(e.target.value)}
-                      placeholder="T.ex. Kundlunch Haus Media — Oliver, Anna (affärsförhandling)" />
+                      placeholder="T.ex. Kundlunch Exempelbolaget — Anna, Johan (affärsförhandling)" />
                   </div>
                 )}
               </div>

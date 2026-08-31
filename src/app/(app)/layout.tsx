@@ -8,8 +8,9 @@ import { AutoRefresh } from "@/components/auto-refresh";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: settings } = await supabase.from("settings")
-    .select("onboarded_at").eq("id", 1).single();
+    .select("onboarded_at, company_name").eq("id", 1).single();
   if (settings && !settings.onboarded_at) redirect("/kom-igang");
+  const companyName = settings?.company_name?.trim() || "Firmabok";
 
   return (
     <div className="flex min-h-screen">
@@ -17,10 +18,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="px-4 py-4 border-b border-sidebar-border">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-bold text-lg">
-              t
+              {companyName.charAt(0).toLowerCase()}
             </span>
             <span className="font-semibold text-[15px] text-white">
-              trimtech
+              {companyName}
               <span className="block text-[11px] font-normal leading-tight text-sidebar-foreground/60">
                 Bokföring
               </span>

@@ -39,6 +39,31 @@ export default async function YearEndPage() {
     return <p className="text-muted-foreground">Inget öppet räkenskapsår.</p>;
   }
 
+  const { data: companySettings } = await supabase.from("settings")
+    .select("company_type").eq("id", 1).single();
+  if (companySettings && companySettings.company_type !== "enskild_firma") {
+    return (
+      <div className="max-w-3xl space-y-4">
+        <h1 className="text-2xl font-semibold">Årsavslut {fy.year}</h1>
+        <Card>
+          <CardContent className="py-6 text-sm space-y-2 text-muted-foreground">
+            <p className="font-medium text-foreground">
+              Årsavslutet stödjer än så länge endast enskild firma.
+            </p>
+            <p>
+              Det inbyggda flödet bygger på förenklat årsbokslut (K1) och NE-bilagan,
+              som bara gäller enskilda firmor. För aktiebolag krävs årsredovisning
+              enligt K2/K3 och för handelsbolag N3A-bilagor — den löpande bokföringen,
+              momsen och rapporterna här fungerar fullt ut, men bokslutet gör du
+              tills vidare med din redovisningskonsult (exportera SIE 4 under
+              Rapporter &amp; export).
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const [checklist, lines, { data: neAccounts }, { data: reserves }] = await Promise.all([
     getYearEndChecklist(fy.id, fy.year),
     getAccountLines(fy.id),

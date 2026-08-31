@@ -11,7 +11,7 @@ export default async function OnboardingPage() {
     <div className="min-h-screen bg-sidebar flex items-center justify-center p-6">
       <OnboardingWizard
         defaults={{
-          company_name: settings?.company_name ?? "Oliver Isaksson (trimtech)",
+          company_name: settings?.company_name ?? "Min firma",
           org_number: settings?.org_number ?? "",
           address: settings?.address ?? "",
           postal_code: settings?.postal_code ?? "",

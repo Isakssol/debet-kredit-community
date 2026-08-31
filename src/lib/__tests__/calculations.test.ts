@@ -225,7 +225,7 @@ describe("skatteberäkning EF 2026", () => {
 describe("SIE 4E", () => {
   it("genererar korrekt filstruktur", () => {
     const sie = generateSie4({
-      companyName: "Oliver Isaksson (trimtech)",
+      companyName: "Exempelfirman",
       orgNumber: "900101-1234",
       generatedDate: "20260701",
       fiscalYear: { year: 2026, start: "2026-01-01", end: "2026-12-31" },
@@ -248,7 +248,7 @@ describe("SIE 4E", () => {
     });
     expect(sie).toContain("#FLAGGA 0");
     expect(sie).toContain("#SIETYP 4");
-    expect(sie).toContain('#FNAMN "Oliver Isaksson (trimtech)"');
+    expect(sie).toContain('#FNAMN "Exempelfirman"');
     expect(sie).toContain("#RAR 0 20260101 20261231");
     expect(sie).toContain('#KONTO 1930 "Företagskonto"');
     expect(sie).toContain("#SRU 3011 7410");
@@ -264,7 +264,7 @@ describe("SIE 4E", () => {
 
   it("rundtur: export → import ger samma data tillbaka", () => {
     const sie = generateSie4({
-      companyName: "Oliver Isaksson (trimtech)",
+      companyName: "Exempelfirman",
       orgNumber: "900101-1234",
       generatedDate: "20260701",
       fiscalYear: { year: 2026, start: "2026-01-01", end: "2026-12-31" },
@@ -291,7 +291,7 @@ describe("SIE 4E", () => {
     });
 
     const parsed = parseSie(sie);
-    expect(parsed.companyName).toBe("Oliver Isaksson (trimtech)");
+    expect(parsed.companyName).toBe("Exempelfirman");
     expect(parsed.orgNumber).toBe("900101-1234");
     expect(parsed.fiscalYears[0]).toEqual({ index: 0, start: "2026-01-01", end: "2026-12-31" });
     expect(parsed.accounts).toHaveLength(3);

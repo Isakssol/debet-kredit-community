@@ -10,7 +10,7 @@ export default async function TaxPage() {
       supabase.from("account_balances").select("*"),
       supabase.from("rule_values").select("key, value")
         .lte("valid_from", today).or(`valid_to.gte.${today},valid_to.is.null`),
-      supabase.from("settings").select("municipal_tax_rate").eq("id", 1).single(),
+      supabase.from("settings").select("municipal_tax_rate, company_type").eq("id", 1).single(),
       supabase.from("fiscal_years").select("year").eq("status", "open")
         .order("year", { ascending: false }).limit(1).single(),
     ]);
@@ -25,6 +25,21 @@ export default async function TaxPage() {
     .reduce((s, b) => s + Number(b.balance), 0);
 
   const r = Object.fromEntries((rules ?? []).map((x) => [x.key, Number(x.value)]));
+
+  if (settings && (settings as { company_type?: string }).company_type !== "enskild_firma"
+      && (settings as { company_type?: string }).company_type !== undefined) {
+    return (
+      <div className="max-w-3xl space-y-4">
+        <h1 className="text-2xl font-semibold">Skatt &amp; eget uttag</h1>
+        <p className="text-sm text-muted-foreground">
+          Skattesimulatorn beräknar egenavgifter och inkomstskatt för enskild firma
+          och gäller därför inte din bolagstyp. I aktiebolag tas ersättning ut som
+          lön eller utdelning, i handelsbolag beskattas delägarna för sina
+          resultatandelar — rådgör med din redovisningskonsult.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl space-y-4">

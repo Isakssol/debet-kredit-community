@@ -1,5 +1,5 @@
 -- ============================================================
--- Trimtech Bokföring — moms, skattekalender, anläggningar, bokslut
+-- Firmabok — moms, skattekalender, anläggningar, bokslut
 -- ============================================================
 
 -- ---------- Momsrapporter ----------

@@ -140,9 +140,8 @@ export function AiBookkeeper({
           <ol className="list-decimal ml-5 space-y-1 text-muted-foreground">
             <li>Hämta en API-nyckel: <strong>console.anthropic.com</strong> (Claude,
               rekommenderas — läser även PDF) eller <strong>platform.openai.com</strong></li>
-            <li>Lägg in i <code>.env.local</code>: <code>ANTHROPIC_API_KEY=sk-ant-…</code>{" "}
-              eller <code>OPENAI_API_KEY=sk-…</code></li>
-            <li>Starta om appen (<code>pnpm dev -p 3006</code>)</li>
+            <li>Klistra in den under <strong>Inställningar → AI-bokföraren</strong> —
+              där väljer du också modell och kan lägga in egna konteringsregler</li>
           </ol>
         </CardContent>
       </Card>

@@ -1,35 +1,67 @@
 /**
- * AI-leverantörsabstraktion: Anthropic (Claude) eller OpenAI — vilken nyckel
- * som än finns i miljön används (Anthropic föredras: bättre PDF-stöd).
+ * AI-leverantörsabstraktion: Anthropic (Claude) eller OpenAI.
  *
- * .env.local: ANTHROPIC_API_KEY=sk-ant-…  eller  OPENAI_API_KEY=sk-…
- * Valfritt: ANTHROPIC_MODEL / OPENAI_MODEL för att byta modell.
+ * Nyckeln hämtas i första hand från Inställningar (settings.ai_api_key i
+ * databasen — leverantör känns igen på prefixet), i andra hand från miljön
+ * (ANTHROPIC_API_KEY / OPENAI_API_KEY). Anthropic föredras: bättre PDF-stöd.
+ * Modell: settings.ai_model → ANTHROPIC_MODEL/OPENAI_MODEL → standard.
  */
 
 export type AiFile = { base64: string; mimeType: string };
 
-export function aiConfigured(): { provider: "anthropic" | "openai" } | null {
-  if (process.env.ANTHROPIC_API_KEY) return { provider: "anthropic" };
-  if (process.env.OPENAI_API_KEY) return { provider: "openai" };
-  return null;
+export type AiConfig = {
+  provider: "anthropic" | "openai";
+  apiKey: string;
+  model: string;
+};
+
+export const DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-5";
+export const DEFAULT_OPENAI_MODEL = "gpt-4o";
+
+/**
+ * Lös ut AI-konfigurationen. `settingsKey`/`settingsModel` kommer från
+ * settings-tabellen (kan vara null); miljövariabler används som fallback
+ * så en självhostad instans kan välja fritt.
+ */
+export function resolveAiConfig(
+  settingsKey?: string | null,
+  settingsModel?: string | null
+): AiConfig | null {
+  const key = settingsKey?.trim() || process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY;
+  if (!key) return null;
+
+  const provider: AiConfig["provider"] =
+    key.startsWith("sk-ant-") || (!settingsKey?.trim() && !!process.env.ANTHROPIC_API_KEY)
+      ? "anthropic"
+      : key.startsWith("sk-") && !key.startsWith("sk-ant-")
+        ? "openai"
+        : "anthropic";
+
+  const model =
+    settingsModel?.trim() ||
+    (provider === "anthropic"
+      ? process.env.ANTHROPIC_MODEL ?? DEFAULT_ANTHROPIC_MODEL
+      : process.env.OPENAI_MODEL ?? DEFAULT_OPENAI_MODEL);
+
+  return { provider, apiKey: key, model };
 }
 
 export async function callAi(
+  config: AiConfig,
   systemPrompt: string,
   userPrompt: string,
   file?: AiFile,
   maxTokens = 2000
 ): Promise<string> {
-  const config = aiConfigured();
-  if (!config) throw new Error("Ingen AI-nyckel konfigurerad.");
-
   if (config.provider === "anthropic") {
-    return callAnthropic(systemPrompt, userPrompt, file, maxTokens);
+    return callAnthropic(config, systemPrompt, userPrompt, file, maxTokens);
   }
-  return callOpenAi(systemPrompt, userPrompt, file, maxTokens);
+  return callOpenAi(config, systemPrompt, userPrompt, file, maxTokens);
 }
 
-async function callAnthropic(system: string, prompt: string, file?: AiFile, maxTokens = 2000): Promise<string> {
+async function callAnthropic(
+  config: AiConfig, system: string, prompt: string, file?: AiFile, maxTokens = 2000
+): Promise<string> {
   const content: unknown[] = [];
   if (file) {
     if (file.mimeType === "application/pdf") {
@@ -50,12 +82,12 @@ async function callAnthropic(system: string, prompt: string, file?: AiFile, maxT
     method: "POST",
     signal: AbortSignal.timeout(90_000), // häng aldrig — hellre tydligt fel än evig spinner
     headers: {
-      "x-api-key": process.env.ANTHROPIC_API_KEY!,
+      "x-api-key": config.apiKey,
       "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6",
+      model: config.model,
       max_tokens: maxTokens,
       system,
       messages: [{ role: "user", content }],
@@ -70,11 +102,13 @@ async function callAnthropic(system: string, prompt: string, file?: AiFile, maxT
   return data.content?.[0]?.text ?? "";
 }
 
-async function callOpenAi(system: string, prompt: string, file?: AiFile, maxTokens = 2000): Promise<string> {
+async function callOpenAi(
+  config: AiConfig, system: string, prompt: string, file?: AiFile, maxTokens = 2000
+): Promise<string> {
   if (file?.mimeType === "application/pdf") {
     throw new Error(
       "OpenAI-nyckeln kan inte läsa PDF direkt — ladda upp en bild (foto/skärmdump) i stället, " +
-      "eller lägg in en ANTHROPIC_API_KEY som har PDF-stöd."
+      "eller använd en Anthropic-nyckel (sk-ant-…) som har PDF-stöd."
     );
   }
   const content: unknown[] = [];
@@ -89,11 +123,11 @@ async function callOpenAi(system: string, prompt: string, file?: AiFile, maxToke
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      Authorization: `Bearer ${config.apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o",
+      model: config.model,
       max_tokens: maxTokens,
       response_format: { type: "json_object" },
       messages: [

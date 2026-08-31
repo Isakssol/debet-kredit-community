@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "trimtech Bokföring",
-  description: "Bokföring för Oliver Isaksson (trimtech)",
+  title: "Firmabok",
+  description: "Öppen bokföring för svenska småföretag — AI-kontering, moms och SIE 4",
 };
 
 export default function RootLayout({

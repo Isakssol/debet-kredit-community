@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   return new NextResponse(new Uint8Array(encoded), {
     headers: {
       "Content-Type": "application/octet-stream",
-      "Content-Disposition": `attachment; filename="trimtech-${year}.se"`,
+      "Content-Disposition": `attachment; filename="bokforing-${year}.se"`,
     },
   });
 }

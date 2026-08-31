@@ -34,7 +34,7 @@ const amt = (n: number) => n.toFixed(2);
 export function generateSie4(data: SieData): string {
   const lines: string[] = [];
   lines.push("#FLAGGA 0");
-  lines.push(`#PROGRAM ${q("trimtech Bokföring")} 1.0`);
+  lines.push(`#PROGRAM ${q("Firmabok")} 1.0`);
   lines.push("#FORMAT PC8");
   lines.push(`#GEN ${data.generatedDate}`);
   lines.push("#SIETYP 4");

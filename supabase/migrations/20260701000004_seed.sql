@@ -1,5 +1,5 @@
 -- ============================================================
--- Trimtech Bokföring — seed: momskoder, momssatser, regelvärden,
+-- Firmabok — seed: momskoder, momssatser, regelvärden,
 -- kontoplan (BAS 2026-urval för tjänsteföretag EF), räkenskapsår 2026
 -- ============================================================
 
@@ -98,7 +98,7 @@ insert into accounts (number, name, vat_code, default_vat_rate, ne_field, blocke
   (2990, 'Upplupna kostnader och förutbetalda intäkter', null, null, 'B16', false, null),
 -- Klass 3 — Intäkter
   (3001, 'Försäljning varor Sverige 25 %',         'SALES_25', 25, 'R1', false, null),
-  (3011, 'Försäljning tjänster Sverige 25 %',      'SALES_25', 25, 'R1', false, 'Standardkonto för trimtechs tjänsteförsäljning'),
+  (3011, 'Försäljning tjänster Sverige 25 %',      'SALES_25', 25, 'R1', false, 'Standardkonto för tjänsteförsäljning'),
   (3105, 'Försäljning varor till land utanför EU', 'SALES_EXPORT', 0, 'R2', false, null),
   (3106, 'Försäljning varor till annat EU-land',   'SALES_EU_GOODS', 0, 'R2', false, 'Kräver köparens VAT-nr + periodisk sammanställning'),
   (3305, 'Försäljning tjänster till land utanför EU', 'SALES_SERVICES_XEU', 0, 'R2', false, null),
@@ -160,7 +160,7 @@ insert into accounts (number, name, vat_code, default_vat_rate, ne_field, blocke
 
 -- ---------- Företagsinställningar (kompletteras i appen) ----------
 insert into settings (id, company_name, vat_period, default_accounting_method)
-values (1, 'Oliver Isaksson (trimtech)', 'kvartal', 'faktureringsmetoden');
+values (1, 'Min firma', 'kvartal', 'faktureringsmetoden');
 
 -- ---------- Räkenskapsår 2026 + verifikationsserier ----------
 insert into fiscal_years (year, start_date, end_date, accounting_method)

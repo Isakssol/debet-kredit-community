@@ -26,7 +26,7 @@ export async function GET(req: Request) {
   // 1. SIE-fil
   const sie = await buildSieForYear(year);
   if ("sie" in sie) {
-    zip.file(`trimtech-${year}.se`, iconv.encode(sie.sie, "cp437"));
+    zip.file(`bokforing-${year}.se`, iconv.encode(sie.sie, "cp437"));
   }
 
   // 2. Rapport-PDF:er
@@ -77,7 +77,7 @@ export async function GET(req: Request) {
   return new NextResponse(Buffer.from(blob), {
     headers: {
       "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="trimtech-arkiv-${year}.zip"`,
+      "Content-Disposition": `attachment; filename="bokforing-arkiv-${year}.zip"`,
     },
   });
 }

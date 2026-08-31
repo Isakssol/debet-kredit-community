@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "@/components/settings-form";
+import { AiSettings } from "@/components/ai-settings";
 import { PeriodLocks } from "@/components/period-locks";
 import { OpeningBalances } from "@/components/opening-balances";
 import { SieImport } from "@/components/sie-import";
@@ -22,7 +23,15 @@ export default async function SettingsPage() {
     <div className="max-w-3xl space-y-6">
       <h1 className="text-2xl font-semibold">Inställningar</h1>
 
-      <SettingsForm settings={settings!} />
+      {/* API-nyckeln ska aldrig ut till klienten — skala bort den ur props */}
+      <SettingsForm settings={(({ ai_api_key: _key, ...rest }) => rest)(settings!) as typeof settings & object} />
+
+      <AiSettings
+        companyType={settings?.company_type ?? "enskild_firma"}
+        hasKey={!!settings?.ai_api_key}
+        model={settings?.ai_model ?? null}
+        rules={settings?.ai_rules ?? null}
+      />
 
       <Card>
         <CardHeader>

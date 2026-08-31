@@ -1,5 +1,5 @@
 -- ============================================================
--- Trimtech Bokföring — fakturering & leverantörer
+-- Firmabok — fakturering & leverantörer
 -- ============================================================
 
 -- ---------- Kunder & artiklar ----------

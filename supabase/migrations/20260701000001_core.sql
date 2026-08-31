@@ -1,5 +1,5 @@
 -- ============================================================
--- Trimtech Bokföring — kärnschema
+-- Firmabok — kärnschema
 -- Grunddata, kontoplan, verifikat med BFL-regler som constraints
 -- ============================================================
 
@@ -7,7 +7,7 @@
 
 create table settings (
   id int primary key default 1 check (id = 1),
-  company_name text not null default 'Oliver Isaksson (trimtech)',
+  company_name text not null default 'Min firma',
   org_number text,                          -- personnummer ÅÅÅÅMMDD-XXXX
   vat_number text,                          -- SE<personnr>01
   address text,
