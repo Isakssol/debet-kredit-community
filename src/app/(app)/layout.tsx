@@ -15,9 +15,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const companyName = settings?.company_name?.trim() || "Debet & Kredit";
   const themeCss = buildThemeCss(settings?.theme_accent, settings?.theme_background);
 
+  const isDemo = process.env.DEMO_MODE === "1";
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       {themeCss && <style>{themeCss}</style>}
+      {isDemo && (
+        <div className="fixed bottom-0 inset-x-0 z-50 bg-foreground text-background text-center text-[13px] py-2 px-4 print:hidden">
+          🧪 Demoläge — utforska fritt! Datan är påhittad, delas av alla besökare och
+          nollställs varje natt.{" "}
+          <a href="https://github.com/Isakssol/debet-kredit" className="underline underline-offset-2"
+            target="_blank" rel="noreferrer">
+            Sätt upp din egen (gratis) →
+          </a>
+        </div>
+      )}
       {/* Mobil toppmeny */}
       <MobileNav companyName={companyName} />
       {/* Desktop-sidomeny */}
