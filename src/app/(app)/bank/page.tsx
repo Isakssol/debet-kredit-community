@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { enableBankingConfigured } from "@/lib/bank/enable-banking";
 import { suggestMatch, type OpenInvoice, type OpenSupplierInvoice, type BookedCandidate } from "@/lib/bank/matching";
 import { BankConnect, BankCsvUpload, BankTxRow } from "@/components/bank-components";
+import { BankRules } from "@/components/bank-rules";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -18,7 +19,7 @@ export default async function BankPage({
 
   const [
     { data: connections }, { data: transactions }, { data: invoices },
-    { data: supplierInvoices }, { data: bankLedger },
+    { data: supplierInvoices }, { data: bankLedger }, { data: bankRules }, { data: ruleAccounts },
   ] = await Promise.all([
     supabase.from("bank_connections").select("*").order("created_at", { ascending: false }),
     supabase.from("bank_transactions").select("*")
@@ -30,6 +31,9 @@ export default async function BankPage({
       .select("id, invoice_no, ocr, suppliers(name), total_amount, supplier_payments(amount)")
       .neq("status", "paid"),
     supabase.from("ledger_entries").select("*").gte("account", 1910).lte("account", 1949),
+    supabase.from("bank_rules").select("*").order("created_at"),
+    supabase.from("accounts").select("number, name")
+      .eq("active", true).eq("blocked", false).gte("number", 3000).order("number"),
   ]);
 
   const openInvoices: OpenInvoice[] = (invoices ?? []).map((i) => {
@@ -119,6 +123,11 @@ export default async function BankPage({
         />
         <BankCsvUpload />
       </div>
+
+      <BankRules
+        rules={(bankRules ?? []) as never}
+        accounts={(ruleAccounts ?? []).map((a) => ({ number: a.number, name: a.name }))}
+      />
 
       <div className="flex items-center justify-between">
         <h2 className="font-medium">

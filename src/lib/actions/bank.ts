@@ -9,6 +9,10 @@ import {
 } from "@/lib/bank/enable-banking";
 import { registerPayment } from "@/lib/actions/invoices";
 import { paySupplierInvoice } from "@/lib/actions/suppliers";
+import {
+  matchingRules, buildRuleRows, ruleDescription, type BankRule, type RuleTx,
+} from "@/lib/bank/rules";
+import { z } from "zod";
 
 /* ---------- CSV-import ---------- */
 
@@ -38,8 +42,82 @@ export async function importBankCsv(formData: FormData) {
     else imported++;
   }
 
+  const auto = await runBankRules(true);
   revalidatePath("/bank");
-  return { ok: true, bank: parsed.bank, imported, duplicates, warnings: parsed.warnings };
+  return {
+    ok: true, bank: parsed.bank, imported, duplicates, warnings: parsed.warnings,
+    autoBooked: auto.booked ?? 0,
+  };
+}
+
+/* ---------- Bokföringsregler ---------- */
+
+const bankRuleSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().min(1).max(80),
+  match_text: z.string().min(2).max(120),
+  direction: z.enum(["in", "out", "both"]),
+  account: z.number().int(),
+  vat_rate: z.number().refine((v) => [0, 6, 12, 25].includes(v), "Momssats 0/6/12/25"),
+  liquidity_account: z.number().int(),
+  auto_book: z.boolean(),
+  active: z.boolean().optional(),
+});
+
+export async function saveBankRule(input: unknown): Promise<{ ok?: boolean; error?: string }> {
+  const parsed = bankRuleSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const supabase = await createClient();
+  const { id, ...values } = parsed.data;
+  const { error } = id
+    ? await supabase.from("bank_rules").update(values).eq("id", id)
+    : await supabase.from("bank_rules").insert(values);
+  if (error) return { error: error.message };
+  revalidatePath("/bank");
+  return { ok: true };
+}
+
+export async function deleteBankRule(id: string): Promise<{ ok?: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("bank_rules").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/bank");
+  return { ok: true };
+}
+
+/**
+ * Kör reglerna mot alla ohanterade transaktioner. autoOnly=true bokför bara
+ * regler med auto_book (körs efter import/synk); false bokför alla entydiga
+ * träffar (knappen "Bokför alla regelträffar").
+ */
+export async function runBankRules(autoOnly = false): Promise<{
+  ok?: boolean; error?: string; booked?: number; skipped?: string[];
+}> {
+  const supabase = await createClient();
+  const [{ data: rules }, { data: txs }] = await Promise.all([
+    supabase.from("bank_rules").select("*").eq("active", true),
+    supabase.from("bank_transactions").select("id, booking_date, amount, description, counterpart")
+      .eq("status", "unmatched").order("booking_date"),
+  ]);
+  if (!rules?.length || !txs?.length) return { ok: true, booked: 0, skipped: [] };
+
+  let booked = 0;
+  const skipped: string[] = [];
+  for (const tx of txs as RuleTx[]) {
+    const hits = matchingRules(tx, rules as BankRule[]);
+    if (hits.length === 0) continue;
+    if (hits.length > 1) {
+      skipped.push(`${tx.booking_date} "${tx.description}": matchar ${hits.length} regler — hanteras manuellt`);
+      continue;
+    }
+    const rule = hits[0];
+    if (autoOnly && !rule.auto_book) continue;
+    const res = await bookTxWithRows(tx.id, buildRuleRows(tx, rule), ruleDescription(tx, rule));
+    if (res.error) skipped.push(`${tx.booking_date} "${tx.description}": ${res.error}`);
+    else booked++;
+  }
+  revalidatePath("/bank");
+  return { ok: true, booked, skipped };
 }
 
 /* ---------- GoCardless (PSD2) ---------- */
@@ -145,7 +223,8 @@ export async function syncBankTransactions(connectionId: string) {
     await supabase.from("bank_connections")
       .update({ last_synced_at: new Date().toISOString() }).eq("id", conn.id);
     revalidatePath("/bank");
-    return { ok: true, imported, total: txs.length };
+    const auto = await runBankRules(true);
+    return { ok: true, imported, total: txs.length, autoBooked: auto.booked ?? 0 };
   } catch (e) {
     const msg = (e as Error).message;
     if (msg.includes("401") || msg.includes("403")) {

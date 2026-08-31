@@ -16,6 +16,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Debet & Kredit",
   description: "Öppen bokföring för svenska småföretag — AI-kontering, moms och SIE 4",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Debet & Kredit" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
+};
+
+export const viewport = {
+  themeColor: "#14532d",
 };
 
 export default function RootLayout({
