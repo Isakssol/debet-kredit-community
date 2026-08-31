@@ -7,6 +7,7 @@ import {
   buildSystemPrompt, buildBatchPrompt, validateSuggestion,
   type AiSuggestion, type CompanyType, type PromptContext,
 } from "@/lib/ai/bookkeeper";
+import { standardRules } from "@/lib/ai/standard-rules";
 
 export type AnalyzeResult =
   | { ok: true; suggestion: AiSuggestion; provider: string }
@@ -40,10 +41,12 @@ async function loadContext() {
     ]);
 
   const aiConfig = resolveAiConfig(settings?.ai_api_key, settings?.ai_model);
+  const companyType = (settings?.company_type as CompanyType) ?? "enskild_firma";
   const promptCtx: PromptContext = {
-    companyType: (settings?.company_type as CompanyType) ?? "enskild_firma",
+    companyType,
     companyName: settings?.company_name ?? "företaget",
-    customRules: settings?.ai_rules ?? null,
+    // Utan egna regler gäller de svenska standardkonteringsreglerna för bolagstypen
+    customRules: settings?.ai_rules?.trim() || standardRules(companyType),
     recentVerifications: (recent ?? []).map((v) => ({
       label: `${(v.verification_series as unknown as { code: string })?.code ?? ""}${v.number}`,
       date: v.verification_date,

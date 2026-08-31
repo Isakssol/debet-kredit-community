@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { saveAiSettings } from "@/lib/actions/settings";
 import { ANTHROPIC_MODELS } from "@/lib/ai/models";
+import { standardRules } from "@/lib/ai/standard-rules";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,17 +123,29 @@ export function AiSettings({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="ai_rules">Egna konteringsregler</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="ai_rules">Konteringsregler</Label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setForm((f) => ({ ...f, ai_rules: standardRules(f.company_type) }))}
+            >
+              Fyll i standardregler
+            </Button>
+          </div>
           <Textarea
             id="ai_rules"
-            rows={6}
-            placeholder={"T.ex.\n– Alla inköp betalas med ägarens privata kort → kreditera 2018\n– Kundbetalningar går via PayPal → 1940, avgiften → 6570\n– Leverantören X är alltid EU-tjänst med omvänd skattskyldighet"}
+            rows={10}
+            placeholder={"Lämnas fältet tomt gäller de svenska standardreglerna för din bolagstyp automatiskt.\nKlicka \"Fyll i standardregler\" för att se och anpassa dem — t.ex.\n– Alla inköp betalas med ägarens privata kort → kreditera 2018\n– Kundbetalningar går via PayPal → 1940, avgiften → 6570"}
             value={form.ai_rules}
             onChange={(e) => setForm((f) => ({ ...f, ai_rules: e.target.value }))}
           />
           <p className="text-xs text-muted-foreground">
-            Skickas med i varje AI-analys och går före de allmänna reglerna.
-            Ju mer av din verklighet du beskriver här, desto träffsäkrare förslag.
+            Standardreglerna följer BAS-kontoplanen och god redovisningssed och gäller
+            tills du skriver egna. De tvingande reglerna (momssatser, omvänd
+            skattskyldighet, balanskrav) är inbyggda och kan inte ändras här.
           </p>
         </div>
 
