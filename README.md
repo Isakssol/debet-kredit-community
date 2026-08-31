@@ -23,7 +23,7 @@ löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
   fakturor innan den svarar (read-only — den kan aldrig ändra bokföringen)
 - **Moms** — deklaration ruta för ruta (månad/kvartal/helår) + eSKD-fil för
   uppladdning till Skatteverket
-- **CRM** — säljpipeline (kanban med drag &amp; drop, värde per steg, nästa
+- **CRM** — säljpipeline (kanban med drag & drop, värde per steg, nästa
   åtgärd som dyker upp i Att göra) och hela offert → order → faktura-kedjan
   med utskrivbar orderbekräftelse
 - **Fakturering** — PDF-fakturor, e-postutskick (Resend), påminnelser,
