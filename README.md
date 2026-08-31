@@ -25,7 +25,17 @@ löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
   uppladdning till Skatteverket
 - **Fakturering** — PDF-fakturor, e-postutskick (Resend), påminnelser,
   kund- och artikelregister
-- **Bankimport** — CSV-import som matchar mot fakturor och föreslår bokföring
+- **Bank med självgående bokföring** — PSD2-koppling (Enable Banking) och
+  CSV-import som matchar mot fakturor; egna bokföringsregler bokför
+  återkommande transaktioner automatiskt vid entydig träff
+- **Enkel lön (fåmansbolag)** — månadslön med arbetsgivaravgifter bokförd
+  korrekt + AGI-fil (XML) som validerar mot Skatteverkets schema
+- **SRU-export** (enskild firma) — NE-bilaga + INK1-utkast som filer för
+  Skatteverkets filöverföringstjänst
+- **Årsredovisning K2** (aktiebolag) — komplett utskrivbart dokument:
+  förvaltningsberättelse, resultat- och balansräkning, noter
+- **Mobilapp (PWA)** — installera på hemskärmen och fota kvitton direkt
+  in i AI-bokföraren
 - **Rapporter** — resultat, balans, huvudbok; export till PDF, CSV och SIE 4
 - **Kvittoarkiv** — underlag lagras digitalt enligt 7-årskravet, kopplade
   till sina verifikat, med digital underlagsinkorg
@@ -114,11 +124,13 @@ för din bolagstyp gäller automatiskt — anpassa dem fritt.
 | Fakturering, bank, rapporter, SIE 4 | ✅ | ✅ | ✅ |
 | AI-kontering med typspecifika regler | ✅ | ✅ | ✅ |
 | Skattesimulator | ✅ | — | — |
-| Årsavslut (K1 + NE-bilaga) | ✅ | — | — |
+| Lön + AGI-fil | — | ✅ | ✅ |
+| Årsavslut K1 + NE-bilaga + SRU-filer | ✅ | — | — |
+| Årsredovisning K2 (dokument) | — | ✅ | — |
 
-Aktiebolag behöver årsredovisning enligt K2/K3 och handelsbolag N3A-bilagor —
-det görs tills vidare utanför Debet & Kredit (exportera SIE 4 till din konsult).
-Bidrag välkomna!
+Kvar för handelsbolag: N3A-bilagor. K2-dokumentet skrivs ut och lämnas till
+Bolagsverket (digital inlämning via deras e-tjänst är nästa steg). Bidrag
+välkomna!
 
 ## Ny på bokföring?
 
