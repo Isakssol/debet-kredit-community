@@ -2,19 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
-import { MessageCircleQuestion, Send, Trash2 } from "lucide-react";
+import { MessageCircleQuestion, Send, Trash2, Sparkles } from "lucide-react";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
 const SUGGESTIONS = [
-  "Hur mycket moms är jag skyldig just nu?",
-  "Hur går det för företaget i år, månad för månad?",
-  "Vilka kundfakturor är obetalda?",
-  "Kan jag dra av lunch med en kund?",
+  { icon: "💰", text: "Hur mycket moms är jag skyldig just nu?" },
+  { icon: "📈", text: "Hur går det för företaget i år, månad för månad?" },
+  { icon: "🧾", text: "Vilka kundfakturor är obetalda?" },
+  { icon: "🍽️", text: "Kan jag dra av lunch med en kund?" },
 ];
 
 export function AdvisorChat({ initialMessages }: { initialMessages: Msg[] }) {
@@ -22,11 +21,23 @@ export function AdvisorChat({ initialMessages }: { initialMessages: Msg[] }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const stickToBottom = useRef(true);
 
+  // Autoscrolla bara när användaren redan är nära botten — annars lämnas läsläget ifred
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+  };
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollRef.current;
+    if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
   }, [messages, status]);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, []);
 
   async function send(text?: string) {
     const message = (text ?? input).trim();
@@ -34,6 +45,7 @@ export function AdvisorChat({ initialMessages }: { initialMessages: Msg[] }) {
     setInput("");
     setBusy(true);
     setStatus(null);
+    stickToBottom.current = true;
     setMessages((m) => [...m, { role: "user", content: message }]);
 
     try {
@@ -98,79 +110,97 @@ export function AdvisorChat({ initialMessages }: { initialMessages: Msg[] }) {
   }
 
   return (
-    <Card>
-      <CardContent className="pt-4 space-y-3">
-        <div className="max-h-[55vh] min-h-[200px] overflow-y-auto space-y-3 pr-1">
-          {messages.length === 0 && (
-            <div className="text-sm text-muted-foreground space-y-3 py-4">
-              <p className="flex items-center gap-2">
-                <MessageCircleQuestion className="h-4 w-4 text-primary" />
-                Ställ en fråga — eller prova något av detta:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {SUGGESTIONS.map((s) => (
-                  <button key={s} type="button" onClick={() => send(s)}
-                    className="rounded-full border px-3 py-1.5 text-xs hover:bg-accent transition-colors">
-                    {s}
-                  </button>
-                ))}
-              </div>
+    <div className="flex flex-col rounded-3xl bg-card shadow-[0_2px_16px_rgba(120,90,60,0.08)] border overflow-hidden h-[calc(100dvh-13.5rem)] min-h-[420px]">
+      {/* Meddelanden */}
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-4">
+        {messages.length === 0 && (
+          <div className="h-full flex flex-col items-center justify-center gap-6 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+              <MessageCircleQuestion className="h-7 w-7 text-primary" />
             </div>
-          )}
-          {messages.map((m, i) => (
-            <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-              <div className={cn(
-                "rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap max-w-[85%]",
-                m.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-sm"
-                  : "bg-muted rounded-bl-sm")}>
+            <div>
+              <div className="font-semibold text-lg font-heading">Vad undrar du?</div>
+              <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                Rådgivaren läser din bokföring innan den svarar — fråga om moms, avdrag eller hur det går.
+              </p>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-2.5 w-full max-w-lg">
+              {SUGGESTIONS.map((s) => (
+                <button key={s.text} type="button" onClick={() => send(s.text)}
+                  className="flex items-center gap-3 rounded-2xl border bg-background px-4 py-3 text-left text-sm hover:border-primary/50 hover:shadow-[0_4px_14px_rgba(120,90,60,0.1)] transition-all">
+                  <span className="text-lg">{s.icon}</span>
+                  <span>{s.text}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {messages.map((m, i) =>
+          m.role === "user" ? (
+            <div key={i} className="flex justify-end">
+              <div className="rounded-3xl rounded-br-lg bg-primary px-4 py-2.5 text-sm text-primary-foreground max-w-[85%] sm:max-w-[70%] shadow-[0_4px_12px_rgba(234,88,12,0.25)]">
                 {m.content}
               </div>
             </div>
-          ))}
-          {status && (
-            <div className="flex justify-start">
-              <div className="rounded-2xl px-4 py-2.5 text-sm bg-muted text-muted-foreground animate-pulse">
-                {status}
+          ) : (
+            <div key={i} className="flex gap-3 items-start">
+              <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <div className="rounded-3xl rounded-tl-lg bg-muted/70 px-4 py-3 text-sm max-w-[90%] sm:max-w-[80%]">
+                <Markdown text={m.content} />
               </div>
             </div>
-          )}
-          {busy && !status && (
-            <div className="flex justify-start">
-              <div className="rounded-2xl px-4 py-2.5 text-sm bg-muted text-muted-foreground animate-pulse">
-                Tänker…
-              </div>
-            </div>
-          )}
-          <div ref={bottomRef} />
-        </div>
+          )
+        )}
 
-        <div className="flex gap-2 items-end border-t pt-3">
+        {(status || (busy && messages[messages.length - 1]?.role === "user")) && (
+          <div className="flex gap-3 items-start">
+            <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
+            </div>
+            <div className="rounded-3xl rounded-tl-lg bg-muted/70 px-4 py-3 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-2">
+                <span className="flex gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:0ms]"></span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:120ms]"></span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-bounce [animation-delay:240ms]"></span>
+                </span>
+                {status ?? "Tänker…"}
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input */}
+      <div className="border-t bg-background/60 px-3 sm:px-4 py-3">
+        <div className="flex items-end gap-2">
           <Textarea
-            rows={2}
+            rows={1}
             placeholder="Fråga rådgivaren…"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
             }}
-            className="resize-none"
+            className="resize-none min-h-11 max-h-32 rounded-2xl bg-card"
           />
-          <div className="flex flex-col gap-1.5">
-            <Button size="icon" onClick={() => send()} disabled={busy || !input.trim()} title="Skicka">
-              <Send className="h-4 w-4" />
-            </Button>
-            <Button size="icon" variant="ghost" onClick={clearChat} disabled={busy}
-              title="Rensa konversationen">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button size="icon" onClick={() => send()} disabled={busy || !input.trim()}
+            className="rounded-2xl h-11 w-11 shrink-0 shadow-[0_4px_12px_rgba(234,88,12,0.3)]" title="Skicka">
+            <Send className="h-4 w-4" />
+          </Button>
+          <Button size="icon" variant="ghost" onClick={clearChat} disabled={busy}
+            className="rounded-2xl h-11 w-11 shrink-0 text-muted-foreground" title="Rensa konversationen">
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          Rådgivaren kan läsa din bokföring men aldrig ändra den. Svaren är vägledning,
-          inte auktoriserad rådgivning — dubbelkolla viktiga beslut.
+        <p className="text-[11px] text-muted-foreground mt-2 px-1">
+          Rådgivaren kan läsa din bokföring men aldrig ändra den. Svaren är vägledning —
+          dubbelkolla viktiga beslut.
         </p>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

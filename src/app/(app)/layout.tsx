@@ -5,16 +5,19 @@ import { NavLinks } from "@/components/nav-links";
 import { LogoutButton } from "@/components/logout-button";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { MobileNav } from "@/components/mobile-nav";
+import { buildThemeCss } from "@/lib/theme";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: settings } = await supabase.from("settings")
-    .select("onboarded_at, company_name").eq("id", 1).single();
+    .select("onboarded_at, company_name, theme_accent, theme_background").eq("id", 1).single();
   if (settings && !settings.onboarded_at) redirect("/kom-igang");
   const companyName = settings?.company_name?.trim() || "Debet & Kredit";
+  const themeCss = buildThemeCss(settings?.theme_accent, settings?.theme_background);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
+      {themeCss && <style>{themeCss}</style>}
       {/* Mobil toppmeny */}
       <MobileNav companyName={companyName} />
       {/* Desktop-sidomeny */}

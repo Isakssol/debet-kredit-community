@@ -80,6 +80,20 @@ export async function saveAiSettings(input: unknown) {
   return { ok: true };
 }
 
+/** Utseende: accentfärg och bakgrundston (null = standard) */
+export async function saveAppearance(input: unknown): Promise<{ ok?: boolean; error?: string }> {
+  const parsed = z.object({
+    theme_accent: z.string().max(30).nullable(),
+    theme_background: z.string().max(30).nullable(),
+  }).safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const supabase = await createClient();
+  const { error } = await supabase.from("settings").update(parsed.data).eq("id", 1);
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 /** Första-gången-wizarden: spara grundinställningar och markera onboarding klar */
 export async function completeOnboarding(input: unknown): Promise<{ ok?: boolean; error?: string }> {
   // Bolagstypen sparas först — VAT-härledningen i saveSettings beror på den
