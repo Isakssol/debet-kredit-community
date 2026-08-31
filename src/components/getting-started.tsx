@@ -70,7 +70,7 @@ export function GettingStarted({ items }: { items: ChecklistItem[] }) {
             {!item.done && (
               <button type="button" disabled={pending}
                 onClick={() => dismiss(item.id)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity mt-0.5 text-muted-foreground hover:text-foreground"
+                className="mt-0.5 rounded-md p-1 -m-1 text-muted-foreground/50 hover:text-foreground hover:bg-background/80 transition-colors"
                 title="Klicka bort steget">
                 <X className="h-3.5 w-3.5" />
               </button>
