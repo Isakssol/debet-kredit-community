@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-60 shrink-0 bg-sidebar text-sidebar-foreground flex flex-col">
+      <aside className="w-60 shrink-0 bg-sidebar text-sidebar-foreground flex flex-col print:hidden">
         <div className="px-4 py-4 border-b border-sidebar-border">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-bold text-lg">

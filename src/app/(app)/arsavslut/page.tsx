@@ -4,6 +4,8 @@ import { getYearEndChecklist } from "@/lib/actions/yearend";
 import { getAccountLines } from "@/lib/reports/data";
 import { computeNeFields } from "@/lib/tax/calc";
 import { CompleteYearEnd } from "@/components/complete-year-end";
+import { K2AnnualReport } from "@/components/k2-annual-report";
+import { buildK2Report } from "@/lib/k2/report";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,23 +42,37 @@ export default async function YearEndPage() {
   }
 
   const { data: companySettings } = await supabase.from("settings")
-    .select("company_type").eq("id", 1).single();
-  if (companySettings && companySettings.company_type !== "enskild_firma") {
+    .select("company_type, company_name, org_number, city").eq("id", 1).single();
+  if (companySettings && companySettings.company_type === "aktiebolag") {
+    const [k2Lines, { data: payroll }] = await Promise.all([
+      getAccountLines(fy.id),
+      supabase.from("payroll_runs").select("employee_personal_number"),
+    ]);
+    const k2 = buildK2Report(k2Lines.map((l) => ({ account: l.account, closing: l.closing })));
+    const employees = new Set((payroll ?? []).map((p) => p.employee_personal_number)).size;
+    return (
+      <K2AnnualReport
+        year={fy.year}
+        companyName={companySettings.company_name ?? "Bolaget"}
+        orgNumber={companySettings.org_number ?? ""}
+        city={companySettings.city ?? ""}
+        report={k2}
+        employees={employees}
+      />
+    );
+  }
+  if (companySettings && companySettings.company_type === "handelsbolag") {
     return (
       <div className="max-w-3xl space-y-4">
         <h1 className="text-2xl font-semibold">Årsavslut {fy.year}</h1>
         <Card>
           <CardContent className="py-6 text-sm space-y-2 text-muted-foreground">
             <p className="font-medium text-foreground">
-              Årsavslutet stödjer än så länge endast enskild firma.
+              Årsavslut för handelsbolag (N3A-bilagor) stöds inte ännu.
             </p>
             <p>
-              Det inbyggda flödet bygger på förenklat årsbokslut (K1) och NE-bilagan,
-              som bara gäller enskilda firmor. För aktiebolag krävs årsredovisning
-              enligt K2/K3 och för handelsbolag N3A-bilagor — den löpande bokföringen,
-              momsen och rapporterna här fungerar fullt ut, men bokslutet gör du
-              tills vidare med din redovisningskonsult (exportera SIE 4 under
-              Rapporter &amp; export).
+              Den löpande bokföringen, momsen och rapporterna fungerar fullt ut —
+              exportera SIE 4 under Rapporter &amp; export till din redovisningskonsult.
             </p>
           </CardContent>
         </Card>
