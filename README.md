@@ -32,38 +32,75 @@ löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
 - **Årsavslut** (enskild firma) — förenklat årsbokslut K1 + NE-bilaga
 - **Arkivexport** — hela räkenskapsåret som zip (SIE + alla underlag)
 
-## Kom igång
+## Det här behöver du
 
-Du behöver: [Node.js 20+](https://nodejs.org), [pnpm](https://pnpm.io),
-ett gratis [Supabase](https://supabase.com)-projekt.
+| Tjänst | Kostnad | Till vad | Krävs? |
+|---|---|---|---|
+| [Node.js 20+](https://nodejs.org) & [pnpm](https://pnpm.io) | Gratis | Köra appen lokalt | ✅ |
+| [Supabase](https://supabase.com)-konto | Gratis (free tier räcker) | Databas, inloggning och kvittolagring | ✅ |
+| [Vercel](https://vercel.com)-konto | Gratis (hobby tier räcker) | Köra appen i molnet så du når den från mobilen | Rekommenderas |
+| [Anthropic](https://console.anthropic.com) API-nyckel | Betala per användning (~kronor/mån) | AI-bokföraren som läser kvitton | Rekommenderas |
+| [Resend](https://resend.com)-konto + egen domän | Gratis-nivå finns | Mejla fakturor direkt från appen | Valfritt |
 
+Ingen tidigare bokföringserfarenhet krävs — men läs på om grunderna
+(verifikat, moms, BAS-kontoplanen) på [verksamt.se](https://verksamt.se)
+och [Skatteverket](https://skatteverket.se).
+
+## Installation (ca 10 minuter)
+
+**1. Klona och installera:**
 ```bash
-git clone <repo-url> debet-kredit && cd debet-kredit
+git clone https://github.com/Isakssol/debet-kredit.git && cd debet-kredit
 pnpm install
 ```
 
-1. **Skapa ett Supabase-projekt** och kör migrationerna:
-   ```bash
-   npx supabase link --project-ref <ditt-projekt-ref>
-   npx supabase db push
-   ```
-2. **Skapa storage-bucketen** `underlag` (privat) under Storage i Supabase-panelen.
-3. **Skapa en inloggningsanvändare** under Authentication → Users
-   (e-post + lösenord). Appen är single-tenant: alla inloggade användare ser
-   samma bokföring.
-4. **Miljövariabler** — kopiera och fyll i:
-   ```bash
-   cp .env.example .env.local
-   ```
-5. **Starta:**
-   ```bash
-   pnpm dev
-   ```
-6. Logga in, följ kom igång-guiden och lägg in din AI-nyckel under
-   **Inställningar → AI-bokföraren** (valfritt men rekommenderat).
+**2. Skapa ett Supabase-projekt** på [supabase.com](https://supabase.com)
+(New project → välj region, t.ex. Stockholm `eu-north-1`). Anteckna databas­lösenordet.
 
-Deploy: fungerar direkt på [Vercel](https://vercel.com) — sätt samma
-miljövariabler där.
+**3. Kör databasmigrationerna** (skapar alla tabeller, kontoplanen BAS 2026,
+momskoder och regelvärden):
+```bash
+npx supabase link --project-ref <ditt-projekt-ref>
+npx supabase db push
+```
+Projekt-ref är strängen i din Supabase-URL: `https://<projekt-ref>.supabase.co`.
+
+**4. Skapa storage-bucketen för kvitton:** Supabase-panelen → Storage →
+New bucket → namn `underlag`, **Private** (inte public).
+
+**5. Skapa din inloggning:** Supabase-panelen → Authentication → Users →
+Add user → e-post + lösenord (bocka i "Auto confirm"). Appen är
+single-tenant: alla användare du skapar ser samma bokföring.
+
+**6. Miljövariabler:**
+```bash
+cp .env.example .env.local
+```
+Fyll i `NEXT_PUBLIC_SUPABASE_URL` och `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+från Supabase-panelen → Project Settings → API.
+
+**7. Starta och logga in:**
+```bash
+pnpm dev
+```
+Öppna [http://localhost:3000](http://localhost:3000), logga in och följ
+kom igång-guiden (bolagstyp, företagsuppgifter, momsperiod, startläge —
+byter du från Fortnox/Visma/Bokio kan du importera din SIE-fil direkt).
+
+**8. Aktivera AI-bokföraren** (rekommenderas): skapa en API-nyckel på
+[console.anthropic.com](https://console.anthropic.com) (sätt gärna ett
+utgiftstak) och klistra in den i appen under
+**Inställningar → Bolagstyp & AI-bokföraren**. Standardkonteringsregler
+för din bolagstyp gäller automatiskt — anpassa dem fritt.
+
+## Deploy till Vercel (valfritt, ca 5 minuter)
+
+1. Forka/pusha repot till ditt eget GitHub-konto.
+2. [vercel.com](https://vercel.com) → Add New → Project → importera ditt repo
+   (framework upptäcks automatiskt: Next.js).
+3. Lägg in samma miljövariabler som i `.env.local` under Environment Variables.
+4. Deploy. Varje push till `main` deployar automatiskt.
+5. Skydda gärna appen extra: Vercel → Settings → Deployment Protection.
 
 ## Bolagstyper
 

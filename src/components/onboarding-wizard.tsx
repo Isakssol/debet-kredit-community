@@ -26,10 +26,11 @@ export function OnboardingWizard({
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [f, setF] = useState({ ...defaults, eu_trade: false });
+  const [f, setF] = useState({ ...defaults, eu_trade: false, company_type: "enskild_firma" });
   const [startMode, setStartMode] = useState<StartMode>("fresh");
   const set = (k: string, v: string | boolean) => setF((p) => ({ ...p, [k]: v }));
 
+  const isEf = f.company_type === "enskild_firma";
   const step1Valid = f.company_name.trim() && f.org_number.trim()
     && f.address.trim() && f.city.trim();
 
@@ -58,7 +59,7 @@ export function OnboardingWizard({
         {/* Stegindikator */}
         <div className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold">
-            t
+            &amp;
           </span>
           <div className="flex-1">
             <div className="font-semibold">Välkommen till Debet & Kredit</div>
@@ -84,12 +85,37 @@ export function OnboardingWizard({
         {step === 0 && (
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1">
+              <Label>Bolagstyp *</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: "enskild_firma", label: "Enskild firma" },
+                  { value: "aktiebolag", label: "Aktiebolag" },
+                  { value: "handelsbolag", label: "Handelsbolag" },
+                ].map((opt) => (
+                  <button key={opt.value} type="button"
+                    onClick={() => set("company_type", opt.value)}
+                    className={cn("rounded-lg border p-2 text-sm transition-colors",
+                      f.company_type === opt.value
+                        ? "border-primary bg-accent ring-1 ring-primary font-medium"
+                        : "hover:bg-accent/50")}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {!isEf && (
+                <p className="text-[11px] text-muted-foreground">
+                  Löpande bokföring, moms och rapporter fungerar fullt ut — årsavslutet
+                  (K1/NE) gäller endast enskild firma än så länge.
+                </p>
+              )}
+            </div>
+            <div className="col-span-2 space-y-1">
               <Label>Företagsnamn *</Label>
               <Input value={f.company_name} onChange={(e) => set("company_name", e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label>Personnummer *</Label>
-              <Input value={f.org_number} placeholder="ÅÅÅÅMMDD-XXXX"
+              <Label>{isEf ? "Personnummer *" : "Organisationsnummer *"}</Label>
+              <Input value={f.org_number} placeholder={isEf ? "ÅÅÅÅMMDD-XXXX" : "XXXXXX-XXXX"}
                 onChange={(e) => set("org_number", e.target.value)} />
               <p className="text-[11px] text-muted-foreground">
                 VAT-nummer (SE…01) skapas automatiskt.
@@ -131,7 +157,7 @@ export function OnboardingWizard({
           <div className="space-y-3">
             <Label>Hur ofta redovisar du moms till Skatteverket?</Label>
             {[
-              { value: "kvartal", title: "Kvartal", desc: "Vanligast för enskild firma — deklaration den 12:e i andra månaden efter kvartalet. Välj denna om du är osäker." },
+              { value: "kvartal", title: "Kvartal", desc: "Vanligast för småföretag — deklaration den 12:e i andra månaden efter kvartalet. Välj denna om du är osäker." },
               { value: "helar", title: "Helår", desc: "Tillåtet under 1 mkr i omsättning. En deklaration per år (12 maj)." },
               { value: "manad", title: "Månad", desc: "Frivilligt (krav först över 40 mkr). Mest administration." },
             ].map((opt) => (

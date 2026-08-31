@@ -29,12 +29,19 @@ export async function saveSettings(input: unknown) {
   const parsed = settingsSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  // Härled VAT-nummer från personnummer om det saknas (SE + 12 siffror + 01)
+  // Härled VAT-nummer om det saknas. Enskild firma: SE + 12-siffrigt personnummer + 01
+  // (10 siffror antas 19xx). Bolag: SE + 10-siffrigt organisationsnummer + 01 (inget sekelprefix).
   const values = { ...parsed.data };
   if (values.org_number && !values.vat_number) {
     const digits = values.org_number.replace(/\D/g, "");
-    if (digits.length === 10) values.vat_number = `SE${digits.length === 10 ? "19" + digits : digits}01`;
+    const supabaseForType = await createClient();
+    const { data: s } = await supabaseForType.from("settings")
+      .select("company_type").eq("id", 1).single();
+    const isEf = (s?.company_type ?? "enskild_firma") === "enskild_firma";
     if (digits.length === 12) values.vat_number = `SE${digits}01`;
+    else if (digits.length === 10) {
+      values.vat_number = isEf ? `SE19${digits}01` : `SE${digits}01`;
+    }
   }
 
   const supabase = await createClient();
@@ -75,9 +82,16 @@ export async function saveAiSettings(input: unknown) {
 
 /** Första-gången-wizarden: spara grundinställningar och markera onboarding klar */
 export async function completeOnboarding(input: unknown): Promise<{ ok?: boolean; error?: string }> {
+  // Bolagstypen sparas först — VAT-härledningen i saveSettings beror på den
+  const companyType = (input as { company_type?: string })?.company_type;
+  const supabase = await createClient();
+  if (companyType && ["enskild_firma", "aktiebolag", "handelsbolag"].includes(companyType)) {
+    const { error } = await supabase.from("settings")
+      .update({ company_type: companyType }).eq("id", 1);
+    if (error) return { error: error.message };
+  }
   const res = await saveSettings(input);
   if (res.error) return res;
-  const supabase = await createClient();
   const { error } = await supabase.from("settings")
     .update({ onboarded_at: new Date().toISOString() }).eq("id", 1);
   if (error) return { error: error.message };
