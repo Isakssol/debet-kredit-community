@@ -98,11 +98,18 @@ export default async function YearEndPage() {
 
   return (
     <div className="max-w-3xl space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold">Årsavslut {fy.year}</h1>
-        <p className="text-sm text-muted-foreground">
-          Förenklat årsbokslut (K1) — bokfört resultat: <strong>{fmt(bookedResult)} kr</strong>
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">Årsavslut {fy.year}</h1>
+          <p className="text-sm text-muted-foreground">
+            Förenklat årsbokslut (K1) — bokfört resultat: <strong>{fmt(bookedResult)} kr</strong>
+          </p>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <a href={`/export/sru?year=${fy.year}`} title="INFO.SRU + BLANKETTER.SRU (NE + INK1-utkast) för Skatteverkets filöverföring">
+            SRU-filer (NE + INK1)
+          </a>
+        </Button>
       </div>
 
       <Card>
