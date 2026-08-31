@@ -43,9 +43,25 @@ export async function POST(req: Request): Promise<Response> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
 
-  const { message } = (await req.json().catch(() => ({}))) as { message?: string };
-  const userMessage = message?.trim().slice(0, 4000);
+  const body = (await req.json().catch(() => ({}))) as { message?: string; conversationId?: string };
+  const userMessage = body.message?.trim().slice(0, 4000);
   if (!userMessage) return new Response("Tomt meddelande", { status: 400 });
+
+  // Befintlig konversation eller ny (titel = första frågan)
+  let conversationId = body.conversationId ?? null;
+  let isNew = false;
+  if (conversationId) {
+    const { data: conv } = await supabase.from("advisor_conversations")
+      .select("id").eq("id", conversationId).single();
+    if (!conv) conversationId = null;
+  }
+  if (!conversationId) {
+    const { data: conv, error } = await supabase.from("advisor_conversations")
+      .insert({ title: userMessage.slice(0, 60) }).select("id").single();
+    if (error || !conv) return new Response("Kunde inte skapa konversation.", { status: 500 });
+    conversationId = conv.id;
+    isNew = true;
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const [{ data: settings }, { data: history }, { data: ruleRows }] = await Promise.all([
@@ -53,6 +69,7 @@ export async function POST(req: Request): Promise<Response> {
       .select("company_name, company_type, vat_period, ai_api_key, ai_model, ai_rules")
       .eq("id", 1).single(),
     supabase.from("advisor_messages").select("role, content")
+      .eq("conversation_id", conversationId)
       .order("created_at", { ascending: false }).limit(HISTORY_LIMIT),
     supabase.from("rule_values").select("key, value")
       .lte("valid_from", today).or(`valid_to.gte.${today},valid_to.is.null`),
@@ -84,7 +101,10 @@ export async function POST(req: Request): Promise<Response> {
     { role: "user" as const, content: userMessage },
   ];
 
-  await supabase.from("advisor_messages").insert({ role: "user", content: userMessage });
+  await supabase.from("advisor_messages")
+    .insert({ role: "user", content: userMessage, conversation_id: conversationId });
+  await supabase.from("advisor_conversations")
+    .update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -92,6 +112,7 @@ export async function POST(req: Request): Promise<Response> {
       const send = (obj: unknown) =>
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
       let fullAnswer = "";
+      send({ type: "meta", conversationId, isNew });
 
       try {
         for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
@@ -150,7 +171,8 @@ export async function POST(req: Request): Promise<Response> {
         }
 
         if (fullAnswer) {
-          await supabase.from("advisor_messages").insert({ role: "assistant", content: fullAnswer });
+          await supabase.from("advisor_messages")
+            .insert({ role: "assistant", content: fullAnswer, conversation_id: conversationId });
         } else {
           send({ type: "error", text: "Rådgivaren fick inte fram ett svar — prova att formulera om frågan." });
         }
@@ -177,13 +199,14 @@ export async function POST(req: Request): Promise<Response> {
   });
 }
 
-/** Rensa konversationen */
-export async function DELETE(): Promise<Response> {
+/** Ta bort en konversation (meddelandena följer med via cascade) */
+export async function DELETE(req: Request): Promise<Response> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
-  const { error } = await supabase.from("advisor_messages")
-    .delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  const id = new URL(req.url).searchParams.get("id");
+  if (!id) return new Response("Ange konversations-id.", { status: 400 });
+  const { error } = await supabase.from("advisor_conversations").delete().eq("id", id);
   if (error) return new Response(error.message, { status: 500 });
   return new Response(null, { status: 204 });
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageCircleQuestion, Send, Trash2, Sparkles } from "lucide-react";
+import { MessageCircleQuestion, Send, Sparkles } from "lucide-react";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -16,11 +17,19 @@ const SUGGESTIONS = [
   { icon: "🍽️", text: "Kan jag dra av lunch med en kund?" },
 ];
 
-export function AdvisorChat({ initialMessages }: { initialMessages: Msg[] }) {
+export function AdvisorChat({
+  conversationId: initialConversationId,
+  initialMessages,
+}: {
+  conversationId: string | null;
+  initialMessages: Msg[];
+}) {
+  const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>(initialMessages);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const conversationRef = useRef<string | null>(initialConversationId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
 
@@ -52,7 +61,7 @@ export function AdvisorChat({ initialMessages }: { initialMessages: Msg[] }) {
       const res = await fetch("/api/radgivare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, conversationId: conversationRef.current }),
       });
       if (!res.ok || !res.body) {
         toast.error(await res.text().catch(() => "Något gick fel."));
@@ -86,8 +95,17 @@ export function AdvisorChat({ initialMessages }: { initialMessages: Msg[] }) {
           const line = evt.split("\n").find((l) => l.startsWith("data: "));
           if (!line) continue;
           try {
-            const data = JSON.parse(line.slice(6)) as { type: string; text?: string };
-            if (data.type === "text" && data.text) { setStatus(null); appendAssistant(data.text); }
+            const data = JSON.parse(line.slice(6)) as {
+              type: string; text?: string; conversationId?: string; isNew?: boolean;
+            };
+            if (data.type === "meta" && data.conversationId) {
+              conversationRef.current = data.conversationId;
+              if (data.isNew) {
+                // Uppdatera URL + historiklistan utan att tappa chatten
+                window.history.replaceState(null, "", `/radgivare?c=${data.conversationId}`);
+              }
+            }
+            else if (data.type === "text" && data.text) { setStatus(null); appendAssistant(data.text); }
             else if (data.type === "status" && data.text) setStatus(data.text);
             else if (data.type === "error" && data.text) { setStatus(null); toast.error(data.text); }
             else if (data.type === "done") setStatus(null);
@@ -99,14 +117,8 @@ export function AdvisorChat({ initialMessages }: { initialMessages: Msg[] }) {
     } finally {
       setBusy(false);
       setStatus(null);
+      router.refresh(); // uppdatera historiklistan (titel + tidsstämpel)
     }
-  }
-
-  async function clearChat() {
-    if (!confirm("Rensa hela konversationen?")) return;
-    const res = await fetch("/api/radgivare", { method: "DELETE" });
-    if (res.ok) setMessages([]);
-    else toast.error("Kunde inte rensa.");
   }
 
   return (
@@ -190,10 +202,6 @@ export function AdvisorChat({ initialMessages }: { initialMessages: Msg[] }) {
           <Button size="icon" onClick={() => send()} disabled={busy || !input.trim()}
             className="rounded-2xl h-11 w-11 shrink-0 shadow-[0_4px_12px_rgba(234,88,12,0.3)]" title="Skicka">
             <Send className="h-4 w-4" />
-          </Button>
-          <Button size="icon" variant="ghost" onClick={clearChat} disabled={busy}
-            className="rounded-2xl h-11 w-11 shrink-0 text-muted-foreground" title="Rensa konversationen">
-            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
         <p className="text-[11px] text-muted-foreground mt-2 px-1">
