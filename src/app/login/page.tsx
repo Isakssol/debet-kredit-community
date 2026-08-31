@@ -38,7 +38,7 @@ export default function LoginPage() {
             t
           </span>
           <span className="font-semibold text-white">
-            Firmabok <span className="font-normal text-sidebar-foreground/70">Bokföring</span>
+            Debet & Kredit <span className="font-normal text-sidebar-foreground/70">Bokföring</span>
           </span>
         </div>
         <div className="space-y-4">
@@ -64,7 +64,7 @@ export default function LoginPage() {
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-xl">
               t
             </span>
-            <span className="font-semibold">Firmabok</span>
+            <span className="font-semibold">Debet & Kredit</span>
           </div>
           <div>
             <h1 className="text-2xl font-semibold">Välkommen tillbaka</h1>

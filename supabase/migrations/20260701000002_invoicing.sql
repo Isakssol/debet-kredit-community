@@ -1,5 +1,5 @@
 -- ============================================================
--- Firmabok — fakturering & leverantörer
+-- Debet & Kredit — fakturering & leverantörer
 -- ============================================================
 
 -- ---------- Kunder & artiklar ----------

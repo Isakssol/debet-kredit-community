@@ -1,5 +1,5 @@
 -- ============================================================
--- Firmabok — kärnschema
+-- Debet & Kredit — kärnschema
 -- Grunddata, kontoplan, verifikat med BFL-regler som constraints
 -- ============================================================
 

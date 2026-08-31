@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: settings } = await supabase.from("settings")
     .select("onboarded_at, company_name").eq("id", 1).single();
   if (settings && !settings.onboarded_at) redirect("/kom-igang");
-  const companyName = settings?.company_name?.trim() || "Firmabok";
+  const companyName = settings?.company_name?.trim() || "Debet & Kredit";
 
   return (
     <div className="flex min-h-screen">

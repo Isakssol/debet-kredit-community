@@ -1,4 +1,4 @@
-# Bidra till Firmabok
+# Bidra till Debet & Kredit
 
 Kul att du vill bidra! Några riktlinjer:
 

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Firmabok",
+  title: "Debet & Kredit",
   description: "Öppen bokföring för svenska småföretag — AI-kontering, moms och SIE 4",
 };
 

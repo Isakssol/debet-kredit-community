@@ -1,4 +1,4 @@
-# Firmabok
+# Debet & Kredit
 
 **Öppen bokföring för svenska småföretag.** Dubbel bokföring enligt BAS 2026,
 AI-kontering av kvitton, momsdeklaration med eSKD-fil, fakturering, SIE 4 —
@@ -7,7 +7,7 @@ självhostat på din egen databas. Din bokföring lämnar aldrig din infrastrukt
 Byggd för enskild firma i första hand; aktiebolag och handelsbolag stöds för
 löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
 
-> ⚠️ Firmabok är ett verktyg, inte rådgivning. Du ansvarar själv för att din
+> ⚠️ Debet & Kredit är ett verktyg, inte rådgivning. Du ansvarar själv för att din
 > bokföring är korrekt. Vid osäkerhet — fråga en redovisningskonsult.
 
 ## Funktioner
@@ -38,7 +38,7 @@ Du behöver: [Node.js 20+](https://nodejs.org), [pnpm](https://pnpm.io),
 ett gratis [Supabase](https://supabase.com)-projekt.
 
 ```bash
-git clone <repo-url> firmabok && cd firmabok
+git clone <repo-url> debet-kredit && cd debet-kredit
 pnpm install
 ```
 
@@ -77,7 +77,7 @@ miljövariabler där.
 | Årsavslut (K1 + NE-bilaga) | ✅ | — | — |
 
 Aktiebolag behöver årsredovisning enligt K2/K3 och handelsbolag N3A-bilagor —
-det görs tills vidare utanför Firmabok (exportera SIE 4 till din konsult).
+det görs tills vidare utanför Debet & Kredit (exportera SIE 4 till din konsult).
 Bidrag välkomna!
 
 ## AI-bokföraren

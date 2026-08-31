@@ -61,7 +61,7 @@ export function OnboardingWizard({
             t
           </span>
           <div className="flex-1">
-            <div className="font-semibold">Välkommen till Firmabok</div>
+            <div className="font-semibold">Välkommen till Debet & Kredit</div>
             <div className="text-xs text-muted-foreground">
               Tre snabba steg så är du igång.
             </div>

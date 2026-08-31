@@ -1,5 +1,5 @@
 -- ============================================================
--- Firmabok — moms, skattekalender, anläggningar, bokslut
+-- Debet & Kredit — moms, skattekalender, anläggningar, bokslut
 -- ============================================================
 
 -- ---------- Momsrapporter ----------

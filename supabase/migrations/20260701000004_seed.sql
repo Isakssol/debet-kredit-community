@@ -1,5 +1,5 @@
 -- ============================================================
--- Firmabok — seed: momskoder, momssatser, regelvärden,
+-- Debet & Kredit — seed: momskoder, momssatser, regelvärden,
 -- kontoplan (BAS 2026-urval för tjänsteföretag EF), räkenskapsår 2026
 -- ============================================================
 
