@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Landmark, TrendingUp, HandCoins, BarChart3, CalendarRange, Receipt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { taxDeadlines } from "@/lib/tax-calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GettingStarted } from "@/components/getting-started";
 import { MonthlyChart } from "@/components/monthly-chart";
-import { formatSEK, kronorToOre } from "@/lib/money";
+import { DashboardWidgets } from "@/components/dashboard-widgets";
+import { DEFAULT_WIDGETS, sanitizeWidgetIds, type WidgetMetrics } from "@/lib/widgets";
+import { kronorToOre } from "@/lib/money";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"];
 
@@ -27,7 +28,8 @@ export default async function DashboardPage() {
     supabase.from("verifications")
       .select("id, verification_date, description, number, verification_series(code)")
       .order("registered_at", { ascending: false }).limit(6),
-    supabase.from("settings").select("vat_period, eu_trade, org_number, bankgiro").eq("id", 1).single(),
+    supabase.from("settings")
+      .select("vat_period, eu_trade, org_number, bankgiro, dashboard_widgets").eq("id", 1).single(),
     supabase.from("vat_reports").select("period_start, status"),
     supabase.from("invoices").select("id, due_date, total_amount, invoice_payments(amount)")
       .in("status", ["booked", "sent", "partially_paid"]).eq("type", "debit"),
@@ -47,6 +49,8 @@ export default async function DashboardPage() {
       .select("id, attachments(id)")
       .neq("source", "correction"),
   ]);
+  const { count: queueCount } = await supabase.from("suggestion_queue")
+    .select("id", { count: "exact", head: true }).eq("status", "pending");
 
   const today = new Date().toISOString().slice(0, 10);
   const bal = balances ?? [];
@@ -143,25 +147,51 @@ export default async function DashboardPage() {
   const daysUntil = (date: string) =>
     Math.ceil((new Date(date).getTime() - new Date(today).getTime()) / 86400000);
 
-  const kpis = [
-    { title: "Omsättning i år", value: kronorToOre(revenueYear), icon: BarChart3, sub: "exkl. moms" },
-    {
-      title: `Omsättning ${MONTH_LABELS[thisMonth].toLowerCase()}`,
-      value: kronorToOre(revenueThisMonth),
-      icon: CalendarRange,
+  // Widgetdata — alla tillgängliga nyckeltal (klienten visar de valda)
+  const vatDebt = bal.filter((b) => b.account! >= 2600 && b.account! <= 2699)
+    .reduce((s, b) => s + kronorToOre(Number(b.balance)), 0);
+  const costsYear = bal.filter((b) => b.account! >= 4000 && b.account! <= 7999)
+    .reduce((s, b) => s + kronorToOre(Number(b.balance)), 0);
+  const unpaidSum = (openInvoices ?? []).reduce((s, i) => {
+    const paid = ((i.invoice_payments ?? []) as { amount: number }[])
+      .reduce((p, x) => p + Number(x.amount), 0);
+    return s + kronorToOre(Number(i.total_amount) - paid);
+  }, 0);
+  const grossMargin = revenueYear > 0
+    ? ((revenueYear - bal.filter((b) => b.account! >= 4000 && b.account! <= 4999)
+        .reduce((s, b) => s + Number(b.balance), 0)) / revenueYear) * 100
+    : null;
+
+  const metrics: WidgetMetrics = {
+    revenue_year: { ore: kronorToOre(revenueYear), sub: "exkl. moms", href: "/analys" },
+    revenue_month: {
+      ore: kronorToOre(revenueThisMonth),
       sub: growth === null ? "första månaden med försäljning"
         : `${growth >= 0 ? "+" : ""}${growth} % mot ${MONTH_LABELS[thisMonth - 1].toLowerCase()}`,
+      href: "/analys",
     },
-    {
-      title: "Snittorder",
-      value: kronorToOre(avgOrder),
-      icon: Receipt,
-      sub: `${salesCount} affärer i år`,
+    avg_order: { ore: kronorToOre(avgOrder), sub: `${salesCount} affärer i år` },
+    bank_cash: { ore: bankSaldo, sub: "enligt bokföringen", href: "/avstamning" },
+    result_year: { ore: resultat, sub: `räkenskapsår ${fy?.year ?? ""}`, href: "/rapporter/resultat" },
+    own_withdrawals: { ore: uttag, sub: "inkl. F-skatt", href: "/skatt" },
+    vat_debt: { ore: -vatDebt, sub: "netto på momskontona", href: "/moms" },
+    approval_queue: {
+      text: `${queueCount ?? 0} st`,
+      sub: (queueCount ?? 0) > 0 ? "AI-förslag väntar på dig" : "kön är tom 🎉",
+      href: "/godkann",
     },
-    { title: "Bank & kassa", value: bankSaldo, icon: Landmark, sub: "enligt bokföringen" },
-    { title: "Resultat i år", value: resultat, icon: TrendingUp, sub: `räkenskapsår ${fy?.year ?? ""}` },
-    { title: "Egna uttag i år", value: uttag, icon: HandCoins, sub: "inkl. F-skatt" },
-  ];
+    unpaid_invoices: {
+      text: `${(openInvoices ?? []).length} st`,
+      sub: unpaidSum > 0 ? `${Math.round(unpaidSum / 100).toLocaleString("sv-SE")} kr utestående` : "inga utestående",
+      href: "/fakturor",
+    },
+    costs_year: { ore: costsYear, sub: "klass 4–7, exkl. moms", href: "/analys" },
+    gross_margin: grossMargin !== null
+      ? { text: `${grossMargin.toFixed(1).replace(".", ",")} %`, sub: "efter direkta kostnader", href: "/analys" }
+      : { text: "—", sub: "ingen försäljning ännu" },
+    verifikat_count: { text: `${verCount ?? 0} st`, sub: "i obruten serie", href: "/verifikat" },
+  };
+  const chosenWidgets = sanitizeWidgetIds(settings?.dashboard_widgets) ?? DEFAULT_WIDGETS;
 
   return (
     <div className="space-y-5">
@@ -179,24 +209,7 @@ export default async function DashboardPage() {
 
       <GettingStarted items={checklist} />
 
-      <div className="grid sm:grid-cols-3 gap-4">
-        {kpis.map((kpi) => (
-          <Card key={kpi.title}>
-            <CardContent className="pt-4 flex items-start justify-between">
-              <div>
-                <div className="text-sm text-muted-foreground">{kpi.title}</div>
-                <div className={`text-2xl font-semibold tabular-nums mt-1 ${kpi.value < 0 ? "text-destructive" : ""}`}>
-                  {formatSEK(kpi.value)}
-                </div>
-                <div className="text-xs text-muted-foreground mt-0.5">{kpi.sub}</div>
-              </div>
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                <kpi.icon className="h-4.5 w-4.5" />
-              </span>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <DashboardWidgets widgets={chosenWidgets} metrics={metrics} />
 
       {hasChartData && (
         <div className="grid sm:grid-cols-2 gap-4">

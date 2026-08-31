@@ -80,6 +80,21 @@ export async function saveAiSettings(input: unknown) {
   return { ok: true };
 }
 
+/** Spara användarens valda dashboard-widgets (null = standard) */
+export async function saveDashboardWidgets(ids: unknown): Promise<{ ok?: boolean; error?: string }> {
+  const { sanitizeWidgetIds, DEFAULT_WIDGETS } = await import("@/lib/widgets");
+  const valid = sanitizeWidgetIds(ids);
+  if (!valid) return { error: "Minst en widget måste vara vald." };
+  const isDefault = valid.length === DEFAULT_WIDGETS.length
+    && valid.every((id, i) => id === DEFAULT_WIDGETS[i]);
+  const supabase = await createClient();
+  const { error } = await supabase.from("settings")
+    .update({ dashboard_widgets: isDefault ? null : valid }).eq("id", 1);
+  if (error) return { error: error.message };
+  revalidatePath("/");
+  return { ok: true };
+}
+
 /** Utseende: accentfärg och bakgrundston (null = standard) */
 export async function saveAppearance(input: unknown): Promise<{ ok?: boolean; error?: string }> {
   const parsed = z.object({
