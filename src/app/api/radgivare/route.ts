@@ -39,12 +39,15 @@ export async function POST(req: Request): Promise<Response> {
   const userMessage = message?.trim().slice(0, 4000);
   if (!userMessage) return new Response("Tomt meddelande", { status: 400 });
 
-  const [{ data: settings }, { data: history }] = await Promise.all([
+  const today = new Date().toISOString().slice(0, 10);
+  const [{ data: settings }, { data: history }, { data: ruleRows }] = await Promise.all([
     supabase.from("settings")
       .select("company_name, company_type, vat_period, ai_api_key, ai_model, ai_rules")
       .eq("id", 1).single(),
     supabase.from("advisor_messages").select("role, content")
       .order("created_at", { ascending: false }).limit(HISTORY_LIMIT),
+    supabase.from("rule_values").select("key, value")
+      .lte("valid_from", today).or(`valid_to.gte.${today},valid_to.is.null`),
   ]);
 
   const config = resolveAiConfig(settings?.ai_api_key, settings?.ai_model);
@@ -61,7 +64,8 @@ export async function POST(req: Request): Promise<Response> {
     companyName: settings?.company_name ?? "företaget",
     customRules: settings?.ai_rules ?? null,
     vatPeriod: settings?.vat_period ?? "kvartal",
-    today: new Date().toISOString().slice(0, 10),
+    today,
+    ruleValues: Object.fromEntries((ruleRows ?? []).map((r) => [r.key, Number(r.value)])),
   });
 
   const messages: { role: "user" | "assistant"; content: string | ContentBlock[] }[] = [
@@ -93,7 +97,7 @@ export async function POST(req: Request): Promise<Response> {
             },
             body: JSON.stringify({
               model: config.model || DEFAULT_ANTHROPIC_MODEL,
-              max_tokens: 2000,
+              max_tokens: 3500,
               system: systemPrompt,
               tools: ADVISOR_TOOLS,
               messages,
@@ -131,6 +135,8 @@ export async function POST(req: Request): Promise<Response> {
 
         if (fullAnswer) {
           await supabase.from("advisor_messages").insert({ role: "assistant", content: fullAnswer });
+        } else {
+          send({ type: "error", text: "Rådgivaren fick inte fram ett svar — prova att formulera om frågan." });
         }
         send({ type: "done" });
       } catch (e) {

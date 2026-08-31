@@ -65,6 +65,58 @@ export const COMPANY_TYPE_RULES: Record<CompanyType, string> = {
   privata, inte bolagets kostnad.`,
 };
 
+/**
+ * Delad svensk bokföringskunskap (momssatser, avdragsregler, kontovägledning).
+ * Används av både AI-bokföraren och Rådgivaren så de aldrig svarar olika.
+ */
+export function knowledgeBase(rules: Record<string, number>): string {
+  return `3. Momssatser: 25 % normalt, 12 % livsmedel/restaurang (6 % livsmedel fr.o.m.
+   2026-04-01), 6 % böcker/persontransport, 0 % försäkringar/bank/myndigheter.
+4. Representation (måltid med affärskontakt): måltiden är EJ avdragsgill —
+   netto + ej avdragsgill moms på 6072 (OBS: 6072, inte 6071). Momslyft (2640)
+   endast på underlag upp till ${rules["representation_moms_underlag"] ?? 300} kr/person.
+   Enklare förtäring ≤ ${rules["representation_enklare"] ?? 60} kr/person → 6071 avdragsgill.
+5. Inventarier ≥ ${rules["direktavdrag_inventarier"] ?? 29600} kr exkl. moms OCH ≥ 3 års
+   livslängd → tillgång (1220, datorer→1250) som ska in i anläggningsregistret,
+   annars 5410 Förbrukningsinventarier (direktavdrag).
+6. Utländska SaaS/tjänster (USA, EU) med omvänd skattskyldighet: netto på 4531
+   (utanför EU) eller 4535 (EU), utgående moms 2614 kredit + beräknad ingående
+   moms 2645 debet (samma belopp, 25 % av netto). Krediten är likvidkontot för
+   det betalda beloppet (= netto vid reverse charge). EU-varuinköp: 4515 med
+   samma momshantering. Utländsk moms som står på kvittot (t.ex. tysk VAT,
+   norsk MVA) är ALDRIG avdragsgill som svensk ingående moms — bokför hela
+   beloppet inkl. den utländska momsen som kostnad och varna.
+7. Öresavrundning på kvitton: differens på några ören mot 3740.
+8. Ej avdragsgillt → 6992 (och varna): böter, felparkerings-/kontrollavgifter,
+   förseningsavgifter och skattetillägg från myndigheter, gåvor över gränsvärdena,
+   privat sjukvårdsförsäkring. Kostnadsränta på skattekontot → 8423 (ej avdragsgill).
+9. KONTOVÄGLEDNING (vanliga händelser):
+   – Drivmedel 5611 · bilförsäkring/skatt 5612 · reparation bil 5613 ·
+     billeasing 5615 (ENDAST HALVA momsen avdragsgill på personbilsleasing) ·
+     trängselskatt tjänsteresa 5616 (momsfri)
+   – Resor: biljetter 5810 (6 % moms) · kost & logi Sverige 5831 (12 %) ·
+     parkeringsavgift vid tjänsteresa 5800-serien (avdragsgill — men BÖTER 6992)
+   – Mobilabonnemang 6212 · bredband 6230 · porto 6250 · svenska programvaror/
+     licenser 5420 · svenska molntjänster 6540 · kontorsmaterial 6110 ·
+     förbrukningsmaterial 5460 · lokalhyra 5010 (momsfri om hyresvärden inte
+     har frivillig moms)
+   – Facklitteratur/branschtidskrifter 6970 (6 %) — allmänna tidningar och
+     allmänbildning är privat, ej avdragsgillt
+   – Arbetskläder: ENDAST skydds- och profilkläder → 5480; vanliga kläder är
+     privata även om de används i jobbet
+   – Egen fortbildning inom verksamhetens befintliga område → 6991;
+     grundutbildning eller utbildning för NY verksamhet är ej avdragsgill
+   – Medlemsavgifter till föreningar 6982 (EJ avdragsgilla, momsfria) —
+     serviceavgifter 6981 (avdragsgilla, moms)
+   – Kundgåvor är ej avdragsgilla; enklare reklamgåvor av mindre värde
+     (≈300 kr) → 6991 med varning
+   – Kundförlust: befarad → 6352 (kredit 1510, INGEN momsjustering);
+     konstaterad (konkurs/ackord) → 6351 och utgående moms får återtas
+   – Redovisningstjänster 6530 · konsultarvoden 6550 · annonsering 5910
+   – Blandat privat/verksamhet: bokför ENDAST verksamhetens andel och varna
+     om fördelningen är en uppskattning.`;
+}
+
 export function buildSystemPrompt(
   accounts: { number: number; name: string; description: string | null }[],
   rules: Record<string, number>,
@@ -106,51 +158,7 @@ REGLER SOM MÅSTE FÖLJAS:
 2. Moms: dela alltid upp i nettokostnad (debet kostnadskonto) + ingående moms
    (debet 2640). Betalt belopp krediteras likvidkonto (1930/1940) eller enligt
    bolagstypens regel för privata betalningar ovan.
-3. Momssatser: 25 % normalt, 12 % livsmedel/restaurang (6 % livsmedel fr.o.m.
-   2026-04-01), 6 % böcker/persontransport, 0 % försäkringar/bank/myndigheter.
-4. Representation (måltid med affärskontakt): måltiden är EJ avdragsgill —
-   netto + ej avdragsgill moms på 6072. Momslyft (2640) endast på underlag upp
-   till ${rules["representation_moms_underlag"] ?? 300} kr/person. Enklare förtäring
-   ≤ ${rules["representation_enklare"] ?? 60} kr/person → 6071 avdragsgill.
-5. Inventarier ≥ ${rules["direktavdrag_inventarier"] ?? 29600} kr exkl. moms OCH ≥ 3 års
-   livslängd → tillgång (1220 datorer→1250) som ska in i anläggningsregistret,
-   annars 5410 Förbrukningsinventarier (direktavdrag).
-6. Utländska SaaS/tjänster (USA, EU) med omvänd skattskyldighet: netto på 4531
-   (utanför EU) eller 4535 (EU), utgående moms 2614 kredit + beräknad ingående
-   moms 2645 debet (samma belopp, 25 % av netto). Krediten är likvidkontot för
-   det betalda beloppet (= netto vid reverse charge). EU-varuinköp: 4515 med
-   samma momshantering. Utländsk moms som står på kvittot (t.ex. tysk VAT,
-   norsk MVA) är ALDRIG avdragsgill som svensk ingående moms — bokför hela
-   beloppet inkl. den utländska momsen som kostnad och varna.
-7. Öresavrundning på kvitton: differens på några ören mot 3740.
-8. Ej avdragsgillt → 6992 (och varna): böter, felparkerings-/kontrollavgifter,
-   förseningsavgifter och skattetillägg från myndigheter, gåvor över gränsvärdena,
-   privat sjukvårdsförsäkring. Kostnadsränta på skattekontot → 8423 (ej avdragsgill).
-9. KONTOVÄGLEDNING (vanliga händelser):
-   – Drivmedel 5611 · bilförsäkring/skatt 5612 · reparation bil 5613 ·
-     billeasing 5615 (ENDAST HALVA momsen avdragsgill på personbilsleasing) ·
-     trängselskatt tjänsteresa 5616 (momsfri)
-   – Resor: biljetter 5810 (6 % moms) · kost & logi Sverige 5831 (12 %) ·
-     parkeringsavgift vid tjänsteresa 5800-serien (avdragsgill — men BÖTER 6992)
-   – Mobilabonnemang 6212 · bredband 6230 · porto 6250 · svenska programvaror/
-     licenser 5420 · svenska molntjänster 6540 · kontorsmaterial 6110 ·
-     förbrukningsmaterial 5460 · lokalhyra 5010 (momsfri om hyresvärden inte
-     har frivillig moms)
-   – Facklitteratur/branschtidskrifter 6970 (6 %) — allmänna tidningar och
-     allmänbildning är privat, ej avdragsgillt
-   – Arbetskläder: ENDAST skydds- och profilkläder → 5480; vanliga kläder är
-     privata även om de används i jobbet
-   – Egen fortbildning inom verksamhetens befintliga område → 6991;
-     grundutbildning eller utbildning för NY verksamhet är ej avdragsgill
-   – Medlemsavgifter till föreningar 6982 (EJ avdragsgilla, momsfria) —
-     serviceavgifter 6981 (avdragsgilla, moms)
-   – Kundgåvor är ej avdragsgilla; enklare reklamgåvor av mindre värde
-     (≈300 kr) → 6991 med varning
-   – Kundförlust: befarad → 6352 (kredit 1510, INGEN momsjustering);
-     konstaterad (konkurs/ackord) → 6351 och utgående moms får återtas
-   – Redovisningstjänster 6530 · konsultarvoden 6550 · annonsering 5910
-   – Blandat privat/verksamhet: bokför ENDAST verksamhetens andel och varna
-     om fördelningen är en uppskattning.
+${knowledgeBase(rules)}
 10. DUBBLETTKONTROLL: jämför mot senaste verifikaten ovan — samma motpart,
     ungefär samma belopp och närliggande datum, eller samma kvitto-/fakturanummer
     i beskrivningen → lägg en tydlig varning "Möjlig dubblett av <verifikat>".

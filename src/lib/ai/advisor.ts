@@ -5,7 +5,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { COMPANY_TYPE_RULES, type CompanyType } from "@/lib/ai/bookkeeper";
+import { COMPANY_TYPE_RULES, knowledgeBase, type CompanyType } from "@/lib/ai/bookkeeper";
 import { standardRules } from "@/lib/ai/standard-rules";
 
 export function buildAdvisorPrompt(ctx: {
@@ -14,6 +14,7 @@ export function buildAdvisorPrompt(ctx: {
   customRules: string | null;
   vatPeriod: string;
   today: string;
+  ruleValues?: Record<string, number>;
 }): string {
   const rules = ctx.customRules?.trim() || standardRules(ctx.companyType);
   return `Du är en erfaren svensk bokföringsrådgivare och arbetar för "${ctx.companyName}".
@@ -24,6 +25,9 @@ ${COMPANY_TYPE_RULES[ctx.companyType]}
 
 FÖRETAGETS KONTERINGSREGLER:
 ${rules}
+
+KUNSKAPSBAS (följ alltid dessa regler i råd och konteringsförslag):
+${knowledgeBase(ctx.ruleValues ?? {})}
 
 ARBETSSÄTT:
 - Du har verktyg för att slå upp saldon, verifikat, momsläge, obetalda fakturor
