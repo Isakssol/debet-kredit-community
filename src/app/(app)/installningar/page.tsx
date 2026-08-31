@@ -4,6 +4,7 @@ import { AiSettings } from "@/components/ai-settings";
 import { PeriodLocks } from "@/components/period-locks";
 import { OpeningBalances } from "@/components/opening-balances";
 import { SieImport } from "@/components/sie-import";
+import { MigrationImport } from "@/components/migration-import";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -64,6 +65,8 @@ export default async function SettingsPage() {
       />
 
       <SieImport />
+
+      <MigrationImport />
 
       <OpeningBalances
         accounts={(accounts ?? []).map((a) => ({ number: a.number, name: a.name }))}
