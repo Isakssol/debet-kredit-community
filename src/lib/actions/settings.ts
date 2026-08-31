@@ -80,6 +80,32 @@ export async function saveAiSettings(input: unknown) {
   return { ok: true };
 }
 
+/** Klicka bort ett Kom igång-steg, eller dölj hela checklistan */
+export async function dismissChecklist(input: unknown): Promise<{ ok?: boolean; error?: string }> {
+  const parsed = z.object({
+    step: z.string().max(60).optional(),   // ett steg-id — utelämnat = dölj allt
+  }).safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const supabase = await createClient();
+  if (!parsed.data.step) {
+    const { error } = await supabase.from("settings")
+      .update({ checklist_hidden: true }).eq("id", 1);
+    if (error) return { error: error.message };
+  } else {
+    const { data: settings } = await supabase.from("settings")
+      .select("dismissed_checklist_steps").eq("id", 1).single();
+    const current: string[] = Array.isArray(settings?.dismissed_checklist_steps)
+      ? settings.dismissed_checklist_steps : [];
+    const next = [...new Set([...current, parsed.data.step])].slice(0, 20);
+    const { error } = await supabase.from("settings")
+      .update({ dismissed_checklist_steps: next }).eq("id", 1);
+    if (error) return { error: error.message };
+  }
+  revalidatePath("/");
+  return { ok: true };
+}
+
 /** Spara användarens valda dashboard-widgets (null = standard) */
 export async function saveDashboardWidgets(ids: unknown): Promise<{ ok?: boolean; error?: string }> {
   const { sanitizeWidgetIds, DEFAULT_WIDGETS } = await import("@/lib/widgets");

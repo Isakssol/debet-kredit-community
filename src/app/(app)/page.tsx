@@ -29,7 +29,8 @@ export default async function DashboardPage() {
       .select("id, verification_date, description, number, verification_series(code)")
       .order("registered_at", { ascending: false }).limit(6),
     supabase.from("settings")
-      .select("vat_period, eu_trade, org_number, bankgiro, dashboard_widgets").eq("id", 1).single(),
+      .select("vat_period, eu_trade, org_number, bankgiro, dashboard_widgets, dismissed_checklist_steps, checklist_hidden")
+      .eq("id", 1).single(),
     supabase.from("vat_reports").select("period_start, status"),
     supabase.from("invoices").select("id, due_date, total_amount, invoice_payments(amount)")
       .in("status", ["booked", "sent", "partially_paid"]).eq("type", "debit"),
@@ -85,45 +86,53 @@ export default async function DashboardPage() {
   const salesCount = new Set((salesVers ?? []).map((v) => v.id)).size;
   const avgOrder = salesCount > 0 ? revenueYear / salesCount : 0;
 
-  // Kom igång-checklistan (Fortnox-mönstret)
-  const checklist = [
+  // Kom igång-checklistan (Fortnox-mönstret) — bortklickade steg filtreras bort
+  const dismissedSteps = new Set(
+    Array.isArray(settings?.dismissed_checklist_steps) ? settings.dismissed_checklist_steps : []);
+  const checklist = settings?.checklist_hidden ? [] : [
     {
+      id: "company_info",
       label: "Fyll i företagsuppgifterna",
       done: !!settings?.org_number && !!settings?.bankgiro,
       href: "/installningar",
       hint: "Personnummer och bankgiro krävs på fakturorna",
     },
     {
+      id: "first_customer",
       label: "Lägg upp din första kund",
       done: (customerCount ?? 0) > 0,
       href: "/kunder",
       hint: "Namn och e-post räcker",
     },
     {
+      id: "first_article",
       label: "Skapa en artikel",
       done: (articleCount ?? 0) > 0,
       href: "/artiklar",
       hint: "T.ex. ditt timarvode",
     },
     {
+      id: "first_invoice",
       label: "Skicka din första faktura",
       done: (invoiceCount ?? 0) > 0,
       href: "/fakturor/ny",
       hint: "Bokförs automatiskt med moms",
     },
     {
+      id: "first_verification",
       label: "Bokför en händelse",
       done: (verCount ?? 0) > 0,
       href: "/verifikat/ny",
       hint: "Prova en snabbhändelse — t.ex. eget uttag",
     },
     {
+      id: "bank",
       label: "Koppla banken eller importera CSV",
       done: (bankTxCount ?? 0) > 0,
       href: "/bank",
       hint: "Transaktionerna matchas mot fakturor automatiskt",
     },
-  ];
+  ].filter((s) => !dismissedSteps.has(s.id));
 
   // Att göra-listan
   const overdueInvoices = (openInvoices ?? []).filter((i) => i.due_date < today);
