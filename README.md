@@ -30,8 +30,9 @@ löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
   återkommande transaktioner automatiskt vid entydig träff
 - **Enkel lön (fåmansbolag)** — månadslön med arbetsgivaravgifter bokförd
   korrekt + AGI-fil (XML) som validerar mot Skatteverkets schema
-- **SRU-export** (enskild firma) — NE-bilaga + INK1-utkast som filer för
-  Skatteverkets filöverföringstjänst
+- **SRU-export** — inkomstdeklarationen som filer för Skatteverkets
+  filöverföringstjänst: NE-bilaga + INK1-utkast (enskild firma) och
+  INK2 + INK2R + INK2S (aktiebolag)
 - **Årsredovisning K2** (aktiebolag) — komplett utskrivbart dokument:
   förvaltningsberättelse, resultat- och balansräkning, noter
 - **Mobilapp (PWA)** — installera på hemskärmen och fota kvitton direkt
@@ -125,8 +126,8 @@ för din bolagstyp gäller automatiskt — anpassa dem fritt.
 | AI-kontering med typspecifika regler | ✅ | ✅ | ✅ |
 | Skattesimulator | ✅ | — | — |
 | Lön + AGI-fil | — | ✅ | ✅ |
-| Årsavslut K1 + NE-bilaga + SRU-filer | ✅ | — | — |
-| Årsredovisning K2 (dokument) | — | ✅ | — |
+| Årsavslut K1 + NE-bilaga + SRU (NE/INK1) | ✅ | — | — |
+| Årsredovisning K2 (dokument) + SRU (INK2/INK2R/INK2S) | — | ✅ | — |
 
 Kvar för handelsbolag: N3A-bilagor. K2-dokumentet skrivs ut och lämnas till
 Bolagsverket (digital inlämning via deras e-tjänst är nästa steg). Bidrag
