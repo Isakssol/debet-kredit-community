@@ -28,6 +28,14 @@ const TOOL_STATUS: Record<string, string> = {
   get_vat_position: "Kollar momsläget…",
   list_unpaid_invoices: "Hämtar obetalda fakturor…",
   lookup_account: "Slår upp i kontoplanen…",
+  web_search: "Söker på webben…",
+};
+
+/** Anthropics inbyggda webbsökning — körs på serversidan, ingen extra nyckel */
+const WEB_SEARCH_TOOL = {
+  type: "web_search_20250305",
+  name: "web_search",
+  max_uses: 3,
 };
 
 export async function POST(req: Request): Promise<Response> {
@@ -99,7 +107,7 @@ export async function POST(req: Request): Promise<Response> {
               model: config.model || DEFAULT_ANTHROPIC_MODEL,
               max_tokens: 3500,
               system: systemPrompt,
-              tools: ADVISOR_TOOLS,
+              tools: [...ADVISOR_TOOLS, WEB_SEARCH_TOOL],
               messages,
             }),
           });
@@ -108,16 +116,24 @@ export async function POST(req: Request): Promise<Response> {
             break;
           }
           const data = await res.json() as {
-            content: ContentBlock[];
+            content: (ContentBlock & { name?: string })[];
             stop_reason: string;
           };
 
+          if (data.content.some((b) => (b as { type: string }).type === "server_tool_use")) {
+            send({ type: "status", text: TOOL_STATUS.web_search });
+          }
           const textBlocks = data.content.filter((b) => b.type === "text") as { text: string }[];
           for (const b of textBlocks) {
             fullAnswer += (fullAnswer ? "\n\n" : "") + b.text;
             send({ type: "text", text: b.text });
           }
 
+          // pause_turn: webbsökningen behöver fler varv — skicka tillbaka och fortsätt
+          if (data.stop_reason === "pause_turn") {
+            messages.push({ role: "assistant", content: data.content as ContentBlock[] });
+            continue;
+          }
           if (data.stop_reason !== "tool_use") break;
 
           const toolUses = data.content.filter((b) => b.type === "tool_use") as

@@ -9,7 +9,7 @@
  */
 
 const CORE = `– Betalning från företagets bankkonto → kreditera 1930 Företagskonto. Kortbetalning med företagskort räknas som företagskonto.
-– Kvitto-/fakturanummer och leverantör ska alltid ingå i verifikatbeskrivningen, tillsammans med vad som köpts (art och mängd, BFL 5:7).
+– Kvitto-/fakturanummer och leverantör tas med i verifikatbeskrivningen som intern rutin (dubblettskydd), tillsammans med vad som köpts — BFL 5:7 kräver att verifikationen visar vad affärshändelsen avser.
 – Leverantörsfaktura som ännu inte är betald (faktureringsmetoden): kreditera 2440 Leverantörsskulder i stället för likvidkonto.
 – Kundfakturor: 1510 Kundfordringar tills betalning sker.
 – Ränta och bankavgifter: 8400/6570 — bankavgifter är momsfria.

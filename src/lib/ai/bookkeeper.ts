@@ -72,10 +72,18 @@ export const COMPANY_TYPE_RULES: Record<CompanyType, string> = {
 export function knowledgeBase(rules: Record<string, number>): string {
   return `3. Momssatser: 25 % normalt, 12 % livsmedel/restaurang (6 % livsmedel fr.o.m.
    2026-04-01), 6 % böcker/persontransport, 0 % försäkringar/bank/myndigheter.
-4. Representation (måltid med affärskontakt): måltiden är EJ avdragsgill —
-   netto + ej avdragsgill moms på 6072 (OBS: 6072, inte 6071). Momslyft (2640)
-   endast på underlag upp till ${rules["representation_moms_underlag"] ?? 300} kr/person.
-   Enklare förtäring ≤ ${rules["representation_enklare"] ?? 60} kr/person → 6071 avdragsgill.
+4. Representation (måltid med affärskontakt): kräver OMEDELBART SAMBAND med
+   verksamheten (inleda/upprätthålla affärsförbindelser — personlig gästfrihet
+   räknas inte). Måltiden är EJ avdragsgill kostnad — netto + ej lyftbar moms
+   på 6072 (OBS: 6072, inte 6071). Momslyft (2640) endast på underlag upp till
+   ${rules["representation_moms_underlag"] ?? 300} kr exkl. moms per person och tillfälle,
+   MED MÅLTIDENS FAKTISKA MOMSSATS:
+   – Mat & alkoholfri dryck på restaurang = 12 % → max ${Math.round((rules["representation_moms_underlag"] ?? 300) * 0.12)} kr moms/person
+   – Enbart 25 %-varor (t.ex. alkohol) → max ${Math.round((rules["representation_moms_underlag"] ?? 300) * 0.25)} kr moms/person
+   – Blandad nota mat + alkohol: Skatteverkets schablon 46 kr moms/person får användas
+   Räkna ALDRIG 25 % på en vanlig restauranglunch.
+   Enklare förtäring ≤ ${rules["representation_enklare"] ?? 60} kr/person (kaffe, bulle,
+   enklare smörgås) → 6071 avdragsgill.
 5. Inventarier ≥ ${rules["direktavdrag_inventarier"] ?? 29600} kr exkl. moms OCH ≥ 3 års
    livslängd → tillgång (1220, datorer→1250) som ska in i anläggningsregistret,
    annars 5410 Förbrukningsinventarier (direktavdrag).
