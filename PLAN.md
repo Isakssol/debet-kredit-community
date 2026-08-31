@@ -1,4 +1,4 @@
-# Bokföringsprogram för Oliver Isaksson (trimtech) — Komplett funktionsplan
+# Debet & Kredit — Komplett funktionsplan
 
 > Enskild firma, en användare, kalenderår, Sverige. Byggs med Next.js + Supabase.
 > Referenser analyserade: Fortnox och Visma eEkonomi (Spiris). Regelverk verifierat för inkomstår 2026.
@@ -16,7 +16,7 @@
 | Räkenskapsår | Kalenderår (lagkrav för EF) |
 | Bokslut | Förenklat årsbokslut (K1, BFNAR 2006:1) — tillåtet ≤ 3 mkr omsättning |
 | Stack | Next.js (App Router) + Supabase (Postgres, Auth, Storage) |
-| Användare | 1 st (Oliver). Ingen RBAC, inget attestflöde. |
+| Användare | 1 st (single-tenant). Ingen RBAC, inget attestflöde. |
 
 ---
 
@@ -34,7 +34,7 @@
 - Satser: **25 / 12 / 6 / 0 %**. **Datumstyrda satser i systemet** (tabell, inte hårdkodat): livsmedel 12 % → 6 % fr.o.m. 2026-04-01 (t.o.m. 2027-12-31). Satsen bestäms av leverans-/affärshändelsedatum.
 - Momsdeklarationens rutor 05–62 mappas från konton via **momskod per konto** (se §5).
 - Deklarationsdatum: 12:e i andra månaden efter periodens slut (17 jan / 17 aug). Helårsmoms utan EU-handel: 12 maj året efter; med EU-handel: 26 feb.
-- Momsbefrielsegräns 120 000 kr (ej aktuell — trimtech är momsregistrerad, men bra att känna till).
+- Momsbefrielsegräns 120 000 kr (gäller ej momsregistrerade företag, men bra att känna till).
 - Kontantmetoden: moms redovisas vid betalning; vid årsskiftet ska dock obetalda fordringar/skulder bokföras.
 - EU-försäljning av tjänster (ruta 39) kräver **periodisk sammanställning** — flaggas i skattekalendern.
 
@@ -120,7 +120,7 @@ Next.js (App Router, TypeScript, Tailwind + shadcn/ui)
 
 ---
 
-## 5. Kontoplan — BAS 2026 anpassad för trimtech (tjänsteföretag)
+## 5. Kontoplan — BAS 2026 anpassad för småföretag (tjänsteföretag)
 
 Kontoregistret seedas från **BAS 2026** (bas.se — 272 ändringar mot 2025, främst klass 4; hämta officiella Excel-filen vid implementation). Varje konto får: momskod, SRU-kod (för SIE/deklaration) och NE-ruta. Användaren kan aktivera fler BAS-konton vid behov — nedan är de ~95 som aktiveras från start:
 
@@ -256,7 +256,7 @@ Luckor identifierade utöver ursprungsplanen — krävs för att programmet ska 
 | 9 | **Underlagsinkorg** — ladda upp kvitton först, bokför senare (Fortnox-mönstret) | Vardagsflödet: fota nu, bokför på söndag | 5 |
 | 10 | **CSV-import av kontoutdrag** + matchning mot reskontror/förslag | 80 % av bankkopplingens nytta utan PSD2-avtal — mellansteg tills riktig koppling | 6 |
 | 11 | **Periodiseringar** (förutbetalda kostnader 1710/1790/2990) | Konton finns; enkel guide vid bokslut räcker för K1 | 5 |
-| 12 | **Periodisk sammanställning** (EU-tjänsteförsäljning ruta 39) | Lagkrav om EU-kunder faktureras — trimtech kan ha det | 3 |
+| 12 | **Periodisk sammanställning** (EU-tjänsteförsäljning ruta 39) | Lagkrav om EU-kunder faktureras | 3 |
 | 13 | **Preliminär inkomstdeklaration-underlag** — jämför bokfört resultat mot debiterad F-skatt löpande | Undvika kvarskatt/överinbetalning; hör ihop med uttagssimulatorn | 5 |
 | 14 | **Global sökning** (verifikat, fakturor, belopp, motpart) | Hygienfunktion när volymen växer | 6 |
 | 15 | **Mobilanpassning** (responsiv sidebar, kvittofoto via mobilkamera) | Kvitton fotas med mobilen i verkligheten | 6 |
