@@ -117,6 +117,13 @@ Aktiebolag behöver årsredovisning enligt K2/K3 och handelsbolag N3A-bilagor �
 det görs tills vidare utanför Debet & Kredit (exportera SIE 4 till din konsult).
 Bidrag välkomna!
 
+## Ny på bokföring?
+
+Läs [Konteringsguiden](docs/KONTERINGSGUIDE.md) — momssatserna, vanliga
+inköp och vilket konto de hör hemma på, avdragsfällorna, EU-inköp med omvänd
+skattskyldighet och vad som gäller när du betalat privat. Samma kunskap är
+inbyggd i AI-bokföraren.
+
 ## AI-bokföraren
 
 AI:n får din kontoplan, din bolagstyps regler, dina egna konteringsregler

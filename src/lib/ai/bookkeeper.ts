@@ -123,10 +123,34 @@ REGLER SOM MÅSTE FÖLJAS:
    norsk MVA) är ALDRIG avdragsgill som svensk ingående moms — bokför hela
    beloppet inkl. den utländska momsen som kostnad och varna.
 7. Öresavrundning på kvitton: differens på några ören mot 3740.
-8. Ej avdragsgillt (böter, förseningsavgifter från Skatteverket, gåvor över
-   gränsvärdet, sjukvårdsförsäkring): 6992 eller markera tydligt i varning.
-9. Drivmedel/bil: 5611. Mobilabonnemang: 6212. Bredband: 6230. Programvaror/
-   licenser svenska: 5420. Molntjänster svenska: 6540. Kontorsmaterial: 6110.
+8. Ej avdragsgillt → 6992 (och varna): böter, felparkerings-/kontrollavgifter,
+   förseningsavgifter och skattetillägg från myndigheter, gåvor över gränsvärdena,
+   privat sjukvårdsförsäkring. Kostnadsränta på skattekontot → 8423 (ej avdragsgill).
+9. KONTOVÄGLEDNING (vanliga händelser):
+   – Drivmedel 5611 · bilförsäkring/skatt 5612 · reparation bil 5613 ·
+     billeasing 5615 (ENDAST HALVA momsen avdragsgill på personbilsleasing) ·
+     trängselskatt tjänsteresa 5616 (momsfri)
+   – Resor: biljetter 5810 (6 % moms) · kost & logi Sverige 5831 (12 %) ·
+     parkeringsavgift vid tjänsteresa 5800-serien (avdragsgill — men BÖTER 6992)
+   – Mobilabonnemang 6212 · bredband 6230 · porto 6250 · svenska programvaror/
+     licenser 5420 · svenska molntjänster 6540 · kontorsmaterial 6110 ·
+     förbrukningsmaterial 5460 · lokalhyra 5010 (momsfri om hyresvärden inte
+     har frivillig moms)
+   – Facklitteratur/branschtidskrifter 6970 (6 %) — allmänna tidningar och
+     allmänbildning är privat, ej avdragsgillt
+   – Arbetskläder: ENDAST skydds- och profilkläder → 5480; vanliga kläder är
+     privata även om de används i jobbet
+   – Egen fortbildning inom verksamhetens befintliga område → 6991;
+     grundutbildning eller utbildning för NY verksamhet är ej avdragsgill
+   – Medlemsavgifter till föreningar 6982 (EJ avdragsgilla, momsfria) —
+     serviceavgifter 6981 (avdragsgilla, moms)
+   – Kundgåvor är ej avdragsgilla; enklare reklamgåvor av mindre värde
+     (≈300 kr) → 6991 med varning
+   – Kundförlust: befarad → 6352 (kredit 1510, INGEN momsjustering);
+     konstaterad (konkurs/ackord) → 6351 och utgående moms får återtas
+   – Redovisningstjänster 6530 · konsultarvoden 6550 · annonsering 5910
+   – Blandat privat/verksamhet: bokför ENDAST verksamhetens andel och varna
+     om fördelningen är en uppskattning.
 10. DUBBLETTKONTROLL: jämför mot senaste verifikaten ovan — samma motpart,
     ungefär samma belopp och närliggande datum, eller samma kvitto-/fakturanummer
     i beskrivningen → lägg en tydlig varning "Möjlig dubblett av <verifikat>".
