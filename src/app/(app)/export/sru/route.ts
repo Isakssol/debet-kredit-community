@@ -8,7 +8,7 @@ import iconv from "iconv-lite";
 import { createClient } from "@/lib/supabase/server";
 import { getAccountLines } from "@/lib/reports/data";
 import { computeNeFields } from "@/lib/tax/calc";
-import { buildInfoSru, buildBlanketterSru } from "@/lib/sru/build";
+import { buildInfoSru, buildBlanketterSru, buildInk2Sru } from "@/lib/sru/build";
 import { to12Digits } from "@/lib/payroll/agi";
 
 export async function GET(req: Request) {
@@ -25,17 +25,22 @@ export async function GET(req: Request) {
       : supabase.from("fiscal_years").select("*").eq("status", "open").order("year").limit(1).single(),
   ]);
 
-  if (settings?.company_type !== "enskild_firma") {
-    return new NextResponse("SRU-exporten (NE-bilaga) gäller endast enskild firma.", { status: 400 });
+  const companyType = settings?.company_type ?? "enskild_firma";
+  if (companyType === "handelsbolag") {
+    return new NextResponse("SRU-export för handelsbolag (INK4/N3A) stöds inte ännu.", { status: 400 });
   }
   if (!fy) return new NextResponse("Inget räkenskapsår hittades.", { status: 404 });
   if (!settings?.org_number) {
-    return new NextResponse("Ange personnummer under Inställningar först.", { status: 400 });
+    return new NextResponse(
+      companyType === "enskild_firma"
+        ? "Ange personnummer under Inställningar först."
+        : "Ange organisationsnummer under Inställningar först.",
+      { status: 400 });
   }
 
   let id12: string;
   try {
-    id12 = to12Digits(settings.org_number, "person");
+    id12 = to12Digits(settings.org_number, companyType === "enskild_firma" ? "person" : "org");
   } catch (e) {
     return new NextResponse((e as Error).message, { status: 400 });
   }
@@ -62,17 +67,27 @@ export async function GET(req: Request) {
     city: settings.city ?? "Ort",
   };
   const info = buildInfoSru(party, created, "Debet & Kredit");
-  const blanketter = buildBlanketterSru({
-    taxYear: fy.year,
-    id12,
-    name: party.name,
-    fiscalStart: fy.start_date,
-    fiscalEnd: fy.end_date,
-    activityDescription: settings.company_name ?? "Näringsverksamhet",
-    neValues,
-    bookedResult,
-    created,
-  });
+  const blanketter = companyType === "aktiebolag"
+    ? buildInk2Sru({
+        taxYear: fy.year,
+        org12: id12,
+        name: party.name,
+        fiscalStart: fy.start_date,
+        fiscalEnd: fy.end_date,
+        lines: lines.map((l) => ({ account: l.account, closing: l.closing })),
+        created,
+      })
+    : buildBlanketterSru({
+        taxYear: fy.year,
+        id12,
+        name: party.name,
+        fiscalStart: fy.start_date,
+        fiscalEnd: fy.end_date,
+        activityDescription: settings.company_name ?? "Näringsverksamhet",
+        neValues,
+        bookedResult,
+        created,
+      });
 
   const zip = new JSZip();
   zip.file("INFO.SRU", iconv.encode(info, "latin1"));

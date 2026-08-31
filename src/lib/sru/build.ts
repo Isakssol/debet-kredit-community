@@ -109,3 +109,125 @@ export function buildBlanketterSru(input: NeSruInput): string {
   lines.push("");
   return lines.join("\r\n");
 }
+
+/* ------------------------------------------------------------------ */
+/*  INK2 — aktiebolagets inkomstdeklaration (INK2 + INK2R + INK2S)     */
+/*  Fältkoder verifierade mot SKV:s SRU-spec 2025P4 (INK2_SKV2002).    */
+/* ------------------------------------------------------------------ */
+
+export type Ink2Input = {
+  taxYear: number;
+  org12: string;                     // organisationsnummer, 12 siffror (16-prefix)
+  name: string;
+  fiscalStart: string;
+  fiscalEnd: string;
+  lines: { account: number; closing: number }[];
+  created: Date;
+};
+
+const sumRange = (
+  lines: { account: number; closing: number }[],
+  from: number, to: number, exclude: number[] = []
+) => lines
+  .filter((l) => l.account >= from && l.account <= to && !exclude.includes(l.account))
+  .reduce((s, l) => s + l.closing, 0);
+
+/**
+ * BLANKETTER.SRU för aktiebolag: tre block (INK2, INK2R, INK2S).
+ * Räkenskapsschemat mappas från BAS-intervall — förenklad mappning för
+ * mindre tjänste-/handelsbolag (t.ex. hela klass 4 → råvaror/förnödenheter).
+ * Skattemässiga justeringar: endast bokförd skatt återläggs (4.3a) —
+ * övriga justeringar görs i Skatteverkets e-tjänst vid behov.
+ */
+export function buildInk2Sru(input: Ink2Input): string {
+  const d = input.created.toISOString().slice(0, 10).replace(/-/g, "");
+  const t = input.created.toISOString().slice(11, 19).replace(/:/g, "");
+  const identitet = `#IDENTITET ${input.org12} ${d} ${t}`;
+  const L = input.lines;
+  const out: string[] = [];
+  const up = (code: number, value: number) => {
+    const v = Math.round(value);
+    if (v !== 0) out.push(`#UPPGIFT ${code} ${v}`);
+  };
+
+  // ---- Belopp ur bokföringen ----
+  const bokfordSkatt = sumRange(L, 8900, 8998);                    // debet = kostnad
+  const resultatEfterSkatt = -sumRange(L, 3000, 8998);             // vinst positiv
+  const overskott = Math.round(resultatEfterSkatt + bokfordSkatt); // enkel återläggning
+
+  // ---- INK2 huvudblankett ----
+  out.push(`#BLANKETT INK2-${input.taxYear}P4`);
+  out.push(identitet);
+  out.push(`#NAMN ${input.name}`);
+  out.push(`#UPPGIFT 7011 ${input.fiscalStart.replace(/-/g, "")}`);
+  out.push(`#UPPGIFT 7012 ${input.fiscalEnd.replace(/-/g, "")}`);
+  if (overskott >= 0) up(7104, overskott); else up(7114, Math.abs(overskott));
+  out.push("#BLANKETTSLUT");
+
+  // ---- INK2R räkenskapsschema ----
+  out.push(`#BLANKETT INK2R-${input.taxYear}P4`);
+  out.push(identitet);
+  out.push(`#NAMN ${input.name}`);
+  out.push(`#UPPGIFT 7011 ${input.fiscalStart.replace(/-/g, "")}`);
+  out.push(`#UPPGIFT 7012 ${input.fiscalEnd.replace(/-/g, "")}`);
+  // Tillgångar
+  up(7201, sumRange(L, 1000, 1099));                    // 2.1 immateriella
+  up(7214, sumRange(L, 1100, 1199));                    // 2.3 byggnader och mark
+  up(7215, sumRange(L, 1200, 1299));                    // 2.4 maskiner/inventarier
+  up(7233, sumRange(L, 1300, 1399));                    // 2.9 långfristiga värdepapper
+  up(7243, sumRange(L, 1400, 1499));                    // 2.15 färdiga varor/handelsvaror
+  up(7251, sumRange(L, 1500, 1599));                    // 2.19 kundfordringar
+  up(7261, sumRange(L, 1600, 1699));                    // 2.21 övriga fordringar
+  up(7263, sumRange(L, 1700, 1799));                    // 2.23 förutbetalda kostnader
+  up(7281, sumRange(L, 1900, 1999));                    // 2.26 kassa och bank
+  // Eget kapital och skulder (kreditsaldon → positiva)
+  up(7301, -sumRange(L, 2080, 2089));                   // 2.27 bundet eget kapital
+  // 2.28 fritt eget kapital: balanserat + årets resultat. Är resultatet inte
+  // bokfört mot 2099/2019 ännu läggs det beräknade till så balansen stämmer.
+  const bokatResultat = -(sumRange(L, 2099, 2099) + sumRange(L, 2019, 2019));
+  up(7302, -sumRange(L, 2090, 2098) + bokatResultat + (bokatResultat === 0 ? resultatEfterSkatt : 0));
+  up(7321, -sumRange(L, 2110, 2149));                   // 2.29 periodiseringsfonder
+  up(7322, -sumRange(L, 2150, 2159));                   // 2.30 överavskrivningar
+  up(7323, -sumRange(L, 2160, 2199));                   // 2.31 övriga obeskattade
+  up(7333, -sumRange(L, 2200, 2299));                   // 2.34 övriga avsättningar
+  up(7354, -sumRange(L, 2300, 2399));                   // 2.39 övriga långfristiga skulder
+  up(7361, -sumRange(L, 2400, 2439));                   // 2.41 kortfr. kreditinstitut m.m.
+  up(7365, -sumRange(L, 2440, 2449));                   // 2.45 leverantörsskulder
+  up(7369, -(sumRange(L, 2450, 2499) + sumRange(L, 2600, 2899))); // 2.48 övriga kortfr. skulder
+  up(7368, -sumRange(L, 2500, 2599));                   // 2.49 skatteskulder
+  up(7370, -sumRange(L, 2900, 2999));                   // 2.50 upplupna kostnader
+  // Resultaträkning
+  up(7410, -sumRange(L, 3000, 3799, [3740]));           // 3.1 nettoomsättning
+  up(7413, -(sumRange(L, 3740, 3740) + sumRange(L, 3800, 3999))); // 3.4 övriga rörelseintäkter
+  up(7511, sumRange(L, 4000, 4999));                    // 3.5 råvaror och förnödenheter
+  up(7513, sumRange(L, 5000, 6999));                    // 3.7 övriga externa kostnader
+  up(7514, sumRange(L, 7000, 7699));                    // 3.8 personalkostnader
+  up(7515, sumRange(L, 7700, 7899));                    // 3.9 av- och nedskrivningar
+  up(7517, sumRange(L, 7900, 7999));                    // 3.11 övriga rörelsekostnader
+  const finIntakt = -sumRange(L, 8000, 8399);
+  if (finIntakt > 0) up(7417, finIntakt);               // 3.16 ränteintäkter
+  up(7522, sumRange(L, 8400, 8799));                    // 3.18 räntekostnader
+  const disp = -sumRange(L, 8800, 8899);
+  if (disp > 0) up(7422, disp); else up(7527, Math.abs(disp)); // 3.24 bokslutsdispositioner
+  up(7528, bokfordSkatt);                               // 3.25 skatt på årets resultat
+  if (resultatEfterSkatt >= 0) up(7450, resultatEfterSkatt);   // 3.26 vinst
+  else up(7550, Math.abs(resultatEfterSkatt));                 // 3.27 förlust
+  out.push("#BLANKETTSLUT");
+
+  // ---- INK2S skattemässiga justeringar ----
+  out.push(`#BLANKETT INK2S-${input.taxYear}P4`);
+  out.push(identitet);
+  out.push(`#NAMN ${input.name}`);
+  out.push(`#UPPGIFT 7011 ${input.fiscalStart.replace(/-/g, "")}`);
+  out.push(`#UPPGIFT 7012 ${input.fiscalEnd.replace(/-/g, "")}`);
+  if (resultatEfterSkatt >= 0) up(7650, resultatEfterSkatt);   // 4.1 vinst
+  else up(7750, Math.abs(resultatEfterSkatt));                 // 4.2 förlust
+  up(7651, bokfordSkatt);                                       // 4.3a skatt återläggs
+  if (overskott >= 0) up(7670, overskott);                     // 4.15 → INK2 1.1
+  else up(7770, Math.abs(overskott));                          // 4.16 → INK2 1.2
+  out.push("#BLANKETTSLUT");
+
+  out.push("#FIL_SLUT");
+  out.push("");
+  return out.join("\r\n");
+}

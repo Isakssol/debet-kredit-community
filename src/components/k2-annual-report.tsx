@@ -1,5 +1,6 @@
 import { PrintButton } from "@/components/print-button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import type { K2Report, K2Row } from "@/lib/k2/report";
 
 const fmt = (n: number) => n.toLocaleString("sv-SE");
@@ -45,7 +46,15 @@ export function K2AnnualReport({
             på papper. Stäm gärna av med redovisningskonsult första året.
           </p>
         </div>
-        <PrintButton />
+        <div className="flex flex-col gap-1.5 shrink-0">
+          <PrintButton />
+          <Button asChild variant="outline" size="sm" className="print:hidden">
+            <a href={`/export/sru?year=${year}`}
+              title="INK2 + INK2R + INK2S som SRU-filer för Skatteverkets filöverföring">
+              SRU-filer (INK2)
+            </a>
+          </Button>
+        </div>
       </div>
 
       {!balanced && (
