@@ -23,16 +23,17 @@ export async function enterDemo(input: unknown): Promise<{ error?: string }> {
 
   const supabase = await createClient();
 
-  // Intresseanmälan — bästa försök, får aldrig stoppa demon
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { error: "Kunde inte starta demon just nu — prova igen om en stund." };
+
+  // Intresseanmälan — efter inloggningen (RLS kräver authenticated).
+  // Bästa försök, får aldrig stoppa demon.
   try {
     await supabase.from("demo_signups").insert({
       name: parsed.data.name,
       company: parsed.data.company,
     });
   } catch { /* tabellen kan saknas — ignorera */ }
-
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: "Kunde inte starta demon just nu — prova igen om en stund." };
 
   redirect("/");
 }
