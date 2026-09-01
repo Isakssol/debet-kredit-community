@@ -1,4 +1,15 @@
-# Debet & Kredit
+# Debet & Kredit — Community Edition
+
+> **Det här är den fria Community-versionen** (AGPL-3.0), fryst per
+> 2026-09-01. Den fungerar komplett som den är — men den uppdateras inte:
+> inga nya funktioner, ingen support, och **inte nästa års regelvärden**
+> (basbelopp, avgiftssatser och momsregler ändras varje årsskifte — den som
+> bokför på gamla värden bokför fel).
+>
+> Vill du ha den underhållna versionen — med e-faktura (Peppol), lokalt
+> LLM-stöd, årliga regeluppdateringar och support — finns licens (engångspris)
+> och komplett uppsättning: **testa demon och läs mer på
+> [debet-kredit-demo.vercel.app/priser](https://debet-kredit-demo.vercel.app/priser)**.
 
 **Öppen bokföring för svenska småföretag.** Dubbel bokföring enligt BAS 2026,
 AI-kontering av kvitton, momsdeklaration med eSKD-fil, fakturering, SIE 4 —
