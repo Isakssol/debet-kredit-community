@@ -1,25 +1,14 @@
 import Link from "next/link";
-import { Megaphone, FileCode2, Paperclip } from "lucide-react";
+import { Megaphone, Package, Paperclip } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatSEK, kronorToOre } from "@/lib/money";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"];
 
-const AD_PARTIES = /google|meta|socialwick/i;
-const FILE_PARTIES = /koelewijn|ecufiles|vitali|olsx|evc/i;
-
-/** Kategorisera en affär utifrån verifikatets text (primär tjänst per verifikat) */
-function serviceCategory(text: string): string {
-  const t = text.toLowerCase();
-  if (/dongel|obd.?flasher|at.?one/.test(t)) return "OBD-dongel";
-  if (/steg ?1|motoroptimering/.test(t)) return "Steg 1 (+ ev. tillval)";
-  if (/dpf/.test(t)) return "DPF OFF";
-  if (/adblue|def removal/.test(t)) return "AdBlue OFF";
-  if (/egr/.test(t)) return "EGR OFF";
-  if (/cold ?start/.test(t)) return "Cold Start OFF";
-  return "Övrigt";
-}
+// KPI-avgränsningar per BAS-kontogrupp (gäller alla företag, inga hårdkodade motparter)
+const isMarketingAccount = (n: number) => n >= 5900 && n <= 5999; // Reklam och PR
+const isGoodsAccount = (n: number) => n >= 4000 && n <= 4999;     // Varor, material, underentreprenader
 
 type Row = {
   account: number; debit: number; credit: number; note: string | null;
@@ -32,7 +21,7 @@ type Row = {
 export default async function AnalysPage() {
   const supabase = await createClient();
 
-  const [{ data: rowsRaw }, { data: allVers }] = await Promise.all([
+  const [{ data: rowsRaw }, { data: allVers }, { data: accountRows }] = await Promise.all([
     supabase
       .from("verification_rows")
       .select("account, debit, credit, note, verifications!inner(id, number, verification_date, description, counterparty, source)")
@@ -42,7 +31,9 @@ export default async function AnalysPage() {
       .select("id, number, verification_date, description, source, attachments(id), verification_series(code)")
       .neq("source", "correction")
       .order("verification_date", { ascending: false }),
+    supabase.from("accounts").select("number, name").gte("number", 3000).lte("number", 3799),
   ]);
+  const accountName = new Map((accountRows ?? []).map((a) => [a.number, a.name]));
 
   const rows = (rowsRaw ?? []) as unknown as Row[];
 
@@ -67,8 +58,8 @@ export default async function AnalysPage() {
   // ---------- Försäljning per kund & tjänst ----------
   const byCustomer = new Map<string, { total: number; count: Set<string> }>();
   const byService = new Map<string, { total: number; count: Set<string> }>();
-  const adCost = { total: 0 };
-  const fileCost = { total: 0 };
+  const marketingCost = { total: 0 };
+  const goodsCost = { total: 0 };
   let revenueTotal = 0;
   const salesVerIds = new Set<string>();
 
@@ -81,14 +72,13 @@ export default async function AnalysPage() {
       const cust = v.counterparty ?? "(okänd kund)";
       const c = byCustomer.get(cust) ?? { total: 0, count: new Set() };
       c.total += amount; c.count.add(v.id); byCustomer.set(cust, c);
-      const cat = serviceCategory(`${v.description} ${r.note ?? ""}`);
+      const cat = `${r.account} ${accountName.get(r.account) ?? ""}`.trim();
       const sv = byService.get(cat) ?? { total: 0, count: new Set() };
       sv.total += amount; sv.count.add(v.id); byService.set(cat, sv);
     } else if (r.account >= 4000) {
       const amount = Number(r.debit) - Number(r.credit);
-      const party = v.counterparty ?? "";
-      if (AD_PARTIES.test(party)) adCost.total += amount;
-      if (FILE_PARTIES.test(party)) fileCost.total += amount;
+      if (isMarketingAccount(r.account)) marketingCost.total += amount;
+      if (isGoodsAccount(r.account)) goodsCost.total += amount;
     }
   }
   const salesCount = salesVerIds.size;
@@ -101,13 +91,13 @@ export default async function AnalysPage() {
   const kpis = [
     {
       title: "Marknadsföring i år", icon: Megaphone,
-      value: kronorToOre(adCost.total),
-      sub: salesCount > 0 ? `${formatSEK(kronorToOre(adCost.total / salesCount))} per affär (CAC)` : "inga affärer ännu",
+      value: kronorToOre(marketingCost.total),
+      sub: salesCount > 0 ? `${formatSEK(kronorToOre(marketingCost.total / salesCount))} per affär (CAC)` : "inga affärer ännu",
     },
     {
-      title: "Filer & tuningmjukvara i år", icon: FileCode2,
-      value: kronorToOre(fileCost.total),
-      sub: salesCount > 0 ? `${formatSEK(kronorToOre(fileCost.total / salesCount))} per affär (inkl. credits-lager & licenser)` : "",
+      title: "Varor & underentreprenader i år", icon: Package,
+      value: kronorToOre(goodsCost.total),
+      sub: salesCount > 0 ? `${formatSEK(kronorToOre(goodsCost.total / salesCount))} per affär (kontoklass 4)` : "",
     },
     {
       title: "Verifikat utan underlag", icon: Paperclip,
@@ -122,7 +112,7 @@ export default async function AnalysPage() {
       <div>
         <h1 className="text-2xl font-semibold">Analys</h1>
         <p className="text-sm text-muted-foreground">
-          Kostnader per leverantör, försäljning per kund och tjänst — allt exkl. moms.
+          Kostnader per leverantör, försäljning per kund och intäktskonto — allt exkl. moms.
         </p>
       </div>
 
@@ -212,7 +202,7 @@ export default async function AnalysPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Försäljning per tjänst</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Försäljning per intäktskonto</CardTitle></CardHeader>
           <CardContent>
             <table className="w-full text-sm">
               <thead>
