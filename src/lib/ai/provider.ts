@@ -99,7 +99,10 @@ async function callAnthropic(
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${await res.text()}`);
   const data = await res.json();
-  return data.content?.[0]?.text ?? "";
+  // Modeller med utökat tänkande kan leda med ett thinking-block — plocka textblocket.
+  const textBlock = (data.content as { type?: string; text?: string }[] | undefined)
+    ?.find((b) => b.type === "text");
+  return textBlock?.text ?? "";
 }
 
 async function callOpenAi(
