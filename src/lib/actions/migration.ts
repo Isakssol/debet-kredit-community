@@ -3,10 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { parseCustomersCsv, parseArticlesCsv } from "@/lib/migration/csv";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 
 const MAX_CSV_BYTES = 2 * 1024 * 1024;
 
-/** Importera kundregister från CSV (Fortnox/Visma-export). Dubbletter på namn hoppas över. */
+// Dubblettnyckel: orgnr (bara siffror) när det finns, annars normaliserat namn.
+// Samma nyckel för befintliga rader och CSV-rader — annars skapas dubbletter
+// när t.ex. Fortnox skriver orgnr med bindestreck men namnet stavas olika.
+const key = (name: string, org: string | null) => (org ?? "").replace(/\D/g, "") || name.toLowerCase().trim();
+
+/** Importera kundregister från CSV (Fortnox/Visma-export). Dubbletter på orgnr/namn hoppas över. */
 export async function importCustomersCsv(formData: FormData): Promise<{
   ok?: boolean; error?: string; imported?: number; skipped?: number;
 }> {
@@ -19,15 +25,18 @@ export async function importCustomersCsv(formData: FormData): Promise<{
   if (!customers.length) return { error: "Inga kunder hittades i filen." };
 
   const supabase = await createClient();
-  const { data: existing } = await supabase.from("customers").select("name");
-  const existingNames = new Set((existing ?? []).map((c) => c.name.toLowerCase().trim()));
+  // fetchAll: register med över 1000 poster ska också dubblettskyddas
+  const existing = await fetchAll<{ name: string; org_number: string | null }>((f, t) =>
+    supabase.from("customers").select("name, org_number").order("id").range(f, t));
+  const seen = new Set(existing.map((c) => key(c.name, c.org_number)));
 
   let imported = 0, skipped = 0;
   for (const c of customers) {
-    if (existingNames.has(c.name.toLowerCase().trim())) { skipped++; continue; }
+    const k = key(c.name, c.org_number);
+    if (seen.has(k)) { skipped++; continue; }
     const { error: insErr } = await supabase.from("customers").insert(c);
     if (insErr) skipped++;
-    else { imported++; existingNames.add(c.name.toLowerCase().trim()); }
+    else { imported++; seen.add(k); }
   }
   revalidatePath("/kunder");
   return { ok: true, imported, skipped };
