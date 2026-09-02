@@ -71,8 +71,21 @@ I Supabase-panelen: **Authentication → Users → Add user** →
 din mejl + ett starkt lösenord (lösenordshanteraren!) → **Create user**.
 Detta är kontot du loggar in i bokföringen med.
 
-Rekommenderat: under **Authentication → Sign In / Up**, stäng av
-**Allow new users to sign up** — då kan ingen annan skapa konton i din instans.
+## Steg 5b — Stäng av självregistrering (OBLIGATORISKT före deploy)
+
+**Authentication → Sign In / Up** → slå AV **Allow new users to sign up**
+→ Save.
+
+Varför det är obligatoriskt och inte bara "rekommenderat": anon-nyckeln som
+appen använder är publik (den ligger i webbläsaren hos alla som öppnar
+sidan). Med självregistrering på kan vem som helst som hittar din adress
+skapa ett konto i din Supabase — och appen är single-tenant, så varje konto
+ser hela din bokföring. Ordningen är därför: skapa ditt eget konto
+(steg 5) → stäng av självregistrering (detta steg) → deploya (steg 6).
+
+Fler användare skapar du sedan inifrån programmet — det fungerar även med
+självregistrering avstängd, eftersom programmet använder service-nyckeln
+på servern (`SUPABASE_SERVICE_ROLE_KEY` i steg 6).
 
 ## Steg 6 — Vercel: sätt appen på nätet
 
