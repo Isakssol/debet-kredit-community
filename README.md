@@ -1,19 +1,25 @@
 # Debet & Kredit — Community Edition
 
 > **Det här är den fria Community-versionen** (AGPL-3.0), fryst per
-> 2026-09-01. Den fungerar komplett som den är — men den uppdateras inte:
-> inga nya funktioner, ingen support, och **inte nästa års regelvärden**
+> 2026-09-01. Den fungerar komplett som den är — men koden står stilla.
+> Fryst betyder allt som det låter: inga nya funktioner, inga rättelser, inga
+> säkerhetsuppdateringar, ingen support, och **inte nästa års regelvärden**
 > (basbelopp, avgiftssatser och momsregler ändras varje årsskifte — den som
-> bokför på gamla värden bokför fel).
+> bokför på gamla värden bokför fel). Du får koden som den är, med full rätt
+> att ändra den själv; underhållet är ditt.
 >
-> Vill du ha den underhållna versionen — med e-faktura (Peppol), lokalt
-> LLM-stöd, årliga regeluppdateringar och support — finns licens (engångspris)
-> och komplett uppsättning: **testa demon och läs mer på
-> [debet-kredit-demo.vercel.app/priser](https://debet-kredit-demo.vercel.app/priser)**.
+> Vill du ha den underhållna versionen — med e-faktura (Peppol), attest av
+> leverantörsfakturor, betalfil till banken, roller och behörigheter, lokalt
+> LLM-stöd, årets regelvärden och support — finns licens (engångspris) och
+> komplett uppsättning: **testa demon och läs mer på
+> [debea.se/priser](https://debea.se/priser)**.
 
 **Öppen bokföring för svenska småföretag.** Dubbel bokföring enligt BAS 2026,
 AI-kontering av kvitton, momsdeklaration med eSKD-fil, fakturering, SIE 4 —
-självhostat på din egen databas. Din bokföring lämnar aldrig din infrastruktur.
+självhostat på din egen databas. Bokföringen ligger i din egen databas, på
+konton du äger. Använder du AI-bokföraren skickas det kvitto du valt till den
+AI-leverantör du själv har nyckel hos (Anthropic eller OpenAI) — vill du köra
+modellen helt lokalt finns det i den licensierade versionen.
 
 Byggd för enskild firma i första hand; aktiebolag och handelsbolag stöds för
 löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
@@ -76,11 +82,17 @@ och [Skatteverket](https://skatteverket.se).
 
 ## Installation (ca 10 minuter)
 
+Snabbversionen står här. Den utförliga guiden — med kontoskapande, Vercel,
+felsökning och skärm för skärm — är
+[docs/INSTALLATION.md](docs/INSTALLATION.md).
+
 **1. Klona och installera:**
 ```bash
-git clone https://github.com/Isakssol/debet-kredit.git && cd debet-kredit
+git clone https://github.com/Isakssol/debet-kredit-community.git && cd debet-kredit-community
 pnpm install
 ```
+Klagar `pnpm install` på build-skript (sharp, unrs-resolver): kör
+`pnpm approve-builds`, godkänn dem, och kör `pnpm install` igen.
 
 **2. Skapa ett Supabase-projekt** på [supabase.com](https://supabase.com)
 (New project → välj region, t.ex. Stockholm `eu-north-1`). Anteckna databas­lösenordet.
@@ -93,21 +105,30 @@ npx supabase db push
 ```
 Projekt-ref är strängen i din Supabase-URL: `https://<projekt-ref>.supabase.co`.
 
-**4. Skapa storage-bucketen för kvitton:** Supabase-panelen → Storage →
-New bucket → namn `underlag`, **Private** (inte public).
+**4. Kvittoarkivet:** migrationerna försöker skapa lagringsytan (bucketen)
+`underlag`. Kontrollera under Supabase-panelen → **Storage** att den finns och
+är **privat**. Saknas den: New bucket → namn `underlag`, **Private** (inte
+public).
 
 **5. Skapa din inloggning:** Supabase-panelen → Authentication → Users →
 Add user → e-post + lösenord (bocka i "Auto confirm"). Appen är
 single-tenant: alla användare du skapar ser samma bokföring.
 
-**6. Miljövariabler:**
+**6. Stäng av självregistrering — gör det innan du deployar:**
+Authentication → Sign In / Up → slå AV **Allow new users to sign up**.
+Anon-nyckeln är publik och appen är single-tenant, så varje konto som skapas
+ser hela din bokföring. Ordningen är: skapa ditt eget konto (steg 5) → stäng
+av självregistrering → deploya. Fler användare lägger du sedan upp på samma
+sätt som ditt eget, i Supabase-panelen.
+
+**7. Miljövariabler:**
 ```bash
 cp .env.example .env.local
 ```
 Fyll i `NEXT_PUBLIC_SUPABASE_URL` och `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 från Supabase-panelen → Project Settings → API.
 
-**7. Starta och logga in:**
+**8. Starta och logga in:**
 ```bash
 pnpm dev
 ```
@@ -115,7 +136,7 @@ pnpm dev
 kom igång-guiden (bolagstyp, företagsuppgifter, momsperiod, startläge —
 byter du från Fortnox/Visma/Bokio kan du importera din SIE-fil direkt).
 
-**8. Aktivera AI-bokföraren** (rekommenderas): skapa en API-nyckel på
+**9. Aktivera AI-bokföraren** (rekommenderas): skapa en API-nyckel på
 [console.anthropic.com](https://console.anthropic.com) (sätt gärna ett
 utgiftstak) och klistra in den i appen under
 **Inställningar → Bolagstyp & AI-bokföraren**. Standardkonteringsregler
@@ -163,10 +184,17 @@ verifikat**. Nyckeln lagras i din databas (använd en nyckel med utgiftstak)
 eller som miljövariabel. Text i kvitton behandlas som data, aldrig som
 instruktioner till modellen.
 
+Community-versionen använder Anthropic eller OpenAI — den kan inte peka mot en
+egen OpenAI-kompatibel endpoint. Att köra modellen helt lokalt (Ollama, LM
+Studio, vLLM) finns i den licensierade versionen. Utan nyckel fungerar allt
+annat i programmet; du konterar då själv.
+
 ## Säkerhet & arkitektur
 
 - Next.js 16 (App Router) + Supabase (Postgres, Auth, Storage)
-- All åtkomst kräver inloggning (Supabase Auth); RLS på samtliga tabeller
+- All åtkomst kräver inloggning (Supabase Auth); RLS på samtliga tabeller.
+  Självregistrering ska vara avstängd i Supabase — anon-nyckeln är publik och
+  appen är single-tenant, så varje konto som kan skapas ser hela bokföringen
 - Verifikat är oföränderliga — bokning och rättelse sker via databas­funktioner
   som upprätthåller balans och nummerserier atomiskt
 - Inga hemligheter i koden — nycklar lever i miljövariabler eller i din databas
@@ -185,6 +213,7 @@ driva en stängd kommersiell produkt erbjuds en **kommersiell licens** — öppn
 ett ärende i repot eller kontakta upphovsrättsinnehavaren, så kommer vi överens
 om villkoren.
 
-Bidrag till projektet lämnas enligt villkoren i
-[CONTRIBUTING.md](CONTRIBUTING.md), som ger projektet rätt att fortsätta
-erbjuda båda licensspåren.
+**Bidrag:** det här repot är fryst och tar inte emot pull requests —
+utvecklingen fortsätter i den licensierade versionen. Villkoren för bidrag
+står kvar i [CONTRIBUTING.md](CONTRIBUTING.md) för den som forkar och driver
+vidare på egen hand, vilket AGPL uttryckligen tillåter.

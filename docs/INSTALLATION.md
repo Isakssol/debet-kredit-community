@@ -83,9 +83,13 @@ skapa ett konto i din Supabase — och appen är single-tenant, så varje konto
 ser hela din bokföring. Ordningen är därför: skapa ditt eget konto
 (steg 5) → stäng av självregistrering (detta steg) → deploya (steg 6).
 
-Fler användare skapar du sedan inifrån programmet — det fungerar även med
-självregistrering avstängd, eftersom programmet använder service-nyckeln
-på servern (`SUPABASE_SERVICE_ROLE_KEY` i steg 6).
+Fler användare lägger du sedan upp på samma sätt som ditt eget: i
+Supabase-panelen under Authentication → Users → Add user. Det fungerar även
+med självregistrering avstängd. Community-versionen har ingen
+användarhantering inne i programmet och inga roller — alla inloggningar ser
+samma bokföring med samma rättigheter. Roller (medarbetare, granskare för
+revisorn, anställd) och inbjudningar inifrån appen finns i den licensierade
+versionen.
 
 ## Steg 6 — Vercel: sätt appen på nätet
 
@@ -98,7 +102,8 @@ på servern (`SUPABASE_SERVICE_ROLE_KEY` i steg 6).
    |---|---|
    | `NEXT_PUBLIC_SUPABASE_URL` | din Project URL från steg 2 |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon-nyckeln från steg 2 |
-   | `SUPABASE_SERVICE_ROLE_KEY` | `service_role`-nyckeln från steg 2 (behövs för att kunna skapa fler användare inifrån appen — hoppa över om du alltid kör ensam) |
+   | `STATS_API_KEY` | *Valfri.* En slumpsträng du hittar på själv (`openssl rand -base64 32`) som ger externa system läsåtkomst till dina nyckeltal via `/api/stats/*`. Hoppa över om du inte bygger egna integrationer |
+   | `SUPABASE_SERVICE_ROLE_KEY` | *Valfri.* Behövs bara tillsammans med `STATS_API_KEY`, för läs-API:et ovan. Går förbi alla säkerhetsregler — lägg den aldrig någon annanstans än som miljövariabel på servern |
 
 4. **Deploy**. Efter ~1 minut har du en adress i stil med
    `https://debet-kredit-dittnamn.vercel.app`.
@@ -111,31 +116,36 @@ bokför din första händelse.
 
 ## Steg 8 (valfritt men rekommenderat) — AI:n
 
-Två vägar, välj en:
+AI-bokföraren och Rådgivaren behöver en API-nyckel hos Anthropic eller OpenAI.
+Anthropic rekommenderas — den läser även PDF-kvitton, och Rådgivarens webbsök
+kräver den.
 
-**A. Anthropic-nyckel (enklast, bäst — läser även PDF-kvitton):**
-1. Skapa konto på [console.anthropic.com](https://console.anthropic.com).
+1. Skapa konto på [console.anthropic.com](https://console.anthropic.com)
+   (eller [platform.openai.com](https://platform.openai.com)).
 2. **Sätt ett utgiftstak först**: Settings → Limits → t.ex. 10 USD/månad.
    En normal månads bokföring kostar 10–50 kr — taket är din krockkudde.
-3. Skapa en API-nyckel (börjar med `sk-ant-`) och klistra in den i appen under
-   **Inställningar → Bolagstyp & AI-bokföraren**.
+3. Skapa en API-nyckel (Anthropic börjar med `sk-ant-`) och klistra in den i
+   appen under **Inställningar → Bolagstyp & AI-bokföraren**. Nyckeln kan
+   också ligga som miljövariabel `ANTHROPIC_API_KEY` eller `OPENAI_API_KEY`.
 
-**B. Lokal modell (gratis, datan lämnar aldrig din dator/server):**
-1. Installera [Ollama](https://ollama.com) och kör t.ex. `ollama pull llama3.1`.
-2. I appen under Inställningar: fältet **Egen/lokal modell** →
-   `http://localhost:11434/v1`, och modellnamnet (t.ex. `llama3.1`) i
-   AI-modell-fältet. Obs: Rådgivarens webbsök kräver Anthropic-nyckel;
-   AI-bokföraren funkar fullt ut lokalt.
+Utan nyckel fungerar resten av programmet precis som vanligt — du konterar
+själv i stället. Community-versionen kan bara prata med Anthropic och OpenAI;
+att peka AI:n mot en modell som körs helt lokalt (Ollama, LM Studio, vLLM)
+finns i den licensierade versionen.
 
 ## Valfria tillägg (när du vill)
 
 - **Mejla fakturor**: konto på [resend.com](https://resend.com), verifiera din
-  domän, lägg `RESEND_API_KEY` som miljövariabel i Vercel.
+  domän, lägg `RESEND_API_KEY` som miljövariabel i Vercel. Fakturor och
+  påminnelser skickar du sedan från fakturan med ett klick — det finns ingen
+  schemalagd utskicksautomatik i community-versionen.
 - **Bankimport**: CSV-export från din internetbank funkar direkt utan
   konfiguration (Bank → Importera CSV). API-koppling via Enable Banking kräver
-  egen appregistrering — guide på begäran.
-- **Skicka e-faktura**: eget konto hos t.ex. Storecove → Inställningar →
-  E-faktura. Nedladdning av e-fakturafiler funkar alltid utan konto.
+  egen appregistrering (`ENABLE_BANKING_APP_ID` och
+  `ENABLE_BANKING_PRIVATE_KEY`).
+
+E-faktura via Peppol, attest av leverantörsfakturor och betalfil till banken
+(ISO 20022) ingår inte i community-versionen.
 
 ---
 

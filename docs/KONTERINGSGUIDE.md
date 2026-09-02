@@ -30,7 +30,7 @@ godkänner alltid själv. Vid osäkerhet: fråga en redovisningskonsult.
 | Trängselskatt (tjänsteresa) | 5616 | Momsfri |
 | Tågbiljetter, flyg, taxi | 5810 | 6 % moms |
 | Hotell & restaurang på tjänsteresa | 5831 | 12 % moms |
-| Milersättning egen bil | 5800 | Schablon 25 kr/mil (2026), momsfri |
+| Milersättning egen bil | 5800 | Schablon 25 kr/mil (2026), momsfri. Körjournalen bokför D 5800 / K 2018 |
 | Lokalhyra | 5010 | Oftast momsfri |
 | Facklitteratur/branschtidskrift | 6970 | 6 % — allmänna tidningar är privat |
 | Företagsförsäkring | 6310 | Momsfri |
@@ -75,6 +75,25 @@ svensk moms — hela beloppet blir kostnad.
 
 Och åt andra hållet — tar du ut pengar: EF → 2013 eget uttag,
 AB → **lön eller utdelning** (aldrig "eget uttag"!), HB → delägarens kapitalkonto.
+
+## Inventarier: direktavdrag eller avskrivning?
+
+| Situation | Så bokförs det |
+|---|---|
+| Under gränsen (29 600 kr exkl. moms 2026 — halvt prisbasbelopp) eller kortare livslängd än 3 år | Direktavdrag som förbrukningsinventarie, **5410** |
+| Över gränsen och minst 3 års livslängd | Tillgång: **1220** Inventarier och verktyg, betalningen mot 1930 och ingående moms som vanligt |
+
+Tillgången läggs upp i **anläggningsregistret**, och därifrån räknas
+avskrivningen fram och bokförs: debet **7832** Avskrivningar på inventarier
+och verktyg, kredit **1229** Ackumulerade avskrivningar. Programmet använder
+räkenskapsenlig avskrivning och tar det lägsta tillåtna restvärdet av
+30-regeln (70 % av avskrivningsunderlaget) och 20-regeln (rak 20 % av
+anskaffningsvärdet per år). Avskrivningen bokförs en gång per räkenskapsår, på
+bokslutsdagen, och fördelas proportionellt över tillgångarna i registret.
+
+Säljer eller skrotar du tillgången bokförs det också från registret:
+tillgången och de ackumulerade avskrivningarna lyfts ur balansräkningen och
+mellanskillnaden blir vinst (**3973**) eller förlust (**7973**).
 
 ## När kunden inte betalar
 
