@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { parseSie } from "@/lib/sie/import";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 import iconv from "iconv-lite";
 
 /**
@@ -87,20 +88,58 @@ export async function importSieFile(formData: FormData) {
           p_source: "opening_balance",
         });
         if (error) warnings.push(`IB-bokningen misslyckades: ${error.message}`);
-        else summary.ibBooked = true;
+        else {
+          summary.ibBooked = true;
+          // Utan ib_booked-flaggan tror appen fortfarande att ingående balanser saknas
+          const { data: targetFy } = await supabase.from("fiscal_years").select("id")
+            .lte("start_date", fyStart).gte("end_date", fyStart).maybeSingle();
+          const { data: marked, error: ibErr } = targetFy
+            ? await supabase.from("fiscal_years")
+                .update({ ib_booked: true }).eq("id", targetFy.id).select("id")
+            : { data: null, error: null };
+          if (ibErr || !marked?.length) {
+            warnings.push(`Ingående balanser är bokförda men räkenskapsåret kunde inte markeras som IB-klart${ibErr ? ` (${ibErr.message})` : ""} — kontrollera under Inställningar → Räkenskapsår.`);
+          }
+        }
       }
     }
   }
 
-  // 3. Verifikat — importeras i egna serier (I<ursprungsserie>) för spårbarhet
+  // 3. Verifikat — importeras i egna serier (I<ursprungsserie>) för spårbarhet.
+  // Idempotent: ett verifikat vars ursprungsnummer redan finns i importserien
+  // hoppas över, så samma fil kan köras om (eller återupptas efter avbrott)
+  // utan dubbletter.
+  let alreadyImported = 0;
   if (mode === "allt" && parsed.verifications.length > 0) {
     const { data: fys } = await supabase.from("fiscal_years").select("*");
     const seriesCreated = new Set<string>();
+    const existingKeys = new Set<string>();
+    for (const fy of fys ?? []) {
+      const rows = await fetchAll<{ description: string | null; verification_series: unknown }>((f, t) =>
+        supabase.from("verifications").select("description, verification_series!inner(code)")
+          .eq("fiscal_year_id", fy.id).like("verification_series.code", "I%").order("id").range(f, t));
+      for (const r of rows) {
+        const m = (r.description ?? "").match(/\(imp\. ([A-ZÅÄÖ0-9]+?)(\d+)\)$/);
+        if (m) existingKeys.add(`${fy.id}:${m[1]}${m[2]}`);
+      }
+    }
 
     for (const ver of parsed.verifications.sort((a, b) => a.date.localeCompare(b.date))) {
       const fy = (fys ?? []).find((f) => ver.date >= f.start_date && ver.date <= f.end_date);
       if (!fy) {
         summary.skipped++;
+        continue;
+      }
+      if (ver.number != null && existingKeys.has(`${fy.id}:${ver.series}${ver.number}`)) {
+        alreadyImported++;
+        continue;
+      }
+      // Fortnox m.fl. skriver ut oanvända mallkonton som nollrader — utan
+      // bokföringsmässig betydelse, och otillåtna som rader hos oss.
+      const rows = ver.rows.filter((r) => Math.abs(r.amount) >= 0.005);
+      if (rows.length < 2) {
+        summary.skipped++;
+        if (warnings.length < 10) warnings.push(`${ver.series}${ver.number}: endast nollrader — hoppades över.`);
         continue;
       }
       const seriesCode = `I${ver.series}`.slice(0, 2);
@@ -117,7 +156,7 @@ export async function importSieFile(formData: FormData) {
         p_series_code: seriesCode,
         p_date: ver.date,
         p_description: `${ver.description} (imp. ${ver.series}${ver.number ?? ""})`,
-        p_rows: ver.rows.map((r) => ({
+        p_rows: rows.map((r) => ({
           account: r.account,
           debit: r.amount > 0 ? r.amount : 0,
           credit: r.amount < 0 ? -r.amount : 0,
@@ -133,6 +172,9 @@ export async function importSieFile(formData: FormData) {
     }
   }
 
+  if (alreadyImported > 0) {
+    warnings.unshift(`${alreadyImported} verifikat fanns redan i importserien och hoppades över (samma fil importerad tidigare, eller fortsättning efter avbrott).`);
+  }
   revalidatePath("/", "layout");
   return { ok: true, summary, warnings, company: parsed.companyName };
 }
