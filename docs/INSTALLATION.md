@@ -126,10 +126,11 @@ Två vägar, välj en:
 
 ---
 
-## Felsökning — de fem vanligaste
+## Felsökning — de vanligaste
 
 | Symptom | Orsak & fix |
 |---|---|
+| `pnpm install` klagar på build-skript (sharp/unrs-resolver) eller vägrar köra | Nyare pnpm kräver att paket med build-skript godkänns — kör `pnpm approve-builds` och välj `sharp` och `unrs-resolver`, kör sedan `pnpm install` igen |
 | `db push` säger "failed to connect" | Fel databaslösenord — återställ under Project Settings → Database → Reset database password |
 | Vit sida / "Invalid API key" efter deploy | Fel eller skiftad anon-nyckel i Vercel — kolla att URL/nyckel är exakt kopierade, redeploya efter ändring |
 | Kan inte logga in | Användaren skapad i FEL Supabase-projekt, eller sign-ups avstängda innan du skapade kontot — skapa användaren igen under Authentication → Users |

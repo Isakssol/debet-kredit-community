@@ -1,3 +1,10 @@
-ignoredBuiltDependencies:
+# Paket med build-skript måste godkännas uttryckligen. sharp behövs för Nexts
+# bildoptimering, unrs-resolver för lint. Både pnpm 10-formen (onlyBuiltDependencies)
+# och pnpm 11-formen (allowBuilds) anges — pnpm 11 läser inte längre "pnpm"-fältet
+# i package.json, och corepack ger pnpm 11 till den som saknar packageManager-pinnen.
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
+onlyBuiltDependencies:
   - sharp
   - unrs-resolver
