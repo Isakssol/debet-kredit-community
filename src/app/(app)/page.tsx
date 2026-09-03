@@ -12,12 +12,6 @@ import { kronorToOre } from "@/lib/money";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"];
 
-const addDaysStr = (date: string, days: number) => {
-  const d = new Date(date + "T00:00:00");
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-};
-
 export default async function DashboardPage() {
   const supabase = await createClient();
 
@@ -56,14 +50,6 @@ export default async function DashboardPage() {
       .select("id, attachments(id)")
       .neq("source", "correction"),
   ]);
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const [{ data: dueDeals }, { data: expiringQuotes }] = await Promise.all([
-    supabase.from("deals").select("id, title, next_action, next_action_at")
-      .lte("next_action_at", todayStr).in("stage", ["lead", "contacted", "quoted"]).limit(5),
-    supabase.from("quotes").select("id, quote_no, valid_until, customers(name)")
-      .eq("status", "sent").lte("valid_until", addDaysStr(todayStr, 7)).limit(5),
-  ]);
-
   const today = new Date().toISOString().slice(0, 10);
   const bal = balances ?? [];
   const bankSaldo = bal.filter((b) => b.account! >= 1910 && b.account! <= 1940)
@@ -268,20 +254,6 @@ export default async function DashboardPage() {
                 <span>💸 {dueSuppliers.length} leverantörsfakturor att betala</span>
               </Link>
             )}
-            {(dueDeals ?? []).map((d) => (
-              <Link key={d.id} href="/pipeline" className="flex justify-between hover:underline">
-                <span>📞 {d.next_action ?? "Följ upp"}: {d.title}</span>
-                <Badge variant={d.next_action_at! < todayStr ? "destructive" : "outline"}>
-                  {d.next_action_at}
-                </Badge>
-              </Link>
-            ))}
-            {(expiringQuotes ?? []).map((q) => (
-              <Link key={q.id} href={`/offerter/${q.id}`} className="flex justify-between hover:underline">
-                <span>📝 Offert #{q.quote_no} till {(q.customers as unknown as { name: string })?.name} går ut</span>
-                <Badge variant={q.valid_until <= todayStr ? "destructive" : "outline"}>{q.valid_until}</Badge>
-              </Link>
-            ))}
             {upcoming.map((d) => (
               <Link key={d.title + d.dueDate}
                 href={d.type === "moms" ? "/moms" : d.type === "inkomstdeklaration" ? "/arsavslut" : "/skatt"}
@@ -294,8 +266,8 @@ export default async function DashboardPage() {
                 </Badge>
               </Link>
             ))}
-            {overdueInvoices.length === 0 && dueSuppliers.length === 0 && upcoming.length === 0
-              && (dueDeals ?? []).length === 0 && (expiringQuotes ?? []).length === 0 && (
+            {overdueInvoices.length === 0 && dueSuppliers.length === 0
+              && missingAttachments === 0 && upcoming.length === 0 && (
               <p className="text-muted-foreground">Allt är i fas. 🎉</p>
             )}
           </CardContent>

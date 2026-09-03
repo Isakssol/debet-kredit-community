@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Search, BookOpen, PlusCircle, Inbox, ListTree, Scale, LineChart,
-  FileText, FilePlus, Users, Package, Truck, Car, Boxes, Kanban, FileSignature,
+  FileText, FilePlus, Users, Package, Truck, Car, Boxes,
   Percent, Calculator, CalendarCheck, BarChart3, Settings, Landmark, Banknote,
   type LucideIcon,
 } from "lucide-react";
@@ -30,13 +30,6 @@ const sections: {
       { href: "/underlag", label: "Underlagsinkorg", icon: Inbox },
       { href: "/avstamning", label: "Avstämning", icon: Scale },
       { href: "/kontoplan", label: "Kontoplan", icon: ListTree },
-    ],
-  },
-  {
-    title: "CRM",
-    links: [
-      { href: "/pipeline", label: "Pipeline", icon: Kanban },
-      { href: "/offerter", label: "Offert & Order", icon: FileSignature },
     ],
   },
   {
