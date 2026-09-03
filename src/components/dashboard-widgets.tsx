@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   BarChart3, CalendarRange, Receipt, Landmark, TrendingUp, HandCoins,
-  Percent, CheckCheck, FileWarning, Wallet, PieChart, BookOpen,
+  Percent, FileWarning, Wallet, PieChart, BookOpen,
   Settings2, X, Plus, Check, type LucideIcon,
 } from "lucide-react";
 
@@ -24,7 +24,6 @@ const WIDGET_META: Record<WidgetId, { label: string; icon: LucideIcon; chip: str
   result_year: { label: "Resultat i år", icon: TrendingUp, chip: "bg-emerald-500/12 text-emerald-600" },
   own_withdrawals: { label: "Egna uttag i år", icon: HandCoins, chip: "bg-rose-500/12 text-rose-600" },
   vat_debt: { label: "Momsskuld just nu", icon: Percent, chip: "bg-indigo-500/12 text-indigo-600" },
-  approval_queue: { label: "Att godkänna", icon: CheckCheck, chip: "bg-orange-500/15 text-orange-600" },
   unpaid_invoices: { label: "Obetalda kundfakturor", icon: FileWarning, chip: "bg-red-500/12 text-red-600" },
   costs_year: { label: "Kostnader i år", icon: Wallet, chip: "bg-stone-500/12 text-stone-600" },
   gross_margin: { label: "Bruttomarginal", icon: PieChart, chip: "bg-teal-500/12 text-teal-600" },

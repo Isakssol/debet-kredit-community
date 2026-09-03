@@ -51,30 +51,18 @@ export async function saveSettings(input: unknown) {
   return { ok: true };
 }
 
-const aiSettingsSchema = z.object({
+const companyTypeSchema = z.object({
   company_type: z.enum(["enskild_firma", "aktiebolag", "handelsbolag"]),
-  ai_api_key: z.string().max(300).optional(),
-  clear_key: z.boolean().optional(),
-  ai_model: z.string().max(80).optional(),
-  ai_rules: z.string().max(10000).optional(),
 });
 
-/** Bolagstyp + AI-bokförarens nyckel/modell/egna regler. Tom nyckel = behåll befintlig. */
-export async function saveAiSettings(input: unknown) {
-  const parsed = aiSettingsSchema.safeParse(input);
+/** Bolagstypen — styr moms, skatteberäkning och vilket årsavslut som erbjuds. */
+export async function saveCompanyType(input: unknown) {
+  const parsed = companyTypeSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
-  const { company_type, ai_api_key, clear_key, ai_model, ai_rules } = parsed.data;
-
-  const values: Record<string, unknown> = {
-    company_type,
-    ai_model: ai_model?.trim() || null,
-    ai_rules: ai_rules?.trim() || null,
-  };
-  if (clear_key) values.ai_api_key = null;
-  else if (ai_api_key?.trim()) values.ai_api_key = ai_api_key.trim();
 
   const supabase = await createClient();
-  const { error } = await supabase.from("settings").update(values).eq("id", 1);
+  const { error } = await supabase.from("settings")
+    .update({ company_type: parsed.data.company_type }).eq("id", 1);
   if (error) return { error: error.message };
   revalidatePath("/", "layout");
   return { ok: true };

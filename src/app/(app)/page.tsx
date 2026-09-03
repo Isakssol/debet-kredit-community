@@ -56,8 +56,6 @@ export default async function DashboardPage() {
       .select("id, attachments(id)")
       .neq("source", "correction"),
   ]);
-  const { count: queueCount } = await supabase.from("suggestion_queue")
-    .select("id", { count: "exact", head: true }).eq("status", "pending");
   const todayStr = new Date().toISOString().slice(0, 10);
   const [{ data: dueDeals }, { data: expiringQuotes }] = await Promise.all([
     supabase.from("deals").select("id, title, next_action, next_action_at")
@@ -197,11 +195,6 @@ export default async function DashboardPage() {
     result_year: { ore: resultat, sub: `räkenskapsår ${fy?.year ?? ""}`, href: "/rapporter/resultat" },
     own_withdrawals: { ore: uttag, sub: "inkl. F-skatt", href: "/skatt" },
     vat_debt: { ore: -vatDebt, sub: "netto på momskontona", href: "/moms" },
-    approval_queue: {
-      text: `${queueCount ?? 0} st`,
-      sub: (queueCount ?? 0) > 0 ? "AI-förslag väntar på dig" : "kön är tom 🎉",
-      href: "/godkann",
-    },
     unpaid_invoices: {
       text: `${(openInvoices ?? []).length} st`,
       sub: unpaidSum > 0 ? `${Math.round(unpaidSum / 100).toLocaleString("sv-SE")} kr utestående` : "inga utestående",
@@ -224,8 +217,8 @@ export default async function DashboardPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild><Link href="/analys">Analys</Link></Button>
-          <Button variant="outline" asChild><Link href="/verifikat/ny">Ny verifikation</Link></Button>
-          <Button asChild><Link href="/ai">Bokför kvitto (AI)</Link></Button>
+          <Button variant="outline" asChild><Link href="/underlag">Underlagsinkorg</Link></Button>
+          <Button asChild><Link href="/verifikat/ny">Ny verifikation</Link></Button>
         </div>
       </div>
 

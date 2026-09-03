@@ -12,7 +12,6 @@ export const WIDGET_IDS = [
   "result_year",
   "own_withdrawals",
   "vat_debt",
-  "approval_queue",
   "unpaid_invoices",
   "costs_year",
   "gross_margin",
