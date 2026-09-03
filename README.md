@@ -30,6 +30,34 @@ säger till.
 Byggd för enskild firma i första hand; aktiebolag och handelsbolag stöds för
 löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
 
+## Kom igång på 20 minuter
+
+Du behöver inte kunna programmera. [Bildguiden på
+debea.se](https://debea.se/kom-igang/community) tar dig steg för steg, med
+skärmbilder hela vägen, från tomt konto till ett körande bokföringsprogram på
+din egen adress.
+
+- **[Bildguiden: kom igång med Community](https://debea.se/kom-igang/community)**
+  Skärmbild för skärmbild. Databas, hosting och första inloggningen.
+- **[Registrera dig och få guiden i mejlen](https://debea.se/community)**
+  Lämnar du din mejladress skickar vi guiden, supportvägen och en kort
+  beskrivning av vad som skiljer Community från licensen. Frivilligt: all kod
+  ligger här i repot, och du kan klona den utan att lämna någonting.
+- **Föredrar du text?** Samma installation beskrivs i
+  [docs/INSTALLATION.md](docs/INSTALLATION.md).
+
+Vill du se programmet innan du installerar det: [demon på
+debea.se](https://debea.se/demo) kör hela programmet med exempeldata, utan
+konto och utan installation.
+
+## Uppgradera till licens — behåll all din bokföring
+
+Uppgraderingen görs på din befintliga installation, mot samma databas:
+verifikat, fakturor, kunder, kvitton och saldon följer med, på ungefär en
+kvart. Steg för steg i licensrepots `docs/UPPGRADERA-FRAN-COMMUNITY.md`.
+Priser och köp: [debea.se/priser](https://debea.se/priser).
+
+
 > ⚠️ Debet & Kredit är ett verktyg, inte rådgivning. Du ansvarar själv för att din
 > bokföring är korrekt. Vid osäkerhet — fråga en redovisningskonsult.
 
