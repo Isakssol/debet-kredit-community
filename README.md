@@ -30,7 +30,7 @@ säger till.
 Byggd för enskild firma i första hand; aktiebolag och handelsbolag stöds för
 löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
 
-## Kom igång på 20 minuter
+## Kom igång på 45–60 minuter
 
 Du behöver inte kunna programmera. [Bildguiden på
 debea.se](https://debea.se/kom-igang/community) tar dig steg för steg, med
@@ -117,7 +117,7 @@ Ingen tidigare bokföringserfarenhet krävs — men läs på om grunderna
 (verifikat, moms, BAS-kontoplanen) på [verksamt.se](https://verksamt.se)
 och [Skatteverket](https://skatteverket.se).
 
-## Installation (ca 10 minuter)
+## Installation (utvecklarvägen)
 
 Snabbversionen står här. Den utförliga guiden — med kontoskapande, Vercel,
 felsökning och skärm för skärm — är
@@ -173,7 +173,7 @@ pnpm dev
 kom igång-guiden (bolagstyp, företagsuppgifter, momsperiod, startläge —
 byter du från Fortnox/Visma/Bokio kan du importera din SIE-fil direkt).
 
-## Deploy till Vercel (valfritt, ca 5 minuter)
+## Deploy till Vercel (valfritt)
 
 1. Forka/pusha repot till ditt eget GitHub-konto.
 2. [vercel.com](https://vercel.com) → Add New → Project → importera ditt repo

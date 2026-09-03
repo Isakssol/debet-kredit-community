@@ -1,7 +1,7 @@
 # Installationsguide — från noll till egen bokföring
 
 Den här guiden tar dig hela vägen: från ingenting till ett körande system på
-dina egna konton. Räkna med **30–60 minuter**. Du behöver inte kunna programmera,
+dina egna konton. Räkna med **45–60 minuter**. Du behöver inte kunna programmera,
 men du kommer att köra några kommandon i terminalen — kopiera och klistra räcker.
 
 **Det här behöver du innan du börjar:**
