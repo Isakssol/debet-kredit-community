@@ -42,12 +42,8 @@ export async function importBankCsv(formData: FormData) {
     else imported++;
   }
 
-  const auto = await runBankRules(true);
   revalidatePath("/bank");
-  return {
-    ok: true, bank: parsed.bank, imported, duplicates, warnings: parsed.warnings,
-    autoBooked: auto.booked ?? 0,
-  };
+  return { ok: true, bank: parsed.bank, imported, duplicates, warnings: parsed.warnings };
 }
 
 /* ---------- Bokföringsregler ---------- */
@@ -60,7 +56,6 @@ const bankRuleSchema = z.object({
   account: z.number().int(),
   vat_rate: z.number().refine((v) => [0, 6, 12, 25].includes(v), "Momssats 0/6/12/25"),
   liquidity_account: z.number().int(),
-  auto_book: z.boolean(),
   active: z.boolean().optional(),
 });
 
@@ -86,11 +81,11 @@ export async function deleteBankRule(id: string): Promise<{ ok?: boolean; error?
 }
 
 /**
- * Kör reglerna mot alla ohanterade transaktioner. autoOnly=true bokför bara
- * regler med auto_book (körs efter import/synk); false bokför alla entydiga
- * träffar (knappen "Bokför alla regelträffar").
+ * Kör reglerna mot alla ohanterade transaktioner och bokför varje entydig
+ * träff. Körs bara när du trycker på "Bokför alla regelträffar" — inget
+ * bokförs av sig självt vid import eller synk.
  */
-export async function runBankRules(autoOnly = false): Promise<{
+export async function runBankRules(): Promise<{
   ok?: boolean; error?: string; booked?: number; skipped?: string[];
 }> {
   const supabase = await createClient();
@@ -111,7 +106,6 @@ export async function runBankRules(autoOnly = false): Promise<{
       continue;
     }
     const rule = hits[0];
-    if (autoOnly && !rule.auto_book) continue;
     const res = await bookTxWithRows(tx.id, buildRuleRows(tx, rule), ruleDescription(tx, rule));
     if (res.error) skipped.push(`${tx.booking_date} "${tx.description}": ${res.error}`);
     else booked++;
@@ -223,8 +217,7 @@ export async function syncBankTransactions(connectionId: string) {
     await supabase.from("bank_connections")
       .update({ last_synced_at: new Date().toISOString() }).eq("id", conn.id);
     revalidatePath("/bank");
-    const auto = await runBankRules(true);
-    return { ok: true, imported, total: txs.length, autoBooked: auto.booked ?? 0 };
+    return { ok: true, imported, total: txs.length };
   } catch (e) {
     const msg = (e as Error).message;
     if (msg.includes("401") || msg.includes("403")) {

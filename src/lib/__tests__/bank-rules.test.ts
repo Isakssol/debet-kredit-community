@@ -3,7 +3,7 @@ import { matchingRules, buildRuleRows, type BankRule, type RuleTx } from "@/lib/
 
 const rule = (over: Partial<BankRule> = {}): BankRule => ({
   id: "r1", name: "Bankavgift", match_text: "pris enl spec", direction: "out",
-  account: 6570, vat_rate: 0, liquidity_account: 1930, auto_book: true, ...over,
+  account: 6570, vat_rate: 0, liquidity_account: 1930, ...over,
 });
 
 const tx = (over: Partial<RuleTx> = {}): RuleTx => ({

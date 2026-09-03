@@ -12,7 +12,6 @@ export type BankRule = {
   account: number;
   vat_rate: number;
   liquidity_account: number;
-  auto_book: boolean;
 };
 
 export type RuleTx = {

@@ -7,13 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Zap, Trash2, Play } from "lucide-react";
 
 type Rule = {
   id: string; name: string; match_text: string; direction: string;
   account: number; vat_rate: number; liquidity_account: number;
-  auto_book: boolean; active: boolean;
+  active: boolean;
 };
 
 const selectClass =
@@ -21,7 +20,7 @@ const selectClass =
 
 const EMPTY = {
   name: "", match_text: "", direction: "out", account: "",
-  vat_rate: "25", liquidity_account: "1930", auto_book: false,
+  vat_rate: "25", liquidity_account: "1930",
 };
 
 export function BankRules({
@@ -44,7 +43,6 @@ export function BankRules({
         account: parseInt(form.account, 10),
         vat_rate: parseFloat(form.vat_rate),
         liquidity_account: parseInt(form.liquidity_account, 10),
-        auto_book: form.auto_book,
       });
       if (res.error) toast.error(res.error);
       else { toast.success("Regel sparad"); setForm(EMPTY); setShowForm(false); }
@@ -52,7 +50,7 @@ export function BankRules({
 
   const run = () =>
     startTransition(async () => {
-      const res = await runBankRules(false);
+      const res = await runBankRules();
       if (res.error) { toast.error(res.error); return; }
       toast.success(`${res.booked} transaktion${res.booked === 1 ? "" : "er"} bokförda via regler`);
       res.skipped?.slice(0, 3).forEach((s) => toast.warning(s));
@@ -73,9 +71,9 @@ export function BankRules({
           Bokföringsregler
         </CardTitle>
         <CardDescription>
-          Matcha banktransaktioner på text och bokför dem automatiskt — t.ex.
-          "Bankavgift" → 6570 momsfritt. Regler med automatik bokförs direkt vid
-          synk/import när exakt en regel träffar.
+          Matcha banktransaktioner på text och bokför dem med ett klick — t.ex.
+          "Bankavgift" → 6570 momsfritt. Reglerna körs när du trycker på "Bokför
+          alla regelträffar", och bokför varje transaktion där exakt en regel träffar.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -91,7 +89,6 @@ export function BankRules({
                   </span>
                 </span>
                 <span className="flex items-center gap-2 shrink-0">
-                  {r.auto_book && <Badge variant="outline" className="text-emerald-600">Auto</Badge>}
                   <Button size="icon" variant="ghost" className="h-7 w-7" disabled={pending}
                     onClick={() => remove(r.id)} title="Ta bort">
                     <Trash2 className="h-3.5 w-3.5" />
@@ -152,11 +149,6 @@ export function BankRules({
                 <option value="1910">1910 Kassa</option>
               </select>
             </div>
-            <label className="sm:col-span-2 flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.auto_book}
-                onChange={(e) => setForm((f) => ({ ...f, auto_book: e.target.checked }))} />
-              Bokför automatiskt vid synk/import (annars via knappen nedan)
-            </label>
             <div className="sm:col-span-2 flex gap-2">
               <Button size="sm" onClick={save}
                 disabled={pending || !form.name || !form.match_text || !form.account}>
