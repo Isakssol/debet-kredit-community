@@ -45,6 +45,8 @@ din egen adress.
   ligger här i repot, och du kan klona den utan att lämna någonting.
 - **Föredrar du text?** Samma installation beskrivs i
   [docs/INSTALLATION.md](docs/INSTALLATION.md).
+- **Har du Claude Code? Låt AI:n installera åt dig:**
+  [docs/INSTALLATION-CLAUDE.md](docs/INSTALLATION-CLAUDE.md)
 
 Vill du se programmet innan du installerar det: [demon på
 debea.se](https://debea.se/demo) kör hela programmet med exempeldata, utan
