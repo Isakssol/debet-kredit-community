@@ -29,17 +29,14 @@ med riktig bokföring.
    DEMO_MODE=1
    DEMO_LOGIN_EMAIL=demo@dindoman.se
    DEMO_LOGIN_PASSWORD=<lösenordet från steg 3>
-   ANTHROPIC_API_KEY=<VALFRITT: en separat nyckel MED HÅRT UTGIFTSTAK>
    ```
 6. **Klart!** Demolänken är `https://<demo-deployen>/demo` — dela den i
    LinkedIn-inlägg, på hemsidan, i DM.
 
 ## Bra att veta
 
-- **AI:n i demon:** utan ANTHROPIC_API_KEY visar AI-vyerna en vänlig
-  "lägg in nyckel"-skärm. Med nyckel funkar AI-bokföraren och Rådgivaren
-  för besökarna — sätt ett HÅRT utgiftstak på nyckeln i Anthropic-konsolen
-  (t.ex. 10 USD/månad) eftersom besökarna kör på din bekostnad.
+- **Inga AI-nycklar behövs:** Community-versionen har ingen AI-funktion,
+  så demon kostar dig ingenting utöver hostingen.
 - **Leads:** läs intresseanmälningarna i demo-projektets panel:
   Table Editor → `demo_signups`.
 - **Manuell återställning:** SQL Editor → `select demo_reset();`

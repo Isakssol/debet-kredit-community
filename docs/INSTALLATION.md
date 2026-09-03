@@ -12,8 +12,8 @@ men du kommer att köra några kommandon i terminalen — kopiera och klistra r�
 - En dator med [Node.js](https://nodejs.org) installerat (LTS-versionen)
 - Bankkort behövs **inte** — allt kör på gratisnivåer tills du själv väljer annat
 
-**Kontona du skapar (alla gratis):** GitHub, Supabase, Vercel, och valfritt
-Anthropic (AI-nyckel). Du äger allihop. Ingen annan har åtkomst — inte ens vi.
+**Kontona du skapar (alla gratis):** GitHub, Supabase, Vercel. Du äger
+allihop. Ingen annan har åtkomst — inte ens vi.
 
 ---
 
@@ -114,25 +114,6 @@ versionen.
 **kom igång-wizarden**: företagsuppgifter, momsperiod, räkenskapsår. Fyll i och
 bokför din första händelse.
 
-## Steg 8 (valfritt men rekommenderat) — AI:n
-
-AI-bokföraren och Rådgivaren behöver en API-nyckel hos Anthropic eller OpenAI.
-Anthropic rekommenderas — den läser även PDF-kvitton, och Rådgivarens webbsök
-kräver den.
-
-1. Skapa konto på [console.anthropic.com](https://console.anthropic.com)
-   (eller [platform.openai.com](https://platform.openai.com)).
-2. **Sätt ett utgiftstak först**: Settings → Limits → t.ex. 10 USD/månad.
-   En normal månads bokföring kostar 10–50 kr — taket är din krockkudde.
-3. Skapa en API-nyckel (Anthropic börjar med `sk-ant-`) och klistra in den i
-   appen under **Inställningar → Bolagstyp & AI-bokföraren**. Nyckeln kan
-   också ligga som miljövariabel `ANTHROPIC_API_KEY` eller `OPENAI_API_KEY`.
-
-Utan nyckel fungerar resten av programmet precis som vanligt — du konterar
-själv i stället. Community-versionen kan bara prata med Anthropic och OpenAI;
-att peka AI:n mot en modell som körs helt lokalt (Ollama, LM Studio, vLLM)
-finns i den licensierade versionen.
-
 ## Valfria tillägg (när du vill)
 
 - **Mejla fakturor**: konto på [resend.com](https://resend.com), verifiera din
@@ -157,10 +138,10 @@ E-faktura via Peppol, attest av leverantörsfakturor och betalfil till banken
 | `db push` säger "failed to connect" | Fel databaslösenord — återställ under Project Settings → Database → Reset database password |
 | Vit sida / "Invalid API key" efter deploy | Fel eller skiftad anon-nyckel i Vercel — kolla att URL/nyckel är exakt kopierade, redeploya efter ändring |
 | Kan inte logga in | Användaren skapad i FEL Supabase-projekt, eller sign-ups avstängda innan du skapade kontot — skapa användaren igen under Authentication → Users |
-| AI:n säger "lägg in nyckel" | Nyckeln sparades inte eller saknar kredit — kolla Inställningar, och att Anthropic-kontot har betalmetod/kredit |
 | Appen sover när du öppnar den | Supabase free tier pausar projekt efter 7 dagars inaktivitet — logga in på supabase.com och klicka "Restore". Bokför du varje vecka händer det aldrig. Vill du slippa helt: uppgradera projektet till Pro (~25 USD/mån) |
 
-Kört fast ändå? Fråga **Rådgivaren i appen** om bokföringsfrågor — och för
-installationsfrågor, mejla/DM:a med skärmdump på felet så löser vi det.
+Kört fast ändå? Bokföringsfrågorna hittar du svar på i
+[Konteringsguiden](KONTERINGSGUIDE.md) — och för installationsfrågor,
+mejla/DM:a med skärmdump på felet så löser vi det.
 
 

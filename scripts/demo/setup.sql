@@ -25,9 +25,6 @@ create policy "authenticated insert" on demo_signups
 -- ------------------------------------------------------------
 create or replace function demo_seed() returns void
 language plpgsql security definer as $$
-declare
-  k_bygg uuid; k_brf uuid; k_villa uuid;
-  q1 uuid; q2 uuid;
 begin
   -- Företaget
   update settings set
@@ -47,9 +44,6 @@ begin
     ('Byggpartner i Mälardalen AB', '556123-4567', 'inkop@byggpartner.se', '021-123456', 'Industrigatan 8', '721 30', 'Västerås'),
     ('BRF Solsidan', '769600-1234', 'styrelsen@brfsolsidan.se', null, 'Solvägen 2', '722 20', 'Västerås'),
     ('Villaägare Andersson', null, 'familjen@andersson.se', '070-1234567', 'Björkallén 14', '725 90', 'Västerås');
-  select id into k_bygg from customers where name = 'Byggpartner i Mälardalen AB';
-  select id into k_brf from customers where name = 'BRF Solsidan';
-  select id into k_villa from customers where name = 'Villaägare Andersson';
 
   -- Artiklar
   insert into articles (article_no, name, unit, price, vat_rate, type, sales_account) values
@@ -76,35 +70,14 @@ begin
   perform book_verification('A', '2026-08-27', 'Reparation golvbrunn BRF Solsidan, faktura 1005', '[{"account":1930,"debit":11400,"credit":0},{"account":3011,"debit":0,"credit":9120},{"account":2611,"debit":0,"credit":2280}]'::jsonb, 'BRF Solsidan', 'quick_event', null);
   perform book_verification('A', '2026-08-29', 'Bankavgifter augusti', '[{"account":6570,"debit":120,"credit":0},{"account":1930,"debit":0,"credit":120}]'::jsonb, 'Banken', 'quick_event', null);
 
-  -- Offerter: en skickad + en accepterad order
-  insert into quotes (customer_id, status, quote_date, valid_until, net_amount, vat_amount, total_amount, notes)
-  values (k_villa, 'sent', '2026-08-25', '2026-09-24', 32700, 8175, 40875, 'Carport 18 kvm inkl. material. ROT-avdrag ej avdraget.')
-  returning id into q1;
-  insert into quote_rows (quote_id, row_no, description, quantity, unit, unit_price, vat_rate, account) values
-    (q1, 1, 'Carportbygge 18 kvm', 1, 'st', 26400, 25, 3011),
-    (q1, 2, 'Material och beslag', 1, 'st', 6300, 25, 3011);
-
-  insert into quotes (customer_id, status, order_no, accepted_at, quote_date, valid_until, net_amount, vat_amount, total_amount)
-  values (k_brf, 'accepted', 1, now(), '2026-08-20', '2026-09-19', 24000, 6000, 30000)
-  returning id into q2;
-  insert into quote_rows (quote_id, row_no, description, quantity, unit, unit_price, vat_rate, account) values
-    (q2, 1, 'Renovering tvättstuga, fast pris', 1, 'st', 24000, 25, 3011);
-
-  -- Pipeline
-  insert into deals (title, customer_id, contact, value, stage, next_action, next_action_at, quote_id) values
-    ('Carport, familjen Andersson', k_villa, null, 32700, 'quoted', 'Ring och följ upp offerten', current_date + 2, q1),
-    ('Tvättstuga BRF Solsidan', k_brf, null, 24000, 'won', null, null, q2),
-    ('Fasadmålning, villa Irsta', null, 'Peter Lindqvist 070-555 12 34', 48000, 'contacted', 'Skicka offert efter platsbesök', current_date + 5, null),
-    ('Ramavtal snickeri, fastighetsbolag', k_bygg, null, 120000, 'lead', 'Boka lunchmöte', current_date + 9, null);
-
   -- Banktransaktioner: två som väntar på hantering
   insert into bank_transactions (booking_date, amount, description, counterpart, status) values
     ('2026-08-28', -449.00, 'AUTOGIRO TELIA', 'Telia Sverige AB', 'unmatched'),
     ('2026-08-30', 40875.00, 'SWISH INBET CARPORT', null, 'unmatched');
 
-  -- En bokföringsregel som visar automatiken
-  insert into bank_rules (name, match_text, direction, account, vat_rate, liquidity_account, auto_book) values
-    ('Telia mobilabonnemang', 'telia', 'out', 6212, 25, 1930, false);
+  -- En bokföringsregel som visar regelmotorn
+  insert into bank_rules (name, match_text, direction, account, vat_rate, liquidity_account) values
+    ('Telia mobilabonnemang', 'telia', 'out', 6212, 25, 1930);
 end $$;
 
 -- ------------------------------------------------------------

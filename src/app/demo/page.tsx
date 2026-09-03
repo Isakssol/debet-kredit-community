@@ -14,8 +14,8 @@ export default function DemoPage() {
           </div>
           <h1 className="text-3xl font-semibold">Testa Debet &amp; Kredit</h1>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-            Utforska hela programmet med ett påhittat exempelföretag — bokföring,
-            AI-rådgivare, offerter, pipeline, moms. Inget konto behövs, inget
+            Utforska hela programmet med ett påhittat exempelföretag — verifikat,
+            fakturor, bank, moms och rapporter. Inget konto behövs, inget
             att installera.
           </p>
         </div>

@@ -8,18 +8,24 @@
 > bokför på gamla värden bokför fel). Du får koden som den är, med full rätt
 > att ändra den själv; underhållet är ditt.
 >
-> Vill du ha den underhållna versionen — med e-faktura (Peppol), attest av
-> leverantörsfakturor, betalfil till banken, roller och behörigheter, lokalt
-> LLM-stöd, årets regelvärden och support — finns licens (engångspris) och
-> komplett uppsättning: **testa demon och läs mer på
-> [debea.se/priser](https://debea.se/priser)**.
+> Vill du ha autopiloten — AI-bokföraren som läser kvittot och konterar,
+> rådgivaren, bankregler som bokför av sig själva, lön med AGI, offert- och
+> orderkedjan, e-faktura (Peppol), attest av leverantörsfakturor, betalfil
+> till banken, roller och behörigheter, lokalt LLM-stöd, årets regelvärden
+> och support — finns licens (engångspris) och komplett uppsättning:
+> **testa demon och läs mer på [debea.se/priser](https://debea.se/priser)**.
 
 **Öppen bokföring för svenska småföretag.** Dubbel bokföring enligt BAS 2026,
-AI-kontering av kvitton, momsdeklaration med eSKD-fil, fakturering, SIE 4 —
-självhostat på din egen databas. Bokföringen ligger i din egen databas, på
-konton du äger. Använder du AI-bokföraren skickas det kvitto du valt till den
-AI-leverantör du själv har nyckel hos (Anthropic eller OpenAI) — vill du köra
-modellen helt lokalt finns det i den licensierade versionen.
+momsdeklaration med eSKD-fil, fakturering, bankimport med avstämning och
+SIE 4 — självhostat på din egen databas, på konton du äger. Ingen data lämnar
+din installation: här finns ingen AI-leverantör, ingen molntjänst och inga
+API-nycklar att hålla reda på.
+
+**Allt räknas fram och föreslås — du trycker på knappen. I licensversionen
+sker det av sig självt, med AI som gör grovjobbet.** Momsen räknas ihop ruta
+för ruta, bankraderna matchas mot fakturor, reglerna pekar ut konteringen,
+skatten simuleras och årsavslutet fylls i — men ingenting bokförs förrän du
+säger till.
 
 Byggd för enskild firma i första hand; aktiebolag och handelsbolag stöds för
 löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
@@ -30,41 +36,43 @@ löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
 ## Funktioner
 
 - **Dubbel bokföring** — oföränderliga verifikat, obrutna nummerserier och
-  balanskrav på databasnivå; rättelser via ändringsverifikat (BFNAR)
-- **AI-bokförare** — fota kvittot, AI:n föreslår kontering enligt BAS 2026
-  (inkl. omvänd skattskyldighet för EU-inköp), du granskar och godkänner.
-  Egen API-nyckel (Anthropic eller OpenAI), valfri modell, egna konteringsregler
-  och automatisk dubblettkontroll mot din tidigare bokföring
-- **Rådgivaren** — inbyggd AI-chatt som svarar på frågor om din bokföring,
-  moms och avdrag. Den slår själv upp saldon, verifikat, momsläge och obetalda
-  fakturor innan den svarar (read-only — den kan aldrig ändra bokföringen)
+  balanskrav på databasnivå; rättelser via ändringsverifikat (BFNAR).
+  Konteringsmallar och snabbhändelser för det som återkommer
 - **Moms** — deklaration ruta för ruta (månad/kvartal/helår) + eSKD-fil för
   uppladdning till Skatteverket
-- **CRM** — säljpipeline (kanban med drag & drop, värde per steg, nästa
-  åtgärd som dyker upp i Att göra) och hela offert → order → faktura-kedjan
-  med utskrivbar orderbekräftelse
 - **Fakturering** — PDF-fakturor, e-postutskick (Resend), påminnelser,
   kund- och artikelregister
-- **Bank med självgående bokföring** — PSD2-koppling (Enable Banking) och
-  CSV-import som matchar mot fakturor; egna bokföringsregler bokför
-  återkommande transaktioner automatiskt vid entydig träff
-- **Enkel lön (fåmansbolag)** — månadslön med arbetsgivaravgifter bokförd
-  korrekt + AGI-fil (XML) som validerar mot Skatteverkets schema
+- **Leverantörsfakturor** — reskontra med förfallobevakning och betalning
+- **Bank** — PSD2-koppling (Enable Banking) och CSV-import. Transaktionerna
+  matchas mot öppna fakturor och bokförda verifikat, dina egna
+  bokföringsregler pekar ut kontering och momssats — och du bokför träffarna
+  när du själv trycker på knappen. Pricka av mot bokföringen i avstämningen
+- **Underlagsinkorg & kvittoarkiv** — ladda upp kvitton och fakturor nu,
+  bokför när du har tid; underlagen kopplas till sina verifikat och arkiveras
+  enligt 7-årskravet
+- **Rapporter** — resultat, balans, huvudbok; export till PDF, CSV och SIE 4,
+  och SIE-import när du flyttar in från ett annat program
 - **SRU-export** — inkomstdeklarationen som filer för Skatteverkets
   filöverföringstjänst: NE-bilaga + INK1-utkast (enskild firma) och
   INK2 + INK2R + INK2S (aktiebolag)
+- **Årsavslut** (enskild firma) — förenklat årsbokslut K1 + NE-bilaga
 - **Årsredovisning K2** (aktiebolag) — komplett utskrivbart dokument:
   förvaltningsberättelse, resultat- och balansräkning, noter
-- **Mobilapp (PWA)** — installera på hemskärmen och fota kvitton direkt
-  in i AI-bokföraren
-- **Rapporter** — resultat, balans, huvudbok; export till PDF, CSV och SIE 4
-- **Kvittoarkiv** — underlag lagras digitalt enligt 7-årskravet, kopplade
-  till sina verifikat, med digital underlagsinkorg
-- **Körjournal, anläggningsregister** med avskrivningar, leverantörsreskontra
 - **Skattekalender & simulator** (enskild firma) — egenavgifter, eget uttag,
-  periodiseringsfond
-- **Årsavslut** (enskild firma) — förenklat årsbokslut K1 + NE-bilaga
+  periodiseringsfond, med deadlines i Att göra-listan
+- **Körjournal, anläggningsregister** med avskrivningar
+- **Översikt med egna nyckeltal** — välj vilka widgets du vill se, teman och
+  färgsättning, samt ett läs-API (`/api/stats`) för egna integrationer
+- **Mobilapp (PWA)** — installera på hemskärmen och fota kvitton rakt in i
+  underlagsinkorgen
 - **Arkivexport** — hela räkenskapsåret som zip (SIE + alla underlag)
+
+### Finns inte här — det är licensversionen
+
+AI-bokföraren som läser kvittot och konterar, AI-rådgivaren, förslagskön,
+bankregler som bokför av sig själva vid import, lön med AGI-fil, samt
+säljdelen (pipeline, offert och order). Community-versionen räknar fram och
+föreslår; den agerar aldrig på egen hand.
 
 ## Det här behöver du
 
@@ -73,7 +81,6 @@ löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
 | [Node.js 20+](https://nodejs.org) & [pnpm](https://pnpm.io) | Gratis | Köra appen lokalt | ✅ |
 | [Supabase](https://supabase.com)-konto | Gratis (free tier räcker) | Databas, inloggning och kvittolagring | ✅ |
 | [Vercel](https://vercel.com)-konto | Gratis (hobby tier räcker) | Köra appen i molnet så du når den från mobilen | Rekommenderas |
-| [Anthropic](https://console.anthropic.com) API-nyckel | Betala per användning (~kronor/mån) | AI-bokföraren som läser kvitton | Rekommenderas |
 | [Resend](https://resend.com)-konto + egen domän | Gratis-nivå finns | Mejla fakturor direkt från appen | Valfritt |
 
 Ingen tidigare bokföringserfarenhet krävs — men läs på om grunderna
@@ -121,12 +128,12 @@ ser hela din bokföring. Ordningen är: skapa ditt eget konto (steg 5) → stän
 av självregistrering → deploya. Fler användare lägger du sedan upp på samma
 sätt som ditt eget, i Supabase-panelen.
 
-**7. Miljövariabler:**
+**7. Miljövariabler:** skapa `.env.local` i projektroten med värdena från
+Supabase-panelen → Project Settings → API:
 ```bash
-cp .env.example .env.local
+NEXT_PUBLIC_SUPABASE_URL=https://<projekt-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-nyckeln>
 ```
-Fyll i `NEXT_PUBLIC_SUPABASE_URL` och `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-från Supabase-panelen → Project Settings → API.
 
 **8. Starta och logga in:**
 ```bash
@@ -135,12 +142,6 @@ pnpm dev
 Öppna [http://localhost:3000](http://localhost:3000), logga in och följ
 kom igång-guiden (bolagstyp, företagsuppgifter, momsperiod, startläge —
 byter du från Fortnox/Visma/Bokio kan du importera din SIE-fil direkt).
-
-**9. Aktivera AI-bokföraren** (rekommenderas): skapa en API-nyckel på
-[console.anthropic.com](https://console.anthropic.com) (sätt gärna ett
-utgiftstak) och klistra in den i appen under
-**Inställningar → Bolagstyp & AI-bokföraren**. Standardkonteringsregler
-för din bolagstyp gäller automatiskt — anpassa dem fritt.
 
 ## Deploy till Vercel (valfritt, ca 5 minuter)
 
@@ -158,9 +159,7 @@ för din bolagstyp gäller automatiskt — anpassa dem fritt.
 | Löpande bokföring, verifikat, kvittoarkiv | ✅ | ✅ | ✅ |
 | Moms + eSKD | ✅ | ✅ | ✅ |
 | Fakturering, bank, rapporter, SIE 4 | ✅ | ✅ | ✅ |
-| AI-kontering med typspecifika regler | ✅ | ✅ | ✅ |
 | Skattesimulator | ✅ | — | — |
-| Lön + AGI-fil | — | ✅ | ✅ |
 | Årsavslut K1 + NE-bilaga + SRU (NE/INK1) | ✅ | — | — |
 | Årsredovisning K2 (dokument) + SRU (INK2/INK2R/INK2S) | — | ✅ | — |
 
@@ -172,22 +171,19 @@ välkomna!
 
 Läs [Konteringsguiden](docs/KONTERINGSGUIDE.md) — momssatserna, vanliga
 inköp och vilket konto de hör hemma på, avdragsfällorna, EU-inköp med omvänd
-skattskyldighet och vad som gäller när du betalat privat. Samma kunskap är
-inbyggd i AI-bokföraren.
+skattskyldighet och vad som gäller när du betalat privat.
 
-## AI-bokföraren
+## Så här är den tänkt att användas
 
-AI:n får din kontoplan, din bolagstyps regler, dina egna konteringsregler
-(fritext under Inställningar) och dina 30 senaste verifikat — för
-dubblettvarningar och konsekvent kontering. Den föreslår; **du godkänner varje
-verifikat**. Nyckeln lagras i din databas (använd en nyckel med utgiftstak)
-eller som miljövariabel. Text i kvitton behandlas som data, aldrig som
-instruktioner till modellen.
+Programmet gör förarbetet: momsrutorna räknas ihop, bankraderna matchas mot
+öppna fakturor, bokföringsreglerna pekar ut konto och momssats, avskrivningar
+och skatt beräknas, årsavslutet fylls i. Sedan tar du beslutet — inget
+verifikat bokförs utan att du klickar. Det är en medveten gräns: du är
+ansvarig för bokföringen, alltså ska du också ha sett den.
 
-Community-versionen använder Anthropic eller OpenAI — den kan inte peka mot en
-egen OpenAI-kompatibel endpoint. Att köra modellen helt lokalt (Ollama, LM
-Studio, vLLM) finns i den licensierade versionen. Utan nyckel fungerar allt
-annat i programmet; du konterar då själv.
+Vill du att samma arbete ska ske av sig självt — kvitton som läses och
+konteras av AI, en förslagskö att bara godkänna, bankregler som bokför direkt
+vid import — är det den licensierade versionen som gäller.
 
 ## Säkerhet & arkitektur
 

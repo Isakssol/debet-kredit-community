@@ -1,8 +1,8 @@
 # Konteringsguide — vanliga händelser i småföretaget
 
-Snabbreferens för dig som är ny på bokföring. AI-bokföraren kan allt det här
-redan, men det är bra att förstå *varför* den föreslår som den gör — och du
-godkänner alltid själv. Vid osäkerhet: fråga en redovisningskonsult.
+Snabbreferens för dig som är ny på bokföring. Programmet räknar fram moms,
+avdrag och saldon åt dig, men konteringen väljer du själv — här står vad som
+hör hemma var. Vid osäkerhet: fråga en redovisningskonsult.
 
 ## Momssatserna 2026
 
