@@ -138,6 +138,7 @@ E-faktura via Peppol, attest av leverantörsfakturor och betalfil till banken
 | `db push` säger "failed to connect" | Fel databaslösenord — återställ under Project Settings → Database → Reset database password |
 | Vit sida / "Invalid API key" efter deploy | Fel eller skiftad anon-nyckel i Vercel — kolla att URL/nyckel är exakt kopierade, redeploya efter ändring |
 | Kan inte logga in | Användaren skapad i FEL Supabase-projekt, eller sign-ups avstängda innan du skapade kontot — skapa användaren igen under Authentication → Users |
+| `db push` avbryts med "policy ... already exists" | Ett tidigare försök hann halvvägs — kör `npx supabase db push` igen; migrationerna tål numera omkörning |
 | Appen sover när du öppnar den | Supabase free tier pausar projekt efter 7 dagars inaktivitet — logga in på supabase.com och klicka "Restore". Bokför du varje vecka händer det aldrig. Vill du slippa helt: uppgradera projektet till Pro (~25 USD/mån) |
 
 Kört fast ändå? Bokföringsfrågorna hittar du svar på i

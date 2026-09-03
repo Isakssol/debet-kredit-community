@@ -28,7 +28,9 @@ const UNDERLAG_BOX: Record<string, string> = {
 const VAT_ACCOUNT_BOX: Record<number, string> = {
   2611: "10", 2621: "11", 2631: "12",
   2614: "30",
-  2640: "48", 2645: "48",
+  // Hela BAS-familjen för ingående moms — 2641 "Debiterad ingående moms" är
+  // standardkontot i Fortnox-/Visma-exporter och måste träffa ruta 48.
+  2640: "48", 2641: "48", 2642: "48", 2645: "48", 2647: "48", 2648: "48", 2649: "48",
 };
 
 const OUTPUT_BOXES = ["10", "11", "12", "30", "31", "32", "60", "61", "62"];
