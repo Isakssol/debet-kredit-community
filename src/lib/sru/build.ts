@@ -19,6 +19,20 @@ export const NE_SRU_CODES: Record<string, number> = {
 
 const sruAmount = (n: number) => String(Math.round(n));
 
+/** Normalisera till 12 siffror: orgnr får 16-prefix, personnr sekelprefix */
+export function to12Digits(id: string, kind: "org" | "person"): string {
+  const digits = id.replace(/\D/g, "");
+  if (digits.length === 12) return digits;
+  if (digits.length !== 10) throw new Error(`Ogiltigt ${kind === "org" ? "organisationsnummer" : "personnummer"}: ${id}`);
+  if (kind === "org") return `16${digits}`;
+  // Personnummer: gissa sekel utifrån ålder (18–99 år bakåt)
+  const yy = parseInt(digits.slice(0, 2), 10);
+  const currentYY = new Date().getFullYear() % 100;
+  const century = yy <= currentYY - 18 || yy > currentYY ? (yy > currentYY ? "19" : "20") : "20";
+  return `${yy > currentYY ? "19" : century}${digits}`;
+}
+
+
 export type SruParty = {
   /** Person-/organisationsnummer, 12 siffror */
   id12: string;

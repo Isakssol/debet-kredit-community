@@ -44,12 +44,8 @@ export default async function YearEndPage() {
   const { data: companySettings } = await supabase.from("settings")
     .select("company_type, company_name, org_number, city").eq("id", 1).single();
   if (companySettings && companySettings.company_type === "aktiebolag") {
-    const [k2Lines, { data: payroll }] = await Promise.all([
-      getAccountLines(fy.id),
-      supabase.from("payroll_runs").select("employee_personal_number"),
-    ]);
+    const k2Lines = await getAccountLines(fy.id);
     const k2 = buildK2Report(k2Lines.map((l) => ({ account: l.account, closing: l.closing })));
-    const employees = new Set((payroll ?? []).map((p) => p.employee_personal_number)).size;
     return (
       <K2AnnualReport
         year={fy.year}
@@ -57,7 +53,6 @@ export default async function YearEndPage() {
         orgNumber={companySettings.org_number ?? ""}
         city={companySettings.city ?? ""}
         report={k2}
-        employees={employees}
       />
     );
   }

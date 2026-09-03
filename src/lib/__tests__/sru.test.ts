@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildInfoSru, buildBlanketterSru } from "@/lib/sru/build";
+import { buildInfoSru, buildBlanketterSru, to12Digits } from "@/lib/sru/build";
 
 const created = new Date("2026-05-01T08:30:00Z");
 const party = { id12: "198501012385", name: "Test Firma", postalCode: "722 12", city: "Västerås" };
@@ -54,5 +54,17 @@ describe("buildBlanketterSru", () => {
     expect(loss).toContain("#UPPGIFT 1202 5000");
     expect(loss).not.toContain("#UPPGIFT 7714");
     expect(loss).not.toContain("#UPPGIFT 7630");
+  });
+});
+
+describe("to12Digits", () => {
+  it("prefixar orgnr med 16", () => {
+    expect(to12Digits("556123-4567", "org")).toBe("165561234567");
+  });
+  it("lämnar 12-siffriga id orörda", () => {
+    expect(to12Digits("198501012385", "person")).toBe("198501012385");
+  });
+  it("kastar på ogiltig längd", () => {
+    expect(() => to12Digits("12345", "org")).toThrow();
   });
 });

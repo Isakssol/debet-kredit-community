@@ -25,14 +25,13 @@ function RowTable({ rows }: { rows: K2Row[] }) {
 
 /** Årsredovisning K2 för mindre aktiebolag — utskrivbart dokument */
 export function K2AnnualReport({
-  year, companyName, orgNumber, city, report, employees,
+  year, companyName, orgNumber, city, report,
 }: {
   year: number;
   companyName: string;
   orgNumber: string;
   city: string;
   report: K2Report;
-  employees: number;
 }) {
   const balanced = report.balances.assets === report.balances.equityAndLiabilities;
   return (
@@ -141,7 +140,7 @@ export function K2AnnualReport({
               skrivs av linjärt över bedömd nyttjandeperiod (5 år).
             </p>
             <p className="text-sm">
-              <b>Not 2 — Medelantal anställda.</b> {employees} {employees === 1 ? "anställd" : "anställda"}.
+              <b>Not 2 — Medelantal anställda.</b> ______ st (fylls i för hand).
             </p>
           </section>
 

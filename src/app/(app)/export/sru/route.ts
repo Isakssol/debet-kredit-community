@@ -8,8 +8,7 @@ import iconv from "iconv-lite";
 import { createClient } from "@/lib/supabase/server";
 import { getAccountLines } from "@/lib/reports/data";
 import { computeNeFields } from "@/lib/tax/calc";
-import { buildInfoSru, buildBlanketterSru, buildInk2Sru } from "@/lib/sru/build";
-import { to12Digits } from "@/lib/payroll/agi";
+import { buildInfoSru, buildBlanketterSru, buildInk2Sru, to12Digits } from "@/lib/sru/build";
 
 export async function GET(req: Request) {
   const supabase = await createClient();
