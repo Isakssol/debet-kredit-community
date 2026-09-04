@@ -37,8 +37,8 @@ debea.se](https://debea.se/kom-igang/community) tar dig steg för steg, med
 skärmbilder hela vägen, från tomt konto till ett körande bokföringsprogram på
 din egen adress.
 
-**Räkna med 60–75 minuter från noll**, eller 45 minuter om du redan har konton
-på GitHub, Vercel och Supabase.
+**Räkna med 45–60 minuter** om du redan har konton på GitHub, Vercel och
+Supabase, annars **60–75 minuter från noll**.
 
 **Först kontona, sedan tekniken.** Guiden börjar med att skapa dem, i den här
 ordningen — GitHub först, för de två andra loggar in med GitHub-kontot, vilket
@@ -46,7 +46,7 @@ ger dig två lösenord i stället för fyra:
 
 | # | Konto | Till vad | Att veta |
 |---|---|---|---|
-| 1 | [GitHub](https://github.com/signup) | här förvaras din kopia av koden | Verifieringen är en **sifferkod i mejlen**, inte en länk. **Tvåstegsinloggning krävs av alla konton** och går inte att stänga av — slå på den direkt och **spara reservkoderna medan de visas**. Utan dem och utan telefonen är alla tre tjänsterna låsta |
+| 1 | [GitHub](https://github.com/signup) | här förvaras din kopia av koden | Verifieringen är en **sifferkod i mejlen**, inte en länk. **Tvåstegsinloggning krävs av alla som lägger upp kod** — slå på den direkt och **spara reservkoderna medan de visas**. Utan dem och utan telefonen är alla tre tjänsterna låsta |
 | 2 | [Vercel](https://vercel.com/signup) | här körs appen på nätet | **Continue with GitHub**. Två snarlika rutor i rad (Authorize, sedan Install) — välj **All repositories** i den andra. Plan **Hobby** är gratis, för privat bruk; Pro för näringsverksamhet. Valfritt om appen bara ska köra lokalt |
 | 3 | [Supabase](https://supabase.com/dashboard/sign-up) | här bor din bokföring | **Continue with GitHub**. Skapa **organisationen** (plan Free) — projektet, och därmed regionen, kommer senare i guiden och regionen går inte att ändra i efterhand |
 

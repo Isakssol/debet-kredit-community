@@ -20,8 +20,8 @@ Supabase loggar in med det kontot.
      lösenord, användarnamn. Bilduppgiften kan komma flera gånger utan att något
      är fel. Verifieringen är en **sifferkod i mejlen**, inte en länk.
      Slå sedan på **tvåstegsinloggning direkt** (Settings → Password and
-     authentication → Authenticator app) — GitHub kräver det av alla konton och
-     det går inte att stänga av — och **spara reservkoderna medan de visas**.
+     authentication → Authenticator app) — GitHub kräver det av alla som lägger
+     upp kod — och **spara reservkoderna medan de visas**.
    - **Vercel** ([vercel.com/signup](https://vercel.com/signup)), om du vill nå
      appen från mobilen: **Continue with GitHub**. Två snarlika rutor kommer i
      rad (Authorize, sedan Install); välj **All repositories** i den andra.

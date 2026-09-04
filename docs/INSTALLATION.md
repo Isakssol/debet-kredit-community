@@ -4,8 +4,8 @@
 > — samma steg med skärmbilder, kopiera-knappar och en handling per kort.
 
 Den här guiden tar dig hela vägen: från ingenting till ett körande system på
-dina egna konton. Räkna med **60–75 minuter från noll**, eller **45 minuter** om
-du redan har konton på GitHub, Vercel och Supabase. Du behöver inte kunna
+dina egna konton. Räkna med **45–60 minuter** om du redan har konton på GitHub,
+Vercel och Supabase, annars **60–75 minuter från noll**. Du behöver inte kunna
 programmera, men du kommer att köra några kommandon i terminalen — kopiera och
 klistra räcker.
 
