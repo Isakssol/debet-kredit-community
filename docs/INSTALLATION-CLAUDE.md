@@ -9,19 +9,37 @@ Vill du hellre klicka själv: följ [INSTALLATION.md](INSTALLATION.md), eller
 bildguiden på [debea.se/kom-igang/community](https://debea.se/kom-igang/community)
 som tar samma steg med skärmdumpar — samma resultat.
 
-## Del 1 — det bara du kan göra (~10 minuter)
+## Del 1 — det bara du kan göra (~25 minuter från noll, ~10 med konton)
 
-1. **Skapa konton** (om du saknar dem): [github.com](https://github.com),
-   [supabase.com](https://supabase.com) och — om du vill nå appen från mobilen —
-   [vercel.com](https://vercel.com) (välj "Continue with GitHub").
+**Har du redan konton på GitHub, Vercel och Supabase?** Hoppa till punkt 2.
+Annars: gör kontona i den här ordningen — GitHub först, för både Vercel och
+Supabase loggar in med det kontot.
+
+1. **Skapa kontona.**
+   - **GitHub** ([github.com/signup](https://github.com/signup)): mejladress,
+     lösenord, användarnamn. Bilduppgiften kan komma flera gånger utan att något
+     är fel. Verifieringen är en **sifferkod i mejlen**, inte en länk.
+     Slå sedan på **tvåstegsinloggning direkt** (Settings → Password and
+     authentication → Authenticator app) — GitHub kräver det av alla konton och
+     det går inte att stänga av — och **spara reservkoderna medan de visas**.
+   - **Vercel** ([vercel.com/signup](https://vercel.com/signup)), om du vill nå
+     appen från mobilen: **Continue with GitHub**. Två snarlika rutor kommer i
+     rad (Authorize, sedan Install); välj **All repositories** i den andra.
+     Plan **Hobby** är gratis för privat bruk, Pro för näringsverksamhet.
+   - **Supabase** ([supabase.com](https://supabase.com/dashboard/sign-up)):
+     **Continue with GitHub**, skapa **organisationen** (plan Free). Projektet
+     kommer i punkt 3.
+   - **Inget AI-konto behövs** — community-versionen har ingen AI-bokförare.
 2. **Forka repot**: öppna
    [Isakssol/debet-kredit-community](https://github.com/Isakssol/debet-kredit-community)
    och klicka **Fork → Create fork**. Repot är publikt, så du behöver ingen
    inbjudan — men forken behövs för att kunna deploya till Vercel och spara
    dina egna ändringar.
-3. **Skapa Supabase-projektet**: New project → döp det (t.ex. `bokforing`),
-   välj ett starkt databaslösenord (spara det i din lösenordshanterare!) och
-   region **Stockholm (eu-north-1)**.
+3. **Skapa Supabase-projektet**: New project → välj organisationen från punkt 1
+   → döp projektet (t.ex. `bokforing`) → låt Supabase generera
+   databaslösenordet (**spara det i lösenordshanteraren innan du klickar
+   vidare** — det visas en gång) → region **Stockholm (eu-north-1)**, som inte
+   går att ändra i efterhand.
 4. **Skapa ditt inloggningskonto och stäng dörren** — i Supabase-panelen:
    - **Authentication → Users → Add user** → din mejl + starkt lösenord →
      bocka i **Auto Confirm User** → Create user.
@@ -95,7 +113,10 @@ GÖR SÅ HÄR:
    gå igenom kom igång-wizarden (bolagstyp, företagsuppgifter, momsperiod,
    räkenskapsår, eventuell SIE-import från mitt gamla program).
 11. Avsluta med en punktlista över allt som är uppsatt, var min data bor och
-   var backup-ansvaret ligger (min Supabase, mina konton).
+   var backup-ansvaret ligger (min Supabase, mina konton). Påminn mig till sist
+   om att läsa avsnittet "Var du förvarar nycklarna" i docs/INSTALLATION.md och
+   fylla i nyckelkortet där — särskilt att mina GitHub-reservkoder ska ligga
+   sparade, eftersom både Vercel och Supabase loggar in med GitHub-kontot.
 ```
 
 ## Vanliga frågor

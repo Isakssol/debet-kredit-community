@@ -30,15 +30,32 @@ säger till.
 Byggd för enskild firma i första hand; aktiebolag och handelsbolag stöds för
 löpande bokföring, moms och rapporter (se [Bolagstyper](#bolagstyper)).
 
-## Kom igång på 45–60 minuter
+## Kom igång
 
 Du behöver inte kunna programmera. [Bildguiden på
 debea.se](https://debea.se/kom-igang/community) tar dig steg för steg, med
 skärmbilder hela vägen, från tomt konto till ett körande bokföringsprogram på
 din egen adress.
 
+**Räkna med 60–75 minuter från noll**, eller 45 minuter om du redan har konton
+på GitHub, Vercel och Supabase.
+
+**Först kontona, sedan tekniken.** Guiden börjar med att skapa dem, i den här
+ordningen — GitHub först, för de två andra loggar in med GitHub-kontot, vilket
+ger dig två lösenord i stället för fyra:
+
+| # | Konto | Till vad | Att veta |
+|---|---|---|---|
+| 1 | [GitHub](https://github.com/signup) | här förvaras din kopia av koden | Verifieringen är en **sifferkod i mejlen**, inte en länk. **Tvåstegsinloggning krävs av alla konton** och går inte att stänga av — slå på den direkt och **spara reservkoderna medan de visas**. Utan dem och utan telefonen är alla tre tjänsterna låsta |
+| 2 | [Vercel](https://vercel.com/signup) | här körs appen på nätet | **Continue with GitHub**. Två snarlika rutor i rad (Authorize, sedan Install) — välj **All repositories** i den andra. Plan **Hobby** är gratis, för privat bruk; Pro för näringsverksamhet. Valfritt om appen bara ska köra lokalt |
+| 3 | [Supabase](https://supabase.com/dashboard/sign-up) | här bor din bokföring | **Continue with GitHub**. Skapa **organisationen** (plan Free) — projektet, och därmed regionen, kommer senare i guiden och regionen går inte att ändra i efterhand |
+
+**Inget AI-konto behövs.** Community-versionen har ingen AI-bokförare och
+skickar ingenting till någon AI-leverantör. Ber en guide dig skapa ett
+Anthropic-konto är den skriven för licensversionen.
+
 - **[Bildguiden: kom igång med Community](https://debea.se/kom-igang/community)**
-  Skärmbild för skärmbild. Databas, hosting och första inloggningen.
+  Skärmbild för skärmbild. Kontona, databasen, hostingen och första inloggningen.
 - **[Registrera dig och få guiden i mejlen](https://debea.se/community)**
   Lämnar du din mejladress skickar vi guiden, supportvägen och en kort
   beskrivning av vad som skiljer Community från licensen. Frivilligt: all kod
@@ -109,6 +126,7 @@ föreslår; den agerar aldrig på egen hand.
 | Tjänst | Kostnad | Till vad | Krävs? |
 |---|---|---|---|
 | [Node.js 20+](https://nodejs.org) & [pnpm](https://pnpm.io) | Gratis | Köra appen lokalt | ✅ |
+| [Git](https://git-scm.com/downloads) | Gratis | Hämta hem koden (`git clone`). Windows: hämta från [git-scm.com/download/win](https://git-scm.com/download/win). Mac: `xcode-select --install` | ✅ |
 | [Supabase](https://supabase.com)-konto | Gratis (free tier räcker) | Databas, inloggning och kvittolagring | ✅ |
 | [Vercel](https://vercel.com)-konto | Gratis (hobby tier räcker) | Köra appen i molnet så du når den från mobilen | Rekommenderas |
 | [Resend](https://resend.com)-konto + egen domän | Gratis-nivå finns | Mejla fakturor direkt från appen | Valfritt |
@@ -119,9 +137,12 @@ och [Skatteverket](https://skatteverket.se).
 
 ## Installation (utvecklarvägen)
 
-Snabbversionen står här. Den utförliga guiden — med kontoskapande, Vercel,
-felsökning och skärm för skärm — är
-[docs/INSTALLATION.md](docs/INSTALLATION.md).
+> **Har du inte gjort det här förut? Läs inte vidare här.** Det här är
+> snabbversionen för den som redan har konton, terminalvana och vill köra appen
+> lokalt. Kommer du från noll: följ
+> [bildguiden](https://debea.se/kom-igang/community) eller
+> [docs/INSTALLATION.md](docs/INSTALLATION.md), som börjar med kontona och tar
+> ett steg i taget. De två vägarna leder till samma sak — men blanda dem inte.
 
 **1. Klona och installera:**
 ```bash
