@@ -196,6 +196,30 @@ d("tvåstegsverifiering, skarpt", () => {
     })).toBe("ok");
   }, 90_000);
 
+  test("databasen kräver kodsteget den också, inte bara proxyn", async () => {
+    // Det här är provet som fattades när spärren bara satt i proxyn. En
+    // aal1-token är en giltig token: den öppnar PostgREST direkt, med
+    // anon-nyckeln som ligger i varje webbläsare, helt utan att passera appen.
+    // Före 20260908000002 gick det att läsa verifikationer och skriva kunder
+    // med den. Kravet ligger nu i `app_role()`, som varje policy redan frågar,
+    // och `second_step_pending()` är villkoret det vilar på.
+    //
+    // Svarar servern att funktionen inte finns är migrationen inte körd mot
+    // den här databasen — och då gäller inte skyddet heller.
+    const supabase = anonClient();
+    const { data } = await supabase.auth.signInWithPassword({ email, password });
+    expect(readAal(data.session!.access_token)).toBe("aal1");
+
+    const { data: väntar, error: fel1 } = await supabase.rpc("second_step_pending");
+    expect(fel1, fel1?.message).toBeNull();
+    expect(väntar, "aal1 + verifierad faktor = kodsteget kvar").toBe(true);
+
+    await supabase.auth.mfa.challengeAndVerify({ factorId, code: await färskKod() });
+    const { data: klar, error: fel2 } = await supabase.rpc("second_step_pending");
+    expect(fel2, fel2?.message).toBeNull();
+    expect(klar, "efter kodsteget ska databasen släppa fram rollen").toBe(false);
+  }, 90_000);
+
   test("avstängning tar bort faktorn, och nästa inloggning är åter en enda", async () => {
     const supabase = anonClient();
     await supabase.auth.signInWithPassword({ email, password });
