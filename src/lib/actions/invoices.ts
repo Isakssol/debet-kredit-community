@@ -8,6 +8,7 @@ import {
   calculateTotals, invoicePostingRows, type InvoiceRowInput,
 } from "@/lib/invoicing/totals";
 import { z } from "zod";
+import { addDays, todayISO } from "@/lib/dates";
 
 type InvoiceRowRecord = {
   row_no: number; article_id: string | null; description: string;
@@ -39,12 +40,6 @@ const draftSchema = z.object({
   notes: z.string().optional(),
   rows: z.array(rowSchema).min(1),
 });
-
-function addDays(date: string, days: number): string {
-  const d = new Date(date + "T00:00:00");
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
 
 /** Skapa/uppdatera fakturautkast. Fakturanummer sätts först vid bokföring. */
 export async function saveInvoiceDraft(id: string | null, input: unknown) {
@@ -273,7 +268,11 @@ export async function registerPayment(input: {
 
   revalidatePath("/fakturor");
   revalidatePath(`/fakturor/${input.invoiceId}`);
-  return { ok: true };
+  // Verifikatets id följer med ut: bokförs betalningen från en bankrad ska
+  // raden peka på verifikatet, annars står den som bokförd utan att gå att
+  // följa till bokföringen (BFL 5 kap. 6 § — verifikationen och affärshändelsen
+  // ska gå att knyta ihop åt båda hållen).
+  return { ok: true, verificationId };
 }
 
 /** Kreditfaktura: speglar originalet, bokför omvänt verifikat, kvittas mot originalet. */
@@ -310,7 +309,7 @@ export async function createCreditInvoice(originalId: string) {
     };
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const { data: fy } = await supabase.from("fiscal_years").select("*")
     .lte("start_date", today).gte("end_date", today).single();
   if (!fy) return { error: "Inget öppet räkenskapsår." };
@@ -429,7 +428,7 @@ export async function createReminder(invoiceId: string, fee: number) {
    * kodändring den dag beloppet i lagen ändras.
    * https://lagen.nu/1981:739
    */
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const { data: feeRules } = await supabase.from("rule_values")
     .select("value, valid_from, valid_to").eq("key", "paminnelseavgift_max");
   const maxFee = pickRuleValue(feeRules, today) ?? 60;

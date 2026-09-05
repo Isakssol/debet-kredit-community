@@ -252,7 +252,7 @@ export async function bookTxAsCustomerPayment(txId: string, invoiceId: string): 
     amount: Number(tx.amount),
   });
   if (res.error) return res;
-  await markTransaction(txId, "booked");
+  await markTransaction(txId, "booked", res.verificationId);
   return { ok: true };
 }
 
@@ -266,7 +266,7 @@ export async function bookTxAsSupplierPayment(txId: string, supplierInvoiceId: s
     amount: -Number(tx.amount),
   });
   if (res.error) return res;
-  await markTransaction(txId, "booked");
+  await markTransaction(txId, "booked", res.verificationId);
   return { ok: true };
 }
 

@@ -177,11 +177,12 @@ export async function paySupplierInvoice(input: {
   });
   if (verErr) return { error: verErr.message };
 
+  const verificationId = (Array.isArray(ver) ? ver[0] : ver)?.out_id ?? null;
   const { error } = await supabase.from("supplier_payments").insert({
     supplier_invoice_id: input.supplierInvoiceId,
     payment_date: input.paymentDate,
     amount: input.amount,
-    verification_id: (Array.isArray(ver) ? ver[0] : ver)?.out_id ?? null,
+    verification_id: verificationId,
   });
   if (error) return { error: error.message };
 
@@ -191,5 +192,6 @@ export async function paySupplierInvoice(input: {
     .eq("id", input.supplierInvoiceId);
 
   revalidatePath("/leverantorer");
-  return { ok: true };
+  // Se kommentaren i registerPayment: bankraden ska kunna peka på verifikatet.
+  return { ok: true, verificationId };
 }
