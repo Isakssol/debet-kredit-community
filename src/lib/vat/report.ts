@@ -253,25 +253,151 @@ export const BOX_LABELS: Record<string, string> = {
   "62": "Utgående moms 6 % vid import",
 };
 
-// Rutordning i deklarationen
+// Rutordning i deklarationen.
+// Ordningen är Skatteverkets taggordning i eSKD-filen (import/ruta 50–62 före
+// 48/49) ["Lämna momsdeklaration via fil i e-tjänsten", tabellen "Obligatoriska
+// uppgifter"]. Samma ordning används på skärmen och i PDF:en, så rapporten och
+// filen läses radvis mot varandra.
 export const BOX_ORDER = [
   "05", "06", "07", "08", "10", "11", "12",
   "20", "21", "22", "23", "24", "30", "31", "32",
   "35", "36", "37", "38", "39", "40", "41", "42",
-  "48", "49", "50", "60", "61", "62",
+  "50", "60", "61", "62", "48", "49",
 ];
 
-/** eSKD-fil för uppladdning på skatteverket.se (Skatteverkets XML-format) */
-export function generateEskd(orgNr: string, periodEnd: string, boxes: VatBoxes): string {
+/**
+ * Organisationsnumret som eSKD-filen kräver det: "10 siffror enligt formatet
+ * xxxxxx-xxxx, med bindestreck" ["Lämna momsdeklaration via fil i e-tjänsten",
+ * Rad 3]. Ett tolvsiffrigt personnummer kortas till de tio sista, precis som
+ * Skatteverkets egen anvisning. Returnerar null när numret inte går att skriva
+ * så — då ska ingen fil skapas.
+ *
+ * Samma kontroll som orgNumberIssue använder i Inställningar, så de två
+ * validerarna aldrig kan vara oense.
+ *
+ * Eftersom resultatet bara innehåller siffror och ett bindestreck behöver det
+ * inte XML-escapas; valideringen är den spärren.
+ */
+export function formatEskdOrgNr(raw: string | null | undefined): string | null {
+  const text = (raw ?? "").trim();
+  if (!text) return null;
+  if (orgNumberIssue(text)) return null;
+  const digits = text.replace(/\D/g, "");
+  const ten = digits.slice(-10);
+  const formatted = `${ten.slice(0, 6)}-${ten.slice(6)}`;
+  return /^\d{6}-\d{4}$/.test(formatted) ? formatted : null;
+}
+
+/**
+ * Kontroll av organisationsnumret redan i Inställningar. Fältet är fritext, och
+ * ett nummer som inte går att skriva som xxxxxx-xxxx gör eSKD-filen omöjlig att
+ * lämna in — det felet ska upptäckas när numret sparas, inte när
+ * momsdeklarationen ska godkännas.
+ *
+ * Godkänt: tio siffror (organisationsnummer eller personnummer utan sekel) eller
+ * tolv med sekelprefix (16 för organisationsnummer, 19/20 för personnummer).
+ * Returnerar ett svenskt felmeddelande, annars null.
+ *
+ * Källa: Skatteverket, "Lämna momsdeklaration via fil i e-tjänsten", Rad 3 samt
+ * Avvisande fel: "Den momsregistrerades organisationsnummer (eller motsvarande)
+ * har angetts i ett felaktigt format."
+ */
+export const ORG_NUMBER_ERROR =
+  "Organisationsnumret ska ha tio siffror (xxxxxx-xxxx), eller tolv med sekel för personnummer. Skatteverket avvisar eSKD-filen om numret har ett annat format.";
+
+export function orgNumberIssue(raw: string | null | undefined): string | null {
+  const text = (raw ?? "").trim();
+  if (!text) return null; // frivilligt fält — spärren ligger i momsgodkännandet
+  const digits = text.replace(/\D/g, "");
+  if (digits.length === 10) return null;
+  if (digits.length === 12 && /^(16|19|20)/.test(digits)) return null;
+  return ORG_NUMBER_ERROR;
+}
+
+/**
+ * Upplysningsfältet i eSKD-filen (Rad 35, <TextUpplysningMoms>) rymmer högst 300
+ * tecken ["Lämna momsdeklaration via fil i e-tjänsten", tabellen "Upplysningar"].
+ * Filen är ISO-8859-1, och Skatteverket avvisar filer med "otillåtna tecken", så
+ * ett tecken som inte finns i ISO-8859-1 (typografiskt tankstreck, emoji) får
+ * inte skickas med — det skulle annars tyst bli ett frågetecken i filen.
+ *
+ * Returnerar ett felmeddelande på svenska när texten inte går att lämna, annars
+ * null. Texten kapas aldrig: en upplysning till Skatteverket som klipps av mitt
+ * i en mening är värre än en fråga till användaren.
+ */
+export const ESKD_NOTE_MAX = 300;
+
+/**
+ * Upplysningen är ETT XML-element på en rad. Radbrytningar och dubbla mellanslag
+ * normaliseras därför bort — texten är kvar, bara sammanpressad till en rad.
+ */
+export function normalizeEskdNote(note: string | null | undefined): string {
+  // JS \s täcker inte U+0085 (NEL) och inte C1-blocket i övrigt, så
+  // radbrytningstecken därifrån normaliseras uttryckligen till mellanslag innan
+  // resten pressas ihop. Det som blir kvar av C1 fälls av validateEskdNote.
+  return (note ?? "").replace(/[\u0085\u2028\u2029]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+export function validateEskdNote(note: string | null | undefined): string | null {
+  const text = normalizeEskdNote(note);
+  if (!text) return null;
+  if (text.length > ESKD_NOTE_MAX) {
+    return `Upplysningen får vara högst ${ESKD_NOTE_MAX} tecken i eSKD-filen (din är ${text.length}). Korta ner den.`;
+  }
+  // Otillåtna kodpunkter i ISO/IEC 8859-1: allt över 255 (finns inte i
+  // teckenuppsättningen), C0-kontrollerna 0–31, DEL (127) och C1-blocket
+  // 128–159. Positionerna 128–159 är OTILLDELADE kontrollpositioner i
+  // ISO/IEC 8859-1 — inga tryckbara tecken — och skrivs ut som råa byte av
+  // iconv-lite när filen kodas i /moms/eskd. Skatteverket avvisar filer med
+  // "otillåtna tecken" ["Lämna momsdeklaration via fil i e-tjänsten",
+  // Kontroll av mottagna uppgifter → Avvisande fel].
+  const bad = [...text].filter((c) => {
+    const code = c.codePointAt(0)!;
+    return code > 255 || code < 32 || code === 127 || (code >= 128 && code <= 159);
+  });
+  if (bad.length > 0) {
+    // Ett osynligt styrtecken går inte att visa — då anges kodpunkten i stället,
+    // annars ser felmeddelandet ut att peka på ingenting.
+    const shown = [...new Set(bad)].map((c) => {
+      const code = c.codePointAt(0)!;
+      return code < 32 || code === 127 || (code >= 128 && code <= 159)
+        ? `U+${code.toString(16).toUpperCase().padStart(4, "0")}`
+        : c;
+    });
+    return `Upplysningen innehåller tecken som inte finns i eSKD-filens teckenuppsättning ISO-8859-1: ${shown.join(" ")}. Skriv om den med vanliga tecken (bindestreck i stället för tankstreck).`;
+  }
+  return null;
+}
+
+/** &, < och > måste escapas för att filen ska vara giltig XML. */
+const escapeXml = (text: string): string =>
+  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/**
+ * eSKD-fil för uppladdning på skatteverket.se (Skatteverkets XML-format).
+ *
+ * `note` är den valfria upplysningen på Rad 35. Skatteverket anvisar fältet för
+ * upplysningar, och vid rättelse av en redan inlämnad deklaration — där hela
+ * deklarationen görs om — är det vägen att förklara vad som ändrats.
+ */
+export function generateEskd(orgNr: string, periodEnd: string, boxes: VatBoxes, note?: string | null): string {
+  const formattedOrgNr = formatEskdOrgNr(orgNr);
+  if (!formattedOrgNr) {
+    throw new Error(
+      `Organisationsnumret "${orgNr}" kan inte skrivas som xxxxxx-xxxx i eSKD-filen. `
+      + "Ange tio siffror (eller ett personnummer) under Inställningar."
+    );
+  }
   const period = periodEnd.slice(0, 7).replace("-", "");
   const el: Record<string, string> = {
-    "05": "ForsMomsEjAnnan", "06": "MomsUlagUttag", "07": "UlagMargbesk",
-    "08": "HyrinkomstFrivSkatt", "10": "MomsUtgHog", "11": "MomsUtgMedel",
+    // Taggnamn enligt Skatteverkets "Lämna momsdeklaration via fil" (eSKDUpload 6.0)
+    "05": "ForsMomsEjAnnan", "06": "UttagMoms", "07": "UlagMargbesk",
+    "08": "HyrinkomstFriv", "10": "MomsUtgHog", "11": "MomsUtgMedel",
     "12": "MomsUtgLag", "20": "InkopVaruAnnatEg", "21": "InkopTjanstAnnatEg",
     "22": "InkopTjanstUtomEg", "23": "InkopVaruSverige", "24": "InkopTjanstSverige",
     "30": "MomsInkopUtgHog", "31": "MomsInkopUtgMedel", "32": "MomsInkopUtgLag",
-    "35": "ForsVaruAnnatEg", "36": "ForsVaruUtomEg", "37": "InkopGetMellanhand",
-    "38": "ForsGetMellanhand", "39": "ForsTjSkskAnnatEg", "40": "ForsTjOvrUtomEg",
+    "35": "ForsVaruAnnatEg", "36": "ForsVaruUtomEg", "37": "InkopVaruMellan3p",
+    "38": "ForsVaruMellan3p", "39": "ForsTjSkskAnnatEg", "40": "ForsTjOvrUtomEg",
     "41": "ForsKopareSkskSverige", "42": "ForsOvrigt", "48": "MomsIngAvdr",
     "49": "MomsBetala", "50": "MomsUlagImport", "60": "MomsImportUtgHog",
     "61": "MomsImportUtgMedel", "62": "MomsImportUtgLag",
@@ -280,10 +406,28 @@ export function generateEskd(orgNr: string, periodEnd: string, boxes: VatBoxes):
     .filter((box) => (boxes[box] ?? 0) !== 0 || box === "49")
     .map((box) => `    <${el[box]}>${boxes[box] ?? 0}</${el[box]}>`);
 
+  // Rad 35: upplysningen sist inuti <Moms>, bara när det finns en.
+  const noteError = validateEskdNote(note);
+  if (noteError) throw new Error(noteError);
+  const noteText = normalizeEskdNote(note);
+  if (noteText) {
+    lines.push(`    <TextUpplysningMoms>${escapeXml(noteText)}</TextUpplysningMoms>`);
+  }
+
+  // Exakt den struktur Skatteverket dokumenterar för "Lämna momsdeklaration via
+  // fil i e-tjänsten", tabellen "Obligatoriska uppgifter": Rad 1 är
+  // xml-deklarationen, Rad 2 <eSKDUpload Version="6.0">, Rad 3 <OrgNr>, Rad 4
+  // <Moms>, Rad 5 <Period> och därefter rutorna i taggordning.
+  //
+  // INGEN DOCTYPE. Skatteverkets tabell har ingenting mellan Rad 1 och Rad 2,
+  // och ingen av deras exempelfiler innehåller en DOCTYPE. Filen kontrolleras
+  // mot "En XML-tagg har angetts på ett annat sätt än det format som avsnittet
+  // Skapa en fil beskriver" (avvisande fel), och den DTD-adress som tidigare
+  // stod här (www1.skatteverket.se/demoeskd/eSKDUpload_6p0.dtd) svarar inte —
+  // en validerande parser som försöker hämta den misslyckas.
   return `<?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE eSKDUpload PUBLIC "-//Skatteverket, Sweden//DTD Skatteverket eSKDUpload-DTD Version 6.0//SV" "https://www1.skatteverket.se/demoeskd/eSKDUpload_6p0.dtd">
 <eSKDUpload Version="6.0">
-  <OrgNr>${orgNr}</OrgNr>
+  <OrgNr>${formattedOrgNr}</OrgNr>
   <Moms>
     <Period>${period}</Period>
 ${lines.join("\n")}

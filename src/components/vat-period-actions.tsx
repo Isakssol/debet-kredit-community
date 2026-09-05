@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { approveVatReport, payVat } from "@/lib/actions/vat";
+import { ESKD_NOTE_MAX } from "@/lib/vat/report";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export function VatPeriodActions({
   periodStart,
@@ -32,6 +34,9 @@ export function VatPeriodActions({
   const [busy, setBusy] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
+  // Upplysningen till Skatteverket (eSKD Rad 35) — valfri, men den normala vägen
+  // att förklara en rättelse av en redan inlämnad deklaration.
+  const [note, setNote] = useState("");
 
   return (
     <div className="flex gap-2 flex-wrap">
@@ -49,10 +54,19 @@ export function VatPeriodActions({
                 Se till att alla verifikat för perioden är bokförda först.
               </DialogDescription>
             </DialogHeader>
+            <div className="space-y-1">
+              <Label>Upplysning till Skatteverket (valfri)</Label>
+              <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3}
+                placeholder="T.ex. varför deklarationen rättas." />
+              <p className="text-[11px] text-muted-foreground">
+                Skrivs i eSKD-filens fält TextUpplysningMoms, högst {ESKD_NOTE_MAX} tecken.
+                {note.trim() ? ` ${note.trim().length} tecken.` : ""}
+              </p>
+            </div>
             <DialogFooter>
               <Button disabled={busy} onClick={async () => {
                 setBusy(true);
-                const res = await approveVatReport({ periodStart, periodEnd });
+                const res = await approveVatReport({ periodStart, periodEnd, note });
                 setBusy(false);
                 if (res.error) toast.error(res.error);
                 else {

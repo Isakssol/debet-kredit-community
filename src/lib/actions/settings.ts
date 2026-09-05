@@ -3,10 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { orgNumberIssue, ORG_NUMBER_ERROR } from "@/lib/vat/report";
 
 const settingsSchema = z.object({
   company_name: z.string().min(1),
-  org_number: z.string().optional(),
+  // Numret måste gå att skriva som xxxxxx-xxxx i eSKD-filen. Kontrollen ligger
+  // här så att felet upptäcks när numret sparas, inte när momsdeklarationen ska
+  // godkännas — då har perioden redan hunnit bli aktuell för inlämning.
+  org_number: z.string().optional()
+    .refine((v) => orgNumberIssue(v) === null, ORG_NUMBER_ERROR),
   vat_number: z.string().optional(),
   address: z.string().optional(),
   postal_code: z.string().optional(),

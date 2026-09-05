@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { computeVatBoxes, vatClosingRows, generateEskd, type VatEntry } from "@/lib/vat/report";
+import {
+  computeVatBoxes, vatClosingRows, formatEskdOrgNr, generateEskd, validateEskdNote,
+  type VatEntry,
+} from "@/lib/vat/report";
 
 export async function getVatEntries(periodStart: string, periodEnd: string) {
   const supabase = await createClient();
@@ -25,6 +28,8 @@ export async function getVatEntries(periodStart: string, periodEnd: string) {
 export async function approveVatReport(input: {
   periodStart: string;
   periodEnd: string;
+  /** Valfri upplysning till Skatteverket, Rad 35 i eSKD-filen (max 300 tecken) */
+  note?: string;
 }) {
   const supabase = await createClient();
 
@@ -37,13 +42,26 @@ export async function approveVatReport(input: {
   ]);
   if (!fy) return { error: "Perioden matchar inget räkenskapsår." };
   if (existing?.status === "approved") return { error: "Perioden är redan momsredovisad." };
-  if (!settings?.org_number) {
-    return { error: "Ange personnummer under Inställningar först (krävs i eSKD-filen)." };
+  // Skatteverket kräver formatet xxxxxx-xxxx i eSKD-filen och avvisar annars
+  // filen ["Lämna momsdeklaration via fil i e-tjänsten", Rad 3]. Både numret och
+  // upplysningen prövas FÖRE omföringen: ett verifikat går inte att ta bort, och
+  // en godkänd period utan användbar fil hjälper ingen.
+  const noteError = validateEskdNote(input.note);
+  if (noteError) return { error: noteError };
+
+  const eskdOrgNr = formatEskdOrgNr(settings?.org_number);
+  if (!eskdOrgNr) {
+    return {
+      error: settings?.org_number
+        ? `Organisationsnumret "${settings.org_number}" går inte att skriva som xxxxxx-xxxx i eSKD-filen. Rätta det under Inställningar.`
+        : "Ange organisationsnummer eller personnummer under Inställningar först (krävs i eSKD-filen).",
+    };
   }
 
   const entries = await getVatEntries(input.periodStart, input.periodEnd);
   const { boxes, exact } = computeVatBoxes(entries);
   const closingRows = vatClosingRows(exact);
+  const eskd = generateEskd(eskdOrgNr, input.periodEnd, boxes, input.note);
 
   let verificationId: string | null = null;
   if (closingRows.length > 0) {
@@ -57,8 +75,6 @@ export async function approveVatReport(input: {
     if (verErr) return { error: verErr.message };
     verificationId = (Array.isArray(ver) ? ver[0] : ver)?.out_id ?? null;
   }
-
-  const eskd = generateEskd(settings.org_number, input.periodEnd, boxes);
 
   const reportValues = {
     fiscal_year_id: fy.id,
