@@ -15,6 +15,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+/**
+ * Påminnelseavgiften är 60 kr enligt lag (1981:739) om ersättning för
+ * inkassokostnader m.m. 4 § andra stycket. Enligt 2 § får ersättning för en
+ * skriftlig betalningspåminnelse tas ut bara om avtal om det träffats senast i
+ * samband med skuldens uppkomst — det kan programmet inte kontrollera, så det
+ * står i knappens hjälptext. Server-actionen avvisar högre belopp.
+ */
+const REMINDER_FEE_NOTE =
+  "Påminnelseavgift 60 kr (lag 1981:739, 4 §). Avgiften får bara tas ut om det avtalats senast när skulden uppkom (2 §).";
+
 export function InvoiceActions({
   invoiceId,
   status,
@@ -126,7 +136,7 @@ export function InvoiceActions({
       )}
 
       {canPay && (
-        <Button variant="outline" disabled={busy}
+        <Button variant="outline" disabled={busy} title={REMINDER_FEE_NOTE}
           onClick={() => run(async () => {
             const r = await createReminder(invoiceId, 60);
             if (!r.error) window.open(`/fakturor/${invoiceId}/paminnelse`, "_blank");

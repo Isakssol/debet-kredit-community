@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { pickRuleValue } from "@/lib/rule-values";
 import { generateOcr } from "@/lib/ocr";
 import {
   calculateTotals, invoicePostingRows, type InvoiceRowInput,
@@ -410,6 +411,42 @@ export async function markInvoiceSent(id: string) {
 
 export async function createReminder(invoiceId: string, fee: number) {
   const supabase = await createClient();
+
+  // Påminnelse (och avgift) får bara skickas på en förfallen, obetald faktura
+  const { data: inv } = await supabase.from("invoices")
+    .select("due_date, status").eq("id", invoiceId).single();
+  if (!inv) return { error: "Fakturan finns inte." };
+
+  /**
+   * Påminnelseavgiften har ett lagstadgat tak. Lag (1981:739) om ersättning för
+   * inkassokostnader m.m. 4 § andra stycket: ersättningsskyldigheten omfattar
+   * 60 kronor för en skriftlig betalningspåminnelse. Enligt 4 § första stycket
+   * gäller den bara kostnader som varit skäligen påkallade, och enligt 2 § utgår
+   * ersättning för påminnelse bara om avtal om detta träffats senast i samband
+   * med skuldens uppkomst — det avtalsvillkoret kan programmet inte kontrollera,
+   * så det påpekas för användaren i stället.
+   * Taket ligger i rule_values (paminnelseavgift_max) och kan därför ändras utan
+   * kodändring den dag beloppet i lagen ändras.
+   * https://lagen.nu/1981:739
+   */
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: feeRules } = await supabase.from("rule_values")
+    .select("value, valid_from, valid_to").eq("key", "paminnelseavgift_max");
+  const maxFee = pickRuleValue(feeRules, today) ?? 60;
+  if (!(fee >= 0) || fee > maxFee + 0.005) {
+    return {
+      error: `Påminnelseavgiften får vara högst ${maxFee.toFixed(2).replace(".", ",")} kr `
+        + "(lag [1981:739] om ersättning för inkassokostnader m.m. 4 §). "
+        + "Avgiften får dessutom bara tas ut om det avtalats senast när skulden uppkom (2 §).",
+    };
+  }
+  if (["paid", "credited", "cancelled", "draft"].includes(inv.status)) {
+    return { error: "Fakturan är inte öppen — ingen påminnelse kan skapas." };
+  }
+  if (inv.due_date >= today) {
+    return { error: `Fakturan förfaller först ${inv.due_date} — påminnelse kan skapas dagen efter förfallodagen.` };
+  }
+
   const { data: prev } = await supabase.from("invoice_reminders")
     .select("reminder_no").eq("invoice_id", invoiceId)
     .order("reminder_no", { ascending: false }).limit(1);

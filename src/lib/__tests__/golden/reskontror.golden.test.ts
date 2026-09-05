@@ -17,6 +17,12 @@
  *           Skatteverket, rättslig vägledning, "Redovisning av kreditnota".
  * [BFL]   Bokföringslag (1999:1078) 4 kap. 2 § — den sidoordnade bokföringen
  *         (kundreskontran) ska kunna stämmas av mot balanskontot; 5 kap. 2 §.
+ * [INK]   Lag (1981:739) om ersättning för inkassokostnader m.m.
+ *         - 2 §: ersättning för skriftlig betalningspåminnelse utgår bara om
+ *           avtal om detta träffats senast i samband med skuldens uppkomst.
+ *         - 4 § 1 st: bara kostnader som varit skäligen påkallade.
+ *         - 4 § 2 st: 60 kronor för en skriftlig betalningspåminnelse.
+ *         https://lagen.nu/1981:739
  * [SKV]   Skatteverket, "Fylla i momsdeklarationen", fält 05 och 10–12.
  */
 import { describe, expect, test } from "vitest";
@@ -25,6 +31,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 import { calculateTotals, invoicePostingRows, type InvoiceRowInput } from "@/lib/invoicing/totals";
+import { pickRuleValue } from "@/lib/rule-values";
 
 // ---------------------------------------------------------------------------
 // Testhjälp
@@ -280,5 +287,59 @@ describe("D. Kreditering och betalning kan inte lämna 1510 utan motpost [BFL 4:
       expect(fn, `status ${status} måste stoppas`).toContain(`'${status}'`);
     }
     expect(SQL_ALL).toMatch(/create trigger trg_invoice_payments_guard_insert[\s\S]*?before insert on invoice_payments/i);
+  });
+});
+
+// ===========================================================================
+// E. Påminnelseavgiftens lagstadgade tak [INK 2 §, 4 §]
+// ===========================================================================
+
+describe("E. Påminnelseavgiften har ett tak i lag [INK 4 § 2 st]", () => {
+  test("E1: taket ligger som regelvärde, inte hårdkodat, och är 60 kr", () => {
+    // 4 § andra stycket: "ersättningsskyldigheten omfattar [...] 60 kronor för
+    // en skriftlig betalningspåminnelse". Värdet ligger i rule_values så att det
+    // syns på regelsidan och kan ändras utan kodändring om lagen ändras.
+    expect(SQL_ALL).toMatch(/insert into rule_values[\s\S]{0,200}'paminnelseavgift_max',\s*60\.00/i);
+  });
+
+  test("E2: server-actionen prövar avgiften mot taket innan påminnelsen skapas", () => {
+    // Utan spärren accepterade createReminder vilket belopp som helst — 500 kr
+    // gick igenom, och avgiften hamnade på ett krav mot en kund.
+    const src = readFileSync(
+      fileURLToPath(new URL("../../actions/invoices.ts", import.meta.url)), "utf8");
+    expect(src).toMatch(/paminnelseavgift_max/);
+    expect(src).toMatch(/fee > maxFee/);
+    expect(src).toMatch(/1981:739/);
+  });
+
+  test("E3: påminnelse kan inte skapas på en faktura som inte är öppen", () => {
+    const src = readFileSync(
+      fileURLToPath(new URL("../../actions/invoices.ts", import.meta.url)), "utf8");
+    for (const status of ["paid", "credited", "cancelled", "draft"]) {
+      expect(src, `status ${status} måste stoppas`).toContain(`"${status}"`);
+    }
+    // Och inte före förfallodagen — en påminnelse om en skuld som inte förfallit
+    // är ingen betalningspåminnelse i lagens mening [INK 2 §].
+    expect(src).toMatch(/inv\.due_date >= today/);
+  });
+
+  test("E4: regelvärdet slås upp på affärshändelsens datum, inte på dagens", () => {
+    // Ett datumstyrt belopp som slås upp med fel datum ger fel svar för en
+    // efterhandsbokförd händelse. Raden som gäller är den med senaste valid_from
+    // som inte ligger efter datumet, och vars valid_to inte passerat.
+    const rows = [
+      { value: 50, valid_from: "2024-01-01", valid_to: "2025-12-31" },
+      { value: 60, valid_from: "2026-01-01", valid_to: null },
+    ];
+    expect(pickRuleValue(rows, "2025-06-01")).toBe(50);
+    expect(pickRuleValue(rows, "2026-06-01")).toBe(60);
+    expect(pickRuleValue(rows, "2023-06-01")).toBeNull();
+    expect(pickRuleValue([], "2026-06-01")).toBeNull();
+    expect(pickRuleValue(null, "2026-06-01")).toBeNull();
+  });
+
+  test("E5: en rad som gått ut gäller inte, även om ingen ersatt den", () => {
+    const rows = [{ value: 50, valid_from: "2024-01-01", valid_to: "2025-12-31" }];
+    expect(pickRuleValue(rows, "2026-01-01")).toBeNull();
   });
 });
