@@ -150,15 +150,49 @@ export function K2AnnualReport({
             <div className="pt-8 border-t max-w-xs">
               <p className="text-sm">Styrelseledamot</p>
             </div>
+            <div className="pt-8 border-t max-w-xs">
+              <p className="text-sm">Styrelseledamot / verkställande direktör</p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Samtliga styrelseledamöter och, i förekommande fall, verkställande
+              direktören ska underteckna årsredovisningen. Lägg till rader för hand
+              om styrelsen har fler ledamöter.
+            </p>
+          </section>
+
+          {/* Fastställelseintyg — krävs i original på den kopia som lämnas till
+              Bolagsverket (årsredovisningslagen 8 kap. 3 c §). Datum fylls i för
+              hand eftersom stämman hålls efter att dokumentet skrivits ut. */}
+          <section className="space-y-4 pt-8 border-t" style={{ breakBefore: "page" }}>
+            <h2 className="font-semibold text-base">Fastställelseintyg</h2>
+            <p className="text-sm leading-relaxed">
+              Undertecknad styrelseledamot intygar att resultaträkningen och
+              balansräkningen har fastställts på årsstämma den ______________________.
+              Årsstämman beslutade i fråga om bolagets {report.result >= 0 ? "vinst" : "förlust"} enligt
+              den i förvaltningsberättelsen intagna dispositionen. Jag intygar även
+              att denna kopia av årsredovisningen överensstämmer med originalet.
+            </p>
+            <p className="text-sm pt-4">{city || "Ort"}, den ______________________</p>
+            <div className="pt-8 border-t max-w-xs">
+              <p className="text-sm">Styrelseledamot</p>
+              <p className="text-xs text-muted-foreground">Namnförtydligande: ______________________</p>
+            </div>
           </section>
         </CardContent>
       </Card>
 
-      <p className="text-xs text-muted-foreground print:hidden">
-        Dokumentet genereras direkt ur bokföringen. Fastställelseintyg och årsstämmo­protokoll
-        tillkommer vid inlämning till Bolagsverket. Debet &amp; Kredit är ett verktyg —
-        styrelsen ansvarar för årsredovisningens innehåll.
-      </p>
+      <div className="text-xs text-muted-foreground print:hidden space-y-1">
+        <p>
+          Dokumentet genereras direkt ur bokföringen och innehåller allt Bolagsverket
+          kräver vid pappersinlämning, inklusive fastställelseintyget. Debet &amp; Kredit
+          är ett verktyg — styrelsen ansvarar för årsredovisningens innehåll.
+        </p>
+        <p>
+          Så lämnar du in på papper: håll årsstämman, skriv ut dokumentet, låt styrelsen
+          underteckna årsredovisningen och en ledamot fastställelseintyget i original,
+          och posta till Bolagsverket, Årsredovisningar, 851 98 Sundsvall.
+        </p>
+      </div>
     </div>
   );
 }
