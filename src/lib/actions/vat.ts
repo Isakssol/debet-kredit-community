@@ -6,6 +6,7 @@ import {
   computeVatBoxes, vatClosingRows, formatEskdOrgNr, generateEskd, validateEskdNote,
   NON_VAT_TRANSFER_SOURCES, type VatEntry,
 } from "@/lib/vat/report";
+import { todayISO } from "@/lib/dates";
 
 export async function getVatEntries(periodStart: string, periodEnd: string) {
   const supabase = await createClient();
@@ -51,6 +52,32 @@ export async function approveVatReport(input: {
   ]);
   if (!fy) return { error: "Perioden matchar inget räkenskapsår." };
   if (existing?.status === "approved") return { error: "Perioden är redan momsredovisad." };
+
+  /**
+   * En momsperiod går inte att redovisa förrän den är slut.
+   *
+   * Två skäl, varav det andra är det allvarliga:
+   *
+   * 1. Deklarationen ska avse en avslutad redovisningsperiod
+   *    (skatteförfarandelagen 2011:1244, 26 kap. 26 och 33 §§). Siffrorna för
+   *    en pågående period är inte deklarationsdugliga — resten av perioden är
+   *    inte bokförd än.
+   *
+   * 2. Godkännandet låser periodens månader permanent, och ett momslås går
+   *    inte att låsa upp. Godkänns en period som inte tagit slut låses därför
+   *    dagar som ännu inte inträffat: bokföringen för resten av perioden blir
+   *    omöjlig, för alltid, i just den installationen. Ett klick på fel
+   *    kvartalsflik räckte.
+   */
+  const today = todayISO();
+  if (input.periodEnd >= today) {
+    return {
+      error: `Perioden ${input.periodStart} – ${input.periodEnd} är inte slut än. `
+        + "Momsdeklarationen avser en avslutad period, och godkännandet låser periodens "
+        + `månader permanent. Vänta till ${input.periodEnd} har passerat.`,
+    };
+  }
+
   // Skatteverket kräver formatet xxxxxx-xxxx i eSKD-filen och avvisar annars
   // filen ["Lämna momsdeklaration via fil i e-tjänsten", Rad 3]. Både numret och
   // upplysningen prövas FÖRE omföringen: ett verifikat går inte att ta bort, och
