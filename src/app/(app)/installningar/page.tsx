@@ -7,6 +7,7 @@ import { OpeningBalances } from "@/components/opening-balances";
 import { SieImport } from "@/components/sie-import";
 import { MigrationImport } from "@/components/migration-import";
 import { ByraAccessSettings, type ByraKeyRow } from "@/components/byra-access-settings";
+import { SecuritySettings } from "@/components/security-settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SettingsToc, SettingsSection, type SettingsGroup } from "@/components/settings-section";
@@ -19,6 +20,7 @@ import { logoSignedUrl } from "@/lib/branding/logo";
 const GROUPS: SettingsGroup[] = [
   { id: "foretaget", title: "Företaget" },
   { id: "atkomst", title: "Åtkomst" },
+  { id: "sakerhet", title: "Säkerhet" },
   { id: "bokforing", title: "Bokföringens ramar" },
   { id: "import", title: "Import och migrering" },
 ];
@@ -78,6 +80,14 @@ export default async function SettingsPage() {
           keys={(byraKeys ?? []) as ByraKeyRow[]}
           demo={process.env.DEMO_MODE === "1"}
         />
+      </SettingsSection>
+
+      {/* Åtkomst ovanför handlar om vem UTANFÖR företaget som släpps in.
+          Det här avsnittet handlar om din egen inloggning, och de två hör
+          inte hemma under samma rubrik. */}
+      <SettingsSection id="sakerhet" title="Säkerhet"
+        description="Hur du själv loggar in.">
+        <SecuritySettings demo={process.env.DEMO_MODE === "1"} />
       </SettingsSection>
 
       <SettingsSection id="bokforing" title="Bokföringens ramar"
