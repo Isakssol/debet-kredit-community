@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { vatPeriods } from "@/lib/vat/report";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { DownloadButton } from "@/components/download-button";
 import { todayISO } from "@/lib/dates";
 

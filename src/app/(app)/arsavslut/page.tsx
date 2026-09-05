@@ -7,7 +7,6 @@ import { CompleteYearEnd } from "@/components/complete-year-end";
 import { K2AnnualReport } from "@/components/k2-annual-report";
 import { buildK2Report } from "@/lib/k2/report";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { DownloadButton } from "@/components/download-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 

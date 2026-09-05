@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getAccountLines } from "@/lib/reports/data";
-import { Button } from "@/components/ui/button";
 import { DownloadButton } from "@/components/download-button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,

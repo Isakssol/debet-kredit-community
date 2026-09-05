@@ -1,6 +1,5 @@
 import { PrintButton } from "@/components/print-button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { DownloadButton } from "@/components/download-button";
 import type { K2Report, K2Row } from "@/lib/k2/report";
 
