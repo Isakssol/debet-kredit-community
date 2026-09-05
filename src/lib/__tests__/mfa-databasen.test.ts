@@ -13,7 +13,7 @@
  * Här är hålet större. Den här utgåvan är byggd för en användare, och varje
  * tabell bär "authenticated full access" med `using (true)`: en aal1-token
  * läser OCH skriver allt. Därför ligger kravet i tre lager, alla i
- * `20260908000002_mfa_second_step_in_rls.sql`:
+ * `20260908000004_mfa_second_step_in_rls.sql`:
  *
  *   1. en restriktiv policy per tabell — AND:as med "authenticated full
  *      access" och kan inte hävas av den,
