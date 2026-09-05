@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { todayISO } from "@/lib/dates";
 
 const ASSET_TYPES = [
   { label: "Inventarier och verktyg", account: 1220, contra: 1229, dep: 7832 },
@@ -25,7 +26,7 @@ export function AssetDialog() {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [f, setF] = useState({
-    name: "", purchase_date: new Date().toISOString().slice(0, 10),
+    name: "", purchase_date: todayISO(),
     purchase_value: "", vat_amount: "", type: "0", useful_life_years: "5",
     book_purchase: true,
   });
@@ -138,7 +139,7 @@ export function DisposeDialog({ assetId, name }: { assetId: string; name: string
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(todayISO());
   const [amount, setAmount] = useState("0");
 
   return (

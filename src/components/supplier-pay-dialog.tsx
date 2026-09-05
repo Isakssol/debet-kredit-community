@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { todayISO } from "@/lib/dates";
 
 export function SupplierPayDialog({
   supplierInvoiceId,
@@ -21,7 +22,7 @@ export function SupplierPayDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(todayISO());
   const [amount, setAmount] = useState("");
 
   return (

@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { todayISO } from "@/lib/dates";
 
 export function TripForm() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [f, setF] = useState({
-    trip_date: new Date().toISOString().slice(0, 10),
+    trip_date: todayISO(),
     from_location: "", to_location: "", purpose: "", km: "",
   });
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { vatPeriods } from "@/lib/vat/report";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { todayISO } from "@/lib/dates";
 
 export default async function ReportsPage() {
   const supabase = await createClient();
@@ -15,7 +16,7 @@ export default async function ReportsPage() {
     (settings?.vat_period ?? "kvartal") as "manad" | "kvartal" | "helar",
     settings?.eu_trade ?? false
   );
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const currentPeriod = periods.filter((p) => p.start <= today).pop() ?? periods[0];
 
   const pdfReports = [

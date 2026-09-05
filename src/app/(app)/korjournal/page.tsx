@@ -4,10 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { todayISO } from "@/lib/dates";
 
 export default async function TripsPage() {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const [{ data: trips }, { data: rule }] = await Promise.all([
     supabase.from("trips").select("*").order("trip_date", { ascending: false }),
     supabase.from("rule_values").select("value").eq("key", "milersattning")

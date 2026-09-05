@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { todayISO } from "@/lib/dates";
 
 export function VatPeriodActions({
   periodStart,
@@ -33,7 +34,7 @@ export function VatPeriodActions({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
-  const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
+  const [payDate, setPayDate] = useState(todayISO());
   // Upplysningen till Skatteverket (eSKD Rad 35) — valfri, men den normala vägen
   // att förklara en rättelse av en redan inlämnad deklaration.
   const [note, setNote] = useState("");

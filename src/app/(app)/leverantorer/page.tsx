@@ -8,6 +8,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import Link from "next/link";
+import { todayISO } from "@/lib/dates";
 
 const fmt = (n: number) =>
   n.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -28,7 +29,7 @@ export default async function SuppliersPage() {
       .order("number"),
   ]);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const openInvoices = (invoices ?? []).filter((i) => i.status !== "paid");
   const openTotal = openInvoices.reduce((s, i) => {
     const paid = ((i.supplier_payments ?? []) as { amount: number }[])

@@ -1,9 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { TaxSimulator } from "@/components/tax-simulator";
+import { todayISO } from "@/lib/dates";
 
 export default async function TaxPage() {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
 
   const [{ data: balances }, { data: rules }, { data: settings }, { data: fy }] =
     await Promise.all([

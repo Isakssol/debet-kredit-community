@@ -9,6 +9,7 @@ import { MonthlyChart } from "@/components/monthly-chart";
 import { DashboardWidgets } from "@/components/dashboard-widgets";
 import { DEFAULT_WIDGETS, sanitizeWidgetIds, type WidgetMetrics } from "@/lib/widgets";
 import { kronorToOre } from "@/lib/money";
+import { todayISO } from "@/lib/dates";
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"];
 
@@ -50,7 +51,7 @@ export default async function DashboardPage() {
       .select("id, attachments(id)")
       .neq("source", "correction"),
   ]);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const bal = balances ?? [];
   const bankSaldo = bal.filter((b) => b.account! >= 1910 && b.account! <= 1940)
     .reduce((s, b) => s + kronorToOre(Number(b.balance)), 0);

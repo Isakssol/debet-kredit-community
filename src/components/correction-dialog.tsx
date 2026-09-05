@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { todayISO } from "@/lib/dates";
 
 type Row = { account: number; debit: number; credit: number };
 
@@ -54,7 +55,7 @@ export function CorrectionDialog({
     setBusy(true);
     const res = await correctVerification({
       originalId: verificationId,
-      date: new Date().toISOString().slice(0, 10),
+      date: todayISO(),
       description: newDescription,
       rows: reverseOnly ? null : rows,
       reason,

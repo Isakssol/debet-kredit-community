@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { todayISO } from "@/lib/dates";
 
 type Customer = {
   id: string; customer_no: number; name: string;
@@ -46,7 +47,7 @@ export function InvoiceForm({
   defaultPaymentTerms: number;
 }) {
   const router = useRouter();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const [busy, setBusy] = useState(false);
   const [customerId, setCustomerId] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(today);

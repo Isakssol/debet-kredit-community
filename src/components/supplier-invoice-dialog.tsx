@@ -13,12 +13,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-
-function addDays(date: string, days: number): string {
-  const d = new Date(date + "T00:00:00");
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
+import { addDays, todayISO } from "@/lib/dates";
 
 export function SupplierInvoiceDialog({
   suppliers,
@@ -28,7 +23,7 @@ export function SupplierInvoiceDialog({
   expenseAccounts: { number: number; name: string; default_vat_rate: number | null }[];
 }) {
   const router = useRouter();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);

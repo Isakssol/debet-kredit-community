@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { todayISO } from "@/lib/dates";
 
 /**
  * Påminnelseavgiften är 60 kr enligt lag (1981:739) om ersättning för
@@ -41,7 +42,7 @@ export function InvoiceActions({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
-  const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10));
+  const [payDate, setPayDate] = useState(todayISO());
   const [payAmount, setPayAmount] = useState(remaining > 0 ? remaining.toFixed(2) : "");
 
   async function run(fn: () => Promise<{ error?: string } & Record<string, unknown>>, okMsg: string) {

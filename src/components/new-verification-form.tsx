@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { todayISO } from "@/lib/dates";
 
 type Account = { number: number; name: string; vatRate: number | null; blocked: boolean };
 type FormRow = { account: string; debit: string; credit: string };
@@ -38,7 +39,7 @@ export function NewVerificationForm({
   templates?: { id: string; name: string; rows: { account: number; side: "debit" | "credit"; share: number }[] }[];
 }) {
   const router = useRouter();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const [busy, setBusy] = useState(false);
 
   // --- Manuell registrering ---

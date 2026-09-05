@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { generateSie4, type SieData } from "@/lib/sie/export";
+import { todayISO } from "@/lib/dates";
 
 /** Bygger komplett SIE 4E-fil för ett räkenskapsår ur databasen. */
 export async function buildSieForYear(year: number): Promise<{ sie: string } | { error: string }> {
@@ -99,7 +100,7 @@ export async function buildSieForYear(year: number): Promise<{ sie: string } | {
       .map((b) => ({ account: b.account!, amount: Number(b.balance) }));
   }
 
-  const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const today = todayISO().replace(/-/g, "");
   const orgNr = settings.org_number.replace(/\s/g, "");
 
   const data: SieData = {

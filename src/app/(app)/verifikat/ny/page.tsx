@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NewVerificationForm } from "@/components/new-verification-form";
+import { todayISO } from "@/lib/dates";
 
 export default async function NewVerificationPage({
   searchParams,
@@ -8,7 +9,7 @@ export default async function NewVerificationPage({
 }) {
   const { underlag } = await searchParams;
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
 
   const [{ data: accounts }, { data: series }, { data: rules }, { data: templates }] = await Promise.all([
     supabase.from("accounts").select("number, name, default_vat_rate, blocked, description")

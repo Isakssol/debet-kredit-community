@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { todayISO } from "@/lib/dates";
 
 const tripSchema = z.object({
   trip_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -33,7 +34,7 @@ export async function deleteTrip(id: string) {
 /** Bokför milersättning för alla obokade resor: D 5800 / K 2018 (skattefri, 25 kr/mil) */
 export async function bookMileage() {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
 
   const [{ data: trips }, { data: rule }] = await Promise.all([
     supabase.from("trips").select("*").is("verification_id", null).order("trip_date"),

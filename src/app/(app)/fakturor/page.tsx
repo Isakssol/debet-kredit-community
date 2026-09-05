@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { todayISO } from "@/lib/dates";
 
 const fmt = (n: number) =>
   n.toLocaleString("sv-SE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -27,7 +28,7 @@ export default async function InvoicesPage() {
     .select("*, customers(name), invoice_payments(amount)")
     .order("created_at", { ascending: false });
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   const open = (invoices ?? []).filter((i) =>
     ["booked", "sent", "partially_paid"].includes(i.status) && i.type === "debit");
   const openTotal = open.reduce((s, i) => {
