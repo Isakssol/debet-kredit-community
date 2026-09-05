@@ -95,10 +95,15 @@ följa README:s utvecklarväg i stället.
    och klicka **Fork** (uppe till höger) → **Create fork**.
    Nu har du en egen kopia under ditt konto: `dittnamn/debet-kredit-community`.
 
-> **Obs:** Community-versionen är fryst per 2026-09-01 — den fungerar
-> komplett men får inga uppdateringar (nästa års basbelopp, momsregler och
-> nya funktioner ingår inte). Den underhållna versionen med support ingår i
+> **Obs:** Community-versionen är fryst i funktioner per 2026-09-01 — nya
+> funktioner och nästa års regelvärden (basbelopp, momsgränser) hör till
+> licensen. Beräkningarna och säkerheten står däremot inte still: rättelser
+> porteras hit, med samma tester mot lagtext som licensen. Support ingår i
 > licensen — se prissidan som är länkad i huvud-README:n.
+>
+> Håller du din fork uppdaterad? `git remote add upstream
+> https://github.com/Isakssol/debet-kredit-community.git` en gång, sedan
+> `git pull upstream main` när en rättelse kommit.
 
 ## Steg 2 — Supabase: databasen (här bor din bokföring)
 

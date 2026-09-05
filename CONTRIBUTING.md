@@ -1,6 +1,12 @@
 # Bidra till Debet & Kredit
 
-Kul att du vill bidra! Några riktlinjer:
+> Repot är fryst i funktioner och tar inte emot pull requests. Har du hittat
+> ett räknefel eller ett säkerhetsproblem — öppna ett ärende: rättelser av
+> beräkningar och säkerhet porteras hit från licensversionen, med sina tester.
+> Riktlinjerna nedan gäller dig som forkar och driver vidare på egen hand,
+> vilket AGPL uttryckligen tillåter.
+
+Några riktlinjer:
 
 ## Licens för bidrag
 

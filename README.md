@@ -1,12 +1,18 @@
 # Debet & Kredit — Community Edition
 
-> **Det här är den fria Community-versionen** (AGPL-3.0), fryst per
-> 2026-09-01. Den fungerar komplett som den är — men koden står stilla.
-> Fryst betyder allt som det låter: inga nya funktioner, inga rättelser, inga
-> säkerhetsuppdateringar, ingen support, och **inte nästa års regelvärden**
-> (basbelopp, avgiftssatser och momsregler ändras varje årsskifte — den som
-> bokför på gamla värden bokför fel). Du får koden som den är, med full rätt
-> att ändra den själv; underhållet är ditt.
+> **Det här är den fria Community-versionen** (AGPL-3.0), **fryst i
+> funktioner** per 2026-09-01 — men den räknar alltid rätt. Rättelser av
+> beräkningar och säkerhet följer med, med samma tester mot lagtext som
+> licensen. Vidareutvecklingen — autopiloten och de nya funktionerna — lever
+> i licensen.
+>
+> I klartext: hittas ett räknefel eller ett säkerhetshål i motorn rättas det
+> här också, och rättelsen kommer med det golden test som citerar
+> rättskällan. Nya funktioner kommer inte hit. Nästa års regelvärden
+> (basbelopp, avgiftssatser, momsgränser) hör till licensen — i Community
+> lägger du in dem själv i tabellen `rule_values` med giltighetsdatum, se
+> [CONTRIBUTING.md](CONTRIBUTING.md). Support ingår inte, och driften är din:
+> du får koden som den är, med full rätt att ändra den själv.
 >
 > Vill du ha autopiloten — AI-bokföraren som läser kvittot och konterar,
 > rådgivaren, bankregler som bokför av sig själva, lön med AGI, offert- och
@@ -266,7 +272,10 @@ driva en stängd kommersiell produkt erbjuds en **kommersiell licens** — öppn
 ett ärende i repot eller kontakta upphovsrättsinnehavaren, så kommer vi överens
 om villkoren.
 
-**Bidrag:** det här repot är fryst och tar inte emot pull requests —
-utvecklingen fortsätter i den licensierade versionen. Villkoren för bidrag
-står kvar i [CONTRIBUTING.md](CONTRIBUTING.md) för den som forkar och driver
-vidare på egen hand, vilket AGPL uttryckligen tillåter.
+**Bidrag:** funktionsutvecklingen sker i den licensierade versionen, och det
+här repot tar inte emot pull requests. Rättelser går åt andra hållet: rättas
+en beräkning eller ett säkerhetshål i licensen porteras det hit, med sina
+tester. Hittar du ett räknefel eller ett säkerhetsproblem — öppna ett ärende,
+det är den vägen som är öppen. Villkoren för bidrag står kvar i
+[CONTRIBUTING.md](CONTRIBUTING.md) för den som forkar och driver vidare på
+egen hand, vilket AGPL uttryckligen tillåter.
