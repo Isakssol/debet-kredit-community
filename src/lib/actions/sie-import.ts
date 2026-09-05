@@ -2,9 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { parseSie } from "@/lib/sie/import";
+import { parseSie, decodeSieBuffer } from "@/lib/sie/import";
 import { fetchAll } from "@/lib/supabase/fetch-all";
-import iconv from "iconv-lite";
 
 /**
  * Importera SIE-fil (från Fortnox, Visma, Bokio m.fl.):
@@ -18,11 +17,7 @@ export async function importSieFile(formData: FormData) {
   if (!file) return { error: "Ingen fil vald." };
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  // SIE är PC8/CP437; vissa program skriver dock UTF-8 — testa CP437 först
-  let content = iconv.decode(buffer, "cp437");
-  if (!content.includes("#FLAGGA") && !content.includes("#SIETYP")) {
-    content = buffer.toString("utf-8");
-  }
+  const content = decodeSieBuffer(buffer);
   if (!content.includes("#SIETYP") && !content.includes("#FLAGGA")) {
     return { error: "Filen ser inte ut som en SIE-fil (saknar #FLAGGA/#SIETYP)." };
   }

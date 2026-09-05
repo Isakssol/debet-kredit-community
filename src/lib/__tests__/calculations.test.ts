@@ -300,7 +300,11 @@ describe("SIE 4E", () => {
       { account: 2010, amount: -50000 },
     ]);
     expect(parsed.verifications).toHaveLength(1);
-    expect(parsed.verifications[0].description).toBe("Kundfaktura 1 — Åäö & Co");
+    // SIE 4B 5.8 föreskriver PC8/CP437, och filen skrivs till disk i den
+    // kodningen. Tankstreck finns inte i CP437, så generateSie4 translittererar
+    // det medvetet till bindestreck i stället för att det tyst ska bli "?" i
+    // arkivfilen (BFL 7 kap. 1–2 §, räkenskapsinformation i läsbar form).
+    expect(parsed.verifications[0].description).toBe("Kundfaktura 1 - Åäö & Co");
     expect(parsed.verifications[0].rows).toEqual([
       { account: 1510, amount: 15000 },
       { account: 2611, amount: -3000 },

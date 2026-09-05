@@ -15,7 +15,7 @@ export async function buildSieForYear(year: number): Promise<{ sie: string } | {
   const [{ data: accounts }, { data: verifications }, { data: balances }] = await Promise.all([
     supabase.from("accounts").select("number, name, sru_code").order("number"),
     supabase.from("verifications")
-      .select("number, verification_date, registered_at, description, verification_series(code), verification_rows(account, debit, credit, note, row_no)")
+      .select("number, verification_date, registered_at, description, source, verification_series(code), verification_rows(account, debit, credit, note, row_no)")
       .eq("fiscal_year_id", fy.id)
       .order("verification_date"),
     supabase.from("account_balances").select("*").eq("fiscal_year_id", fy.id),
@@ -53,20 +53,51 @@ export async function buildSieForYear(year: number): Promise<{ sie: string } | {
     .filter((b) => b.class! >= 3 && Math.abs(Number(b.balance)) >= 0.005)
     .map((b) => ({ account: b.account!, amount: Number(b.balance) }));
 
-  const sieVerifications = (verifications ?? []).map((v) => ({
-    series: (v.verification_series as unknown as { code: string })?.code ?? "A",
-    number: v.number,
-    date: v.verification_date,
-    description: v.description,
-    registeredDate: (v.registered_at as string).slice(0, 10),
-    rows: ((v.verification_rows as { account: number; debit: number; credit: number; note: string | null; row_no: number }[]) ?? [])
-      .sort((a, b) => a.row_no - b.row_no)
-      .map((r) => ({
-        account: r.account,
-        amount: Number(r.debit) - Number(r.credit),
-        note: r.note ?? undefined,
-      })),
-  }));
+  // Öppningsbalansverifikatet skrivs ut som #IB ovan. #IB (årets ingående
+  // balans) och #VER (årets affärshändelser) är skilda posttyper i SIE 4B —
+  // skrivs balanserna som bådadera bokför varje program som läser filen dem
+  // två gånger, vår egen import inkluderad. Balansräkningen fortsätter att
+  // balansera, så felet syns bara på beloppen.
+  // ÅRL 2 kap. 4 § 1 st p. 7 och BFL 4 kap. 1 § (varje affärshändelse en gång).
+  const sieVerifications = (verifications ?? [])
+    .filter((v) => v.source !== "opening_balance")
+    .map((v) => ({
+      series: (v.verification_series as unknown as { code: string })?.code ?? "A",
+      number: v.number,
+      date: v.verification_date,
+      description: v.description,
+      registeredDate: (v.registered_at as string).slice(0, 10),
+      rows: ((v.verification_rows as { account: number; debit: number; credit: number; note: string | null; row_no: number }[]) ?? [])
+        .sort((a, b) => a.row_no - b.row_no)
+        .map((r) => ({
+          account: r.account,
+          amount: Number(r.debit) - Number(r.credit),
+          note: r.note ?? undefined,
+        })),
+    }));
+
+  // Jämförelseår. SIE 4B 5.16 rekommenderar att både #UB -1 och #IB 0 skrivs
+  // när värdena finns; utan #RAR -1/#UB -1/#RES -1 kan ett mottagande program
+  // inte bygga jämförelsetalen (ÅRL 3 kap. 5 §).
+  const prevEnd = new Date(`${fy.start_date}T00:00:00Z`);
+  prevEnd.setUTCDate(prevEnd.getUTCDate() - 1);
+  const { data: prevFy } = await supabase.from("fiscal_years").select("*")
+    .eq("end_date", prevEnd.toISOString().slice(0, 10)).maybeSingle();
+
+  let previousYear: SieData["previousYear"];
+  let previousClosing: SieData["previousClosing"];
+  let previousResults: SieData["previousResults"];
+  if (prevFy) {
+    const { data: prevBalances } = await supabase.from("account_balances")
+      .select("*").eq("fiscal_year_id", prevFy.id).order("account");
+    previousYear = { year: prevFy.year, start: prevFy.start_date, end: prevFy.end_date };
+    previousClosing = (prevBalances ?? [])
+      .filter((b) => b.class! <= 2 && Math.abs(Number(b.balance)) >= 0.005)
+      .map((b) => ({ account: b.account!, amount: Number(b.balance) }));
+    previousResults = (prevBalances ?? [])
+      .filter((b) => b.class! >= 3 && Math.abs(Number(b.balance)) >= 0.005)
+      .map((b) => ({ account: b.account!, amount: Number(b.balance) }));
+  }
 
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const orgNr = settings.org_number.replace(/\s/g, "");
@@ -76,6 +107,9 @@ export async function buildSieForYear(year: number): Promise<{ sie: string } | {
     orgNumber: orgNr,
     generatedDate: today,
     fiscalYear: { year: fy.year, start: fy.start_date, end: fy.end_date },
+    previousYear,
+    previousClosing,
+    previousResults,
     accounts: accountList,
     openingBalances,
     closingBalances,
