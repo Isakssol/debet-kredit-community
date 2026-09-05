@@ -90,6 +90,12 @@ export async function completeYearEnd(year: number) {
     .eq("fiscal_year_id", fy.id);
   const bal = balances ?? [];
 
+  // Bokslutsposten ska gå att hitta från bokslutsraden och inte bara genom att
+  // leta på source = 'year_end' (BFL 5 kap. 6 §: verifikationen och det den
+  // avser ska gå att knyta ihop). Egetkapitalkonsolideringen ligger i den här
+  // utgåvan inne i IB-verifikatet och har därför ingen egen rad att peka på.
+  let resultVerificationId: string | null = null;
+
   // 1. Årets resultat (klass 3–8 exkl. 8999)
   const result = bal.filter((b) => b.class! >= 3 && b.account !== 8999)
     .reduce((s, b) => s - Number(b.balance), 0);
@@ -99,7 +105,7 @@ export async function completeYearEnd(year: number) {
          { account: 2019, debit: 0, credit: result }]
       : [{ account: 2019, debit: -result, credit: 0 },
          { account: 8999, debit: 0, credit: -result }];
-    const { error } = await supabase.rpc("book_verification", {
+    const { data: ver, error } = await supabase.rpc("book_verification", {
       p_series_code: "E",
       p_date: fy.end_date,
       p_description: `Årets resultat ${year}`,
@@ -107,6 +113,7 @@ export async function completeYearEnd(year: number) {
       p_source: "year_end",
     });
     if (error) return { error: error.message };
+    resultVerificationId = (Array.isArray(ver) ? ver[0] : ver)?.out_id ?? null;
   }
 
   // 2. Nästa räkenskapsår
@@ -179,6 +186,7 @@ export async function completeYearEnd(year: number) {
   await supabase.from("year_end_closings").upsert({
     fiscal_year_id: fy.id,
     status: "completed",
+    result_verification_id: resultVerificationId,
     completed_at: new Date().toISOString(),
   }, { onConflict: "fiscal_year_id" });
 
