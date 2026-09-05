@@ -4,19 +4,28 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
   computeVatBoxes, vatClosingRows, formatEskdOrgNr, generateEskd, validateEskdNote,
-  type VatEntry,
+  NON_VAT_TRANSFER_SOURCES, type VatEntry,
 } from "@/lib/vat/report";
 
 export async function getVatEntries(periodStart: string, periodEnd: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("ledger_entries")
-    .select("account, debit, credit")
+    .select("account, debit, credit, verification_id")
     .gte("verification_date", periodStart)
     .lte("verification_date", periodEnd);
   const { data: accounts } = await supabase.from("accounts").select("number, vat_code");
   const vatCodeByAccount = new Map((accounts ?? []).map((a) => [a.number, a.vat_code]));
-  return (data ?? []).map((e) => ({
+  // Verifikatkällor som aldrig redovisar moms — listan bor i report.ts
+  // (NON_VAT_TRANSFER_SOURCES) och får inte dubbleras här. Momsomföringen
+  // nollställer 26xx mot 2650 och skulle annars räknas in i sin egen period;
+  // bokslutsverifikatet (year_end) är daterat räkenskapsårets sista dag och
+  // ligger därför alltid i den sista momsperioden.
+  const { data: transfers } = await supabase.from("verifications").select("id")
+    .in("source", NON_VAT_TRANSFER_SOURCES)
+    .gte("verification_date", periodStart).lte("verification_date", periodEnd);
+  const transferIds = new Set((transfers ?? []).map((t) => t.id));
+  return (data ?? []).filter((e) => !transferIds.has(e.verification_id ?? "")).map((e) => ({
     account: e.account!,
     vat_code: vatCodeByAccount.get(e.account!) ?? null,
     debit: Number(e.debit),

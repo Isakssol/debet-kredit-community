@@ -3,7 +3,9 @@ import { kronorToOre, vatFromGross, vatOnNet, roundToKrona } from "../money";
 import { generateOcr, validateOcr } from "../ocr";
 import { calculateTotals, invoicePostingRows } from "../invoicing/totals";
 import { representation, fSkatt, kopMotKvitto, milersattning } from "../posting/quick-events";
-import { computeVatBoxes, vatClosingRows, generateEskd, vatPeriods } from "../vat/report";
+import {
+  computeVatBoxes, computeVatChecks, vatClosingRows, generateEskd, vatPeriods,
+} from "../vat/report";
 import { calculateEfTax } from "../tax/calc";
 import { generateSie4 } from "../sie/export";
 import { parseSie } from "../sie/import";
@@ -158,17 +160,22 @@ describe("momsdeklarationen", () => {
     expect(xml).toContain("<MomsBetala>20000</MomsBetala>");
     expect(xml).toContain("<ForsTjSkskAnnatEg>20000</ForsTjSkskAnnatEg>");
   });
-  it("omvänd skattskyldighet på inventarie (1220) → underlaget härleds till ruta 20", () => {
-    const { boxes } = computeVatBoxes([
+  it("omvänd skattskyldighet på inventarie (1220) → ruta 20 lämnas tom, kontrollen larmar", () => {
+    const rows = [
       // EU-köpt utrustning bokförd direkt som tillgång — inget 45xx-konto
       { account: 1220, vat_code: null, debit: 64743, credit: 0 },
       { account: 2614, vat_code: null, debit: 0, credit: 16185.75 },
       { account: 2645, vat_code: null, debit: 16185.75, credit: 0 },
-    ]);
-    expect(boxes["20"]).toBe(64743);
+    ];
+    const { boxes } = computeVatBoxes(rows);
+    // Underlaget gissas inte fram: det som inte är bokfört står inte i deklarationen
+    expect(boxes["20"] ?? 0).toBe(0);
     expect(boxes["30"]).toBe(16185);
     expect(boxes["48"]).toBe(16185);
     expect(boxes["49"]).toBe(0); // omvänd moms nettar ut
+    const check = computeVatChecks(rows).find((c) => c.label.includes("omvänd skattskyldighet"));
+    expect(check?.ok).toBe(false);
+    expect(check?.detail).toContain("Underlag saknas för utgående moms");
   });
 
   it("kvartalens deklarationsdatum (12:e, 17:e i jan/aug)", () => {

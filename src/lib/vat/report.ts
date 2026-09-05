@@ -22,18 +22,39 @@ const UNDERLAG_BOX: Record<string, string> = {
   SALES_EU_GOODS: "35", SALES_EU_SERVICES: "39",
   SALES_EXPORT: "36", SALES_SERVICES_XEU: "40", SALES_EXEMPT: "42",
   PURCHASE_EU_GOODS: "20", PURCHASE_EU_SERVICES: "21", PURCHASE_SERVICES_XEU: "22",
+  // Varuimport från land utanför EU. Momsen påförs vid införseln (tullräkningen
+  // från Tullverket eller speditören), inte genom omvänd skattskyldighet, och
+  // beskattningsunderlaget redovisas i ruta 50 ["Fylla i momsdeklarationen",
+  // fält 50 "Beskattningsunderlag vid import"].
+  PURCHASE_IMPORT: "50",
 };
 
 // momskonto → momsruta
 const VAT_ACCOUNT_BOX: Record<number, string> = {
   2611: "10", 2621: "11", 2631: "12",
   2614: "30",
+  // Importmoms enligt tullräkningen — ruta 60–62 ["Fylla i momsdeklarationen"].
+  2615: "60", 2625: "61", 2635: "62",
   // Hela BAS-familjen för ingående moms — 2641 "Debiterad ingående moms" är
   // standardkontot i Fortnox-/Visma-exporter och måste träffa ruta 48.
   2640: "48", 2641: "48", 2642: "48", 2645: "48", 2647: "48", 2648: "48", 2649: "48",
 };
 
 const OUTPUT_BOXES = ["10", "11", "12", "30", "31", "32", "60", "61", "62"];
+
+/**
+ * Verifikatkällor som aldrig redovisar moms i en momsperiod.
+ *
+ * - vat_report: momsomföringen nollställer 26xx mot 2650. Räknas den med i
+ *   periodens underlag redovisas samma moms två gånger.
+ * - opening_balance: ingående balanser är föregående års utgående, inte årets
+ *   affärshändelser (ÅRL 2 kap. 4 § 1 st p. 7).
+ * - year_end: bokslutsverifikatet är daterat räkenskapsårets sista dag och
+ *   ligger därför ALLTID i den sista momsperioden. Rör det ett 26xx-konto
+ *   hamnade beloppet i deklarationen trots att posten inte är en momspliktig
+ *   omsättning.
+ */
+export const NON_VAT_TRANSFER_SOURCES = ["vat_report", "opening_balance", "year_end"];
 
 export function computeVatBoxes(entries: VatEntry[]): {
   boxes: VatBoxes;
@@ -64,18 +85,21 @@ export function computeVatBoxes(entries: VatEntry[]): {
     }
   }
 
-  // Omvänd skattskyldighet: om utgående moms (ruta 30) finns men underlaget
-  // inte fångats via 45xx-konton (t.ex. EU-inköp bokfört direkt på 1220 som
-  // inventarie) härleds underlaget från momsen och läggs i ruta 20.
-  const reverseVat = oreBoxes.get("30") ?? 0;
-  const reverseBase = ["20", "21", "22", "23", "24"]
-    .reduce((s, b) => s + (oreBoxes.get(b) ?? 0), 0);
-  const expectedBase = Math.round(reverseVat / 0.25);
-  if (reverseVat > 0 && expectedBase - reverseBase > 100) {
-    oreBoxes.set("20", (oreBoxes.get("20") ?? 0) + (expectedBase - reverseBase));
-  }
+  // Deklarationen innehåller bara det som faktiskt är bokfört. Saknas underlaget
+  // till en momsruta härleds det INTE — ett gissat belopp i ruta 20 ser rätt ut i
+  // filen men saknar motsvarighet i huvudboken, blir alltid 25 % även när
+  // omvändningen gäller 12 eller 6 procent, och döljer den felkontering det
+  // kompenserar för. I stället flaggar rimlighetskontrollen (computeVatChecks)
+  // att underlaget saknas, så konteringen rättas där felet sitter.
 
-  // Hela kronor, öretal slopas (Skatteverkets regel)
+  // Hela kronor: öretalen stryks per ruta. Skatteverkets filformat kräver
+  // "belopp i heltal utan decimaler" ["Lämna momsdeklaration via fil i
+  // e-tjänsten"] men publicerar ingen avrundningsregel för rutorna.
+  // Math.trunc (mot noll) väljs medvetet framför Math.round: den stryker
+  // öretalen konsekvent även för negativa rutor (kreditnotor), och ruta 49
+  // räknas nedan ur de REDAN trunkerade rutorna så att Skatteverkets
+  // summeringsformel för fält 49 alltid stämmer i den inlämnade filen. Det är
+  // den invarianten som räknas — ändra inte till Math.round, då bryts den.
   const boxes: VatBoxes = {};
   for (const [box, ore] of oreBoxes) {
     boxes[box] = Math.trunc(oreToKronor(ore));
@@ -178,10 +202,16 @@ export function vatPeriods(
 export function computeVatChecks(entries: VatEntry[]): { label: string; ok: boolean; detail: string }[] {
   const underlagByRate = new Map<number, number>(); // ören, per sats
   const vatByBox = new Map<string, number>();
+  const baseByBox = new Map<string, number>();      // ören, per underlagsruta
 
   for (const e of entries) {
     const debit = kronorToOre(Number(e.debit));
     const credit = kronorToOre(Number(e.credit));
+    if (e.vat_code && UNDERLAG_BOX[e.vat_code]) {
+      const box = UNDERLAG_BOX[e.vat_code];
+      const amount = e.vat_code.startsWith("PURCHASE") ? debit - credit : credit - debit;
+      baseByBox.set(box, (baseByBox.get(box) ?? 0) + amount);
+    }
     if (e.vat_code === "SALES_25") underlagByRate.set(25, (underlagByRate.get(25) ?? 0) + credit - debit);
     if (e.vat_code === "SALES_12") underlagByRate.set(12, (underlagByRate.get(12) ?? 0) + credit - debit);
     if (e.vat_code === "SALES_6") underlagByRate.set(6, (underlagByRate.get(6) ?? 0) + credit - debit);
@@ -209,12 +239,59 @@ export function computeVatChecks(entries: VatEntry[]): { label: string; ok: bool
     });
   }
 
+  // Omvänd skattskyldighet: momsen i ruta 30–32 ska ha sitt underlag i ruta 20–24.
+  // Ett EU-inköp som bokförts direkt på ett inventariekonto ger moms utan underlag;
+  // programmet gissar inte fram beloppet utan säger var det saknas.
+  const reverseRates: [string, number][] = [["30", 25], ["31", 12], ["32", 6]];
+  const reverseVat = reverseRates.reduce((s, [box]) => s + (vatByBox.get(box) ?? 0), 0);
+  if (reverseVat > 0) {
+    const expectedBase = reverseRates
+      .reduce((s, [box, rate]) => s + ((vatByBox.get(box) ?? 0) * 100) / rate, 0);
+    const actualBase = ["20", "21", "22", "23", "24"]
+      .reduce((s, b) => s + (baseByBox.get(b) ?? 0), 0);
+    const missing = Math.round(expectedBase - actualBase);
+    checks.push({
+      label: "Underlaget till omvänd skattskyldighet finns i ruta 20–24",
+      ok: missing <= 100,
+      detail: missing <= 100
+        ? `${oreToKronor(actualBase).toLocaleString("sv-SE")} kr underlag mot ${oreToKronor(reverseVat).toLocaleString("sv-SE")} kr moms i ruta 30–32`
+        : `Underlag saknas för utgående moms — kontrollera konteringen. Ruta 30–32 har ${oreToKronor(reverseVat).toLocaleString("sv-SE")} kr moms men ruta 20–24 bara ${oreToKronor(actualBase).toLocaleString("sv-SE")} kr underlag, ${oreToKronor(missing).toLocaleString("sv-SE")} kr för lite. Bokför inköpet på ett 45xx-konto med rätt momskod i stället för direkt på tillgångs- eller kostnadskontot.`,
+    });
+  }
+
+  // Import av varor: den utgående momsen i ruta 60–62 ska ha sitt
+  // beskattningsunderlag i ruta 50. Skatteverket, "Fylla i momsdeklarationen",
+  // fält 50 "Beskattningsunderlag vid import" och fält 60–62.
+  const importRates: [string, number][] = [["60", 25], ["61", 12], ["62", 6]];
+  const importVat = importRates.reduce((s, [box]) => s + (vatByBox.get(box) ?? 0), 0);
+  const importBase = baseByBox.get("50") ?? 0;
+  if (importVat > 0 || importBase > 0) {
+    const expectedBase = importRates
+      .reduce((s, [box, rate]) => s + ((vatByBox.get(box) ?? 0) * 100) / rate, 0);
+    const diff = Math.abs(Math.round(expectedBase - importBase));
+    checks.push({
+      label: "Underlaget till importmomsen finns i ruta 50",
+      ok: diff <= 100,
+      detail: diff <= 100
+        ? `${oreToKronor(importBase).toLocaleString("sv-SE")} kr underlag mot ${oreToKronor(importVat).toLocaleString("sv-SE")} kr moms i ruta 60–62`
+        : `Ruta 50 har ${oreToKronor(importBase).toLocaleString("sv-SE")} kr underlag men momsen i ruta 60–62 svarar mot ${oreToKronor(Math.round(expectedBase)).toLocaleString("sv-SE")} kr. Bokför importen på ett 45xx-konto med rätt momskod.`,
+    });
+  }
+
+  // Negativ ingående moms är inte ett fel i sig. En period där kreditnotor på
+  // inköp överstiger periodens inköp ger ett fullt legitimt kreditsaldo på 2641,
+  // och en kreditnota på ett EU-förvärv ger det på 2645. Ruta 48 har inget
+  // teckenkrav hos Skatteverket ["Fylla i momsdeklarationen", fält 48] och
+  // eSKD-formatet tillåter uttryckligen inledande minustecken ["Lämna
+  // momsdeklaration via fil i e-tjänsten"]. Raden är därför en upplysning: ett
+  // rött fel ska vara reserverat för något som faktiskt är fel, annars lär sig
+  // användaren att "rätta" en korrekt bokföring.
   const ingMoms = vatByBox.get("48") ?? 0;
   if (ingMoms < 0) {
     checks.push({
       label: "Ingående moms är negativ",
-      ok: false,
-      detail: "Konto 2640/2645 har kreditsaldo — kontrollera felbokningar.",
+      ok: true,
+      detail: `Ruta 48 är ${oreToKronor(ingMoms).toLocaleString("sv-SE")} kr. Det är normalt när periodens kreditnotor på inköp är större än inköpen — kontrollera ändå att inget inköp bokförts med omvänt tecken.`,
     });
   }
   return checks;
