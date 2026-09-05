@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   costByClass, grossMarginByMonth, paretoOf, topWithRest, agingBuckets, daysBetween,
 } from "@/lib/analysis-charts";
@@ -154,5 +156,36 @@ describe("agingBuckets", () => {
 
   it("markerar vilka fack som är förfallna", () => {
     expect(agingBuckets([], today).map((b) => b.overdue)).toEqual([false, true, true, true]);
+  });
+});
+
+/**
+ * Serverkomponent → klientkomponent: inga funktioner över gränsen.
+ *
+ * Analys-sidan renderas på servern, diagrammen är klientkomponenter. Skickas en
+ * formaterare eller en länkbyggare som prop vägrar React rendera och HELA sidan
+ * faller ned i felgränsen — användaren får "Något gick fel", inte ett diagram
+ * som saknar sina siffror. Felet syns aldrig i tsc och aldrig i ett enhetstest
+ * av räkningen, bara i webbläsaren. Därför vaktas gränsen här.
+ */
+describe("diagrammen tar emot data, inte funktioner", () => {
+  const charts = readFileSync(join(process.cwd(), "src/components/charts.tsx"), "utf8");
+  const page = readFileSync(join(process.cwd(), "src/app/(app)/analys/page.tsx"), "utf8");
+
+  it("charts.tsx är en klientkomponent", () => {
+    expect(charts.startsWith('"use client"')).toBe(true);
+  });
+
+  it("ingen prop i charts.tsx är deklarerad som funktion", () => {
+    // t.ex. "format: (n: number) => string" eller "href?: (item) => string"
+    const fnProps = [...charts.matchAll(/^\s{2}\w+\??:\s*\([^)]*\)\s*=>/gm)].map((m) => m[0].trim());
+    expect(fnProps).toEqual([]);
+  });
+
+  it("analyssidan skickar inga funktioner till diagrammen", () => {
+    const arrowProps = [...page.matchAll(/\s\w+=\{\s*\([^)]*\)\s*=>/g)].map((m) => m[0].trim());
+    expect(arrowProps).toEqual([]);
+    // En namngiven funktion är lika omöjlig att skicka som en pil
+    expect(page).not.toMatch(/\sformat=\{/);
   });
 });

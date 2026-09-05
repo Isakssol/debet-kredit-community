@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Megaphone, Package, Paperclip } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatSEK, kronorToOre } from "@/lib/money";
 import { todayISO } from "@/lib/dates";
@@ -18,7 +19,6 @@ const isMarketingAccount = (n: number) => n >= 5900 && n <= 5999; // Reklam och 
 const isGoodsAccount = (n: number) => n >= 4000 && n <= 4999;     // Varor, material, underentreprenader
 
 const sek = (kronor: number) => formatSEK(kronorToOre(kronor));
-const pct = (n: number) => `${n.toFixed(1).replace(".", ",")} %`;
 
 type Row = {
   account: number; debit: number; credit: number; note: string | null;
@@ -31,19 +31,29 @@ type Row = {
 export default async function AnalysPage() {
   const supabase = await createClient();
 
-  const [{ data: rowsRaw }, { data: allVers }, { data: accountRows },
+  // fetchAll paginerar förbi PostgREST:s tak på 1000 rader. Utan det läser
+  // sidan bara den första tusenlappen och tiger om resten: diagrammen ritade
+  // "Inga kostnader bokförda det här året" för ett företag med miljoner i
+  // kostnader, eftersom de tusen raderna råkade vara intäkter. Ett tyst fel
+  // som ser ut som ett svar är värre än inget diagram alls.
+  const [rowsRaw, allVers, { data: accountRows },
     { data: fiscalYears }, { data: openInvoices }] = await Promise.all([
     // Upp till 8998: resultatet omfattar även finansiella poster och skatt,
     // men aldrig 8999 (årets resultat) — då räknas resultatet två gånger.
-    supabase
+    fetchAll<Row>((f, t) => supabase
       .from("verification_rows")
       .select("account, debit, credit, note, verifications!inner(id, number, verification_date, fiscal_year_id, description, counterparty, source)")
-      .gte("account", 3000).lte("account", 8998),
-    supabase
+      .gte("account", 3000).lte("account", 8998)
+      .order("id").range(f, t) as unknown as PromiseLike<{ data: Row[] | null; error: { message: string } | null }>),
+    fetchAll<{
+      id: string; number: number; verification_date: string; description: string | null;
+      source: string; attachments: { id: string }[]; verification_series: unknown;
+    }>((f, t) => supabase
       .from("verifications")
       .select("id, number, verification_date, description, source, attachments(id), verification_series(code)")
       .neq("source", "correction")
-      .order("verification_date", { ascending: false }),
+      .order("verification_date", { ascending: false })
+      .order("id").range(f, t)),
     supabase.from("accounts").select("number, name").gte("number", 3000).lte("number", 3799),
     supabase.from("fiscal_years").select("id, year, status, start_date").order("year", { ascending: false }),
     supabase.from("invoices").select("id, due_date, total_amount, invoice_payments(amount)")
@@ -239,7 +249,6 @@ export default async function AnalysPage() {
                     : []),
                 ]}
                 line={{ label: "Resultat", values: thisYear.result, color: "chart-3" }}
-                format={sek}
               />
               <ChartLegend items={[
                 { label: `Omsättning ${fy?.year ?? ""}`.trim(), color: "chart-1" },
@@ -267,7 +276,7 @@ export default async function AnalysPage() {
           </CardHeader>
           <CardContent>
             {costClasses.segments.length ? (
-              <ShareBar segments={costClasses.segments} format={sek} />
+              <ShareBar segments={costClasses.segments} />
             ) : (
               <ChartEmpty>Inga kostnader bokförda på konto 4000–7999 det här året.</ChartEmpty>
             )}
@@ -284,7 +293,7 @@ export default async function AnalysPage() {
           </CardHeader>
           <CardContent>
             {hasMargin ? (
-              <LineChart labels={MONTH_LABELS} values={margin} format={pct} color="chart-1" />
+              <LineChart labels={MONTH_LABELS} values={margin} unit="percent" color="chart-1" />
             ) : (
               <ChartEmpty>Ingen försäljning bokförd ännu — marginalen går inte att räkna.</ChartEmpty>
             )}
@@ -305,7 +314,6 @@ export default async function AnalysPage() {
             {topSuppliers.length ? (
               <HBarChart
                 items={topSuppliers.map((i) => ({ ...i, muted: i.label.startsWith("Övriga ") }))}
-                format={sek}
               />
             ) : (
               <ChartEmpty>Inga kostnader bokförda det här året.</ChartEmpty>
@@ -324,7 +332,7 @@ export default async function AnalysPage() {
           </CardHeader>
           <CardContent>
             {customerPareto.items.length ? (
-              <ParetoChart items={customerPareto.items} format={sek} />
+              <ParetoChart items={customerPareto.items} />
             ) : (
               <ChartEmpty>Ingen försäljning bokförd ännu.</ChartEmpty>
             )}
@@ -350,8 +358,7 @@ export default async function AnalysPage() {
               items={aging.filter((b) => b.value > 0).map((b) => ({
                 label: `${b.label} (${b.count} st)`, value: b.value, muted: !b.overdue,
               }))}
-              format={sek}
-              href={() => "/fakturor"}
+              href="/fakturor"
             />
           ) : (
             <ChartEmpty>Inga obetalda kundfakturor just nu.</ChartEmpty>

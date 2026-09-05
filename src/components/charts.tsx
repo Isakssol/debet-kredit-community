@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { formatSEK, kronorToOre } from "@/lib/money";
 
 /**
  * Diagrammen på Analys-sidan.
@@ -20,6 +21,22 @@ import { cn } from "@/lib/utils";
  */
 
 export type ChartColor = "chart-1" | "chart-2" | "chart-3" | "destructive";
+
+/**
+ * Enheten anges som ett ord, inte som en funktion.
+ *
+ * Analys-sidan är en serverkomponent och diagrammen är klientkomponenter. En
+ * funktion går inte över den gränsen — React vägrar rendera och hela sidan
+ * faller ned i felgränsen. Därför skickas "sek" eller "procent" och
+ * formateringen sker här inne, precis som i monthly-chart.tsx.
+ */
+export type ChartUnit = "sek" | "percent";
+
+function formatValue(n: number, unit: ChartUnit): string {
+  return unit === "percent"
+    ? `${n.toFixed(1).replace(".", ",")} %`
+    : formatSEK(kronorToOre(n));
+}
 
 const FILL: Record<ChartColor, string> = {
   "chart-1": "fill-chart-1",
@@ -89,14 +106,15 @@ function Tooltip({ leftPct, children }: { leftPct: number; children: React.React
  * mått i samma bild utan att någon av dem blir svårläst.
  */
 export function GroupedBarChart({
-  labels, series, line, format,
+  labels, series, line, unit = "sek",
 }: {
   labels: string[];
   series: { label: string; values: number[]; color: ChartColor; faded?: boolean }[];
   line?: { label: string; values: number[]; color: ChartColor };
-  format: (n: number) => string;
+  unit?: ChartUnit;
 }) {
   const [active, setActive] = useState<number | null>(null);
+  const format = (n: number) => formatValue(n, unit);
   const all = [...series.flatMap((s) => s.values), ...(line?.values ?? [])];
 
   const SLOT = 46, H = 150, PAD_BOTTOM = 18, PAD_TOP = 4;
@@ -185,14 +203,15 @@ export function GroupedBarChart({
  * månad utan försäljning.
  */
 export function LineChart({
-  labels, values, format, color = "chart-1",
+  labels, values, unit = "sek", color = "chart-1",
 }: {
   labels: string[];
   values: (number | null)[];
-  format: (n: number) => string;
+  unit?: ChartUnit;
   color?: ChartColor;
 }) {
   const [active, setActive] = useState<number | null>(null);
+  const format = (n: number) => formatValue(n, unit);
   const present = values.filter((v): v is number => v !== null);
   const max = Math.max(...present.map(Math.abs), 1);
   const SLOT = 46, H = 130, PAD_BOTTOM = 18;
@@ -261,12 +280,13 @@ export function LineChart({
  * linje. Svarar på frågan "hur många kunder står för halva omsättningen?".
  */
 export function ParetoChart({
-  items, format,
+  items, unit = "sek",
 }: {
   items: { label: string; value: number; cumulative: number }[];
-  format: (n: number) => string;
+  unit?: ChartUnit;
 }) {
   const [active, setActive] = useState<number | null>(null);
+  const format = (n: number) => formatValue(n, unit);
   const max = Math.max(...items.map((i) => i.value), 1);
   const SLOT = 46, H = 140, PAD_BOTTOM = 26;
   const W = items.length * SLOT;
@@ -324,18 +344,20 @@ export function ParetoChart({
  * lika viktigt som storleken.
  */
 export function HBarChart({
-  items, format, color = "chart-1", href,
+  items, unit = "sek", color = "chart-1", href,
 }: {
-  items: { label: string; value: number; muted?: boolean }[];
-  format: (n: number) => string;
+  items: { label: string; value: number; muted?: boolean; href?: string }[];
+  unit?: ChartUnit;
   color?: ChartColor;
-  href?: (item: { label: string; value: number }) => string | undefined;
+  /** Gemensam länk för alla rader — enskilda rader kan ha en egen i `item.href` */
+  href?: string;
 }) {
+  const format = (n: number) => formatValue(n, unit);
   const max = Math.max(...items.map((i) => i.value), 1);
   return (
     <ol className="space-y-1.5">
       {items.map((item) => {
-        const link = href?.(item);
+        const link = item.href ?? href;
         const row = (
           <>
             <div className="flex items-baseline justify-between gap-3 text-sm">
@@ -366,11 +388,12 @@ export function HBarChart({
  * fyra staplar bredvid varandra när summan är det intressanta.
  */
 export function ShareBar({
-  segments, format,
+  segments, unit = "sek",
 }: {
   segments: { label: string; value: number; share: number }[];
-  format: (n: number) => string;
+  unit?: ChartUnit;
 }) {
+  const format = (n: number) => formatValue(n, unit);
   const colors: ChartColor[] = ["chart-1", "chart-2", "chart-3", "destructive"];
   return (
     <div className="space-y-3">
