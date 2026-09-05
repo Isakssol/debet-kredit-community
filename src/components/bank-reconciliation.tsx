@@ -32,8 +32,8 @@ export function BankReconciliation({ bookBalance }: { bookBalance: number }) {
         {diff !== null && (
           <div className={`pb-2 text-sm font-medium ${Math.abs(diff) < 0.005 ? "text-green-700" : "text-destructive"}`}>
             {Math.abs(diff) < 0.005
-              ? "✅ Stämmer på öret"
-              : `❌ Differens ${fmt(diff)} kr — leta efter obokförda händelser eller dubbletter`}
+              ? "Stämmer på öret ✓"
+              : `Differens ${fmt(diff)} kr — leta efter obokförda händelser eller dubbletter`}
           </div>
         )}
       </CardContent>

@@ -58,7 +58,7 @@ export function K2AnnualReport({
       {!balanced && (
         <Card className="border-destructive print:hidden">
           <CardContent className="py-4 text-sm text-destructive">
-            ⚠️ Balansräkningen balanserar inte (tillgångar {fmt(report.balances.assets)} kr,
+            Obs: balansräkningen balanserar inte (tillgångar {fmt(report.balances.assets)} kr,
             eget kapital &amp; skulder {fmt(report.balances.equityAndLiabilities)} kr).
             Kontrollera att alla bokslutsposter (avskrivningar, skatt, årets resultat)
             är bokförda innan dokumentet används.

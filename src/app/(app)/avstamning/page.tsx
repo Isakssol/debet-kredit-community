@@ -171,7 +171,7 @@ export default async function ReconciliationPage() {
               <CardContent className="py-3 flex items-center justify-between gap-4">
                 <div>
                   <div className="text-sm font-medium">
-                    {c.ok ? "✅" : c.warn ? "⚠️" : "❌"} {c.title}
+                    {c.ok ? "✓" : c.warn ? "!" : "✕"} {c.title}
                   </div>
                   <div className="text-xs text-muted-foreground">{c.detail}</div>
                 </div>
@@ -197,7 +197,7 @@ export default async function ReconciliationPage() {
             <ul className="space-y-1">
               {(vatReports ?? []).filter((r) => r.status === "approved").map((r) => (
                 <li key={r.period_start}>
-                  ✅ {r.period_start} – {r.period_end}
+                  ✓ {r.period_start} – {r.period_end}
                 </li>
               ))}
             </ul>

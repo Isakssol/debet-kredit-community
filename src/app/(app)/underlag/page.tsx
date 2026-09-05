@@ -23,13 +23,13 @@ export default async function InboxPage() {
       <div className="space-y-2">
         {!files?.length && (
           <p className="text-sm text-muted-foreground py-6 text-center">
-            Inkorgen är tom. 🎉
+            Inkorgen är tom.
           </p>
         )}
         {files?.map((f) => (
           <div key={f.id} className="flex items-center justify-between rounded border p-3 text-sm">
             <div>
-              <div className="font-medium">📎 {f.file_name}</div>
+              <div className="font-medium">{f.file_name}</div>
               <div className="text-xs text-muted-foreground">
                 Uppladdad {new Date(f.uploaded_at).toLocaleString("sv-SE")}
               </div>

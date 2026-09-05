@@ -58,7 +58,7 @@ export function GettingStarted({ items }: { items: ChecklistItem[] }) {
         {items.map((item) => (
           <div key={item.id}
             className="group flex items-start gap-2 py-1 rounded-lg hover:bg-accent px-1 -mx-1">
-            <span className="mt-px">{item.done ? "✅" : "⬜"}</span>
+            <span className="mt-px">{item.done ? "✓" : "○"}</span>
             <Link href={item.href} className="flex-1 min-w-0">
               <span className={item.done ? "line-through text-muted-foreground" : "font-medium"}>
                 {item.label}

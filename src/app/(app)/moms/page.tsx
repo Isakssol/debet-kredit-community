@@ -118,7 +118,7 @@ export default async function VatPage({
               <div className="text-sm font-medium">Momskontroller</div>
               {checks.map((c) => (
                 <div key={c.label} className="text-sm flex gap-2">
-                  <span>{c.ok ? "✅" : "⚠️"}</span>
+                  <span>{c.ok ? "✓" : "!"}</span>
                   <span>
                     {c.label}
                     <span className="block text-xs text-muted-foreground">{c.detail}</span>

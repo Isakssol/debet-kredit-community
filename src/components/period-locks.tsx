@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Lock } from "lucide-react";
 import { toast } from "sonner";
 import { toggleMonthLock } from "@/lib/actions/settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +39,7 @@ export function PeriodLocks({
       <CardHeader>
         <CardTitle className="text-base">Periodlåsning</CardTitle>
         <CardDescription>
-          Låst period tillåter inga nya eller ändrade verifikat. Momsrapporten låser sin period automatiskt (🔒 = momslåst, klickbar = manuell).
+          Låst period tillåter inga nya eller ändrade verifikat. Momsrapporten låser sin period automatiskt (nedtonad = momslåst, klickbar = manuell).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -55,7 +56,7 @@ export function PeriodLocks({
                     key={month}
                     disabled={busy}
                     onClick={() => toggle(fy.id, month, !!lock, lock?.reason)}
-                    className={`px-2.5 py-1.5 rounded border text-sm ${
+                    className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded border text-sm ${
                       vatLocked
                         ? "bg-muted text-muted-foreground cursor-not-allowed"
                         : lock
@@ -64,7 +65,7 @@ export function PeriodLocks({
                     }`}
                     title={vatLocked ? "Låst av momsrapporten" : lock ? "Klicka för att låsa upp" : "Klicka för att låsa"}
                   >
-                    {name} {lock ? "🔒" : ""}
+                    {name}{lock && <Lock className="h-3 w-3" aria-label="Låst" />}
                   </button>
                 );
               })}

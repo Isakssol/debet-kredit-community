@@ -247,17 +247,17 @@ export default async function DashboardPage() {
           <CardContent className="space-y-2 text-sm">
             {overdueInvoices.length > 0 && (
               <Link href="/fakturor" className="flex justify-between hover:underline">
-                <span>🔴 {overdueInvoices.length} förfallna kundfakturor att påminna</span>
+                <span>{overdueInvoices.length} förfallna kundfakturor att påminna</span>
               </Link>
             )}
             {missingAttachments > 0 && (
               <Link href="/analys" className="flex justify-between hover:underline">
-                <span>📎 {missingAttachments} verifikat saknar underlag</span>
+                <span>{missingAttachments} verifikat saknar underlag</span>
               </Link>
             )}
             {dueSuppliers.length > 0 && (
               <Link href="/leverantorer" className="flex justify-between hover:underline">
-                <span>💸 {dueSuppliers.length} leverantörsfakturor att betala</span>
+                <span>{dueSuppliers.length} leverantörsfakturor att betala</span>
               </Link>
             )}
             {upcoming.map((d) => (
@@ -265,7 +265,7 @@ export default async function DashboardPage() {
                 href={d.type === "moms" ? "/moms" : d.type === "inkomstdeklaration" ? "/arsavslut" : "/skatt"}
                 className="flex justify-between gap-2 hover:underline">
                 <span>
-                  {d.type === "moms" ? "🧾" : d.type === "f_skatt" ? "🏛️" : "📋"} {d.title}
+                  {d.title}
                 </span>
                 <Badge variant={daysUntil(d.dueDate) <= 7 ? "destructive" : "outline"}>
                   {d.dueDate} ({daysUntil(d.dueDate)} dgr)
@@ -279,7 +279,7 @@ export default async function DashboardPage() {
             )}
             {overdueInvoices.length === 0 && dueSuppliers.length === 0
               && missingAttachments === 0 && upcoming.length === 0 && !askFTax && (
-              <p className="text-muted-foreground">Allt är i fas. 🎉</p>
+              <p className="text-muted-foreground">Allt är i fas.</p>
             )}
             {/* Skattedatumen är härledda, inte inlagda — säg det, så ingen tror
                 att någon lagt in dem åt dem. */}

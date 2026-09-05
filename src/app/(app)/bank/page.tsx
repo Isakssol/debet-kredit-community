@@ -139,7 +139,7 @@ export default async function BankPage({
       {rows.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            Inga ohanterade bankhändelser. 🎉 Importera CSV eller synka bankkopplingen.
+            Inga ohanterade bankhändelser. Importera CSV eller synka bankkopplingen.
           </CardContent>
         </Card>
       ) : (

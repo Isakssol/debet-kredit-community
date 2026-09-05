@@ -132,7 +132,10 @@ export default async function YearEndPage() {
           {checks.map((c) => (
             <Link key={c.label} href={c.href}
               className="flex items-center justify-between text-sm hover:underline">
-              <span>{c.ok ? "✅" : "⬜"} {c.label}</span>
+              <span className="flex items-center gap-2">
+                <span className={c.ok ? "text-emerald-600" : "text-muted-foreground"}>{c.ok ? "✓" : "○"}</span>
+                {c.label}
+              </span>
               {c.detail && <Badge variant="destructive">{c.detail}</Badge>}
             </Link>
           ))}

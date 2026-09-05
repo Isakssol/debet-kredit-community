@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {themeCss && <style>{themeCss}</style>}
       {isDemo && (
         <div className="fixed bottom-0 inset-x-0 z-50 bg-foreground text-background text-center text-[13px] py-2 px-4 print:hidden">
-          🧪 Demoläge — utforska fritt! Datan är påhittad, delas av alla besökare och
+          Demoläge — utforska fritt! Datan är påhittad, delas av alla besökare och
           nollställs varje natt.{" "}
           <a href="https://github.com/Isakssol/debet-kredit" className="underline underline-offset-2"
             target="_blank" rel="noreferrer">

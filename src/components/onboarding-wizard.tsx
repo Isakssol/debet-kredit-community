@@ -261,7 +261,7 @@ export function OnboardingWizard({
             </Button>
           ) : (
             <Button onClick={finish} disabled={busy}>
-              {busy ? "Sparar…" : "Kom igång 🎉"}
+              {busy ? "Sparar…" : "Kom igång"}
             </Button>
           )}
         </div>
