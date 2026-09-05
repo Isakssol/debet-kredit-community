@@ -197,7 +197,7 @@ versionen.
    | `NEXT_PUBLIC_SUPABASE_URL` | din Project URL från steg 2 |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon-nyckeln från steg 2 |
    | `STATS_API_KEY` | *Valfri.* En slumpsträng du hittar på själv (`openssl rand -base64 32`) som ger externa system läsåtkomst till dina nyckeltal via `/api/stats/*`. Hoppa över om du inte bygger egna integrationer |
-   | `SUPABASE_SERVICE_ROLE_KEY` | *Valfri.* Behövs bara tillsammans med `STATS_API_KEY`, för läs-API:et ovan. Går förbi alla säkerhetsregler — lägg den aldrig någon annanstans än som miljövariabel på servern |
+   | `SUPABASE_SERVICE_ROLE_KEY` | *Valfri.* Behövs för läs-API:et ovan (tillsammans med `STATS_API_KEY`) och för Byråns åtkomst. Går förbi alla säkerhetsregler — lägg den aldrig någon annanstans än som miljövariabel på servern |
 
 4. **Deploy**. Efter ~1 minut har du en adress i stil med
    `https://debet-kredit-dittnamn.vercel.app`.
@@ -218,6 +218,19 @@ bokför din första händelse.
   konfiguration (Bank → Importera CSV). API-koppling via Enable Banking kräver
   egen appregistrering (`ENABLE_BANKING_APP_ID` och
   `ENABLE_BANKING_PRIVATE_KEY`).
+- **Byråns åtkomst**: anlitar du en redovisningsbyrå kan de följa din bokföring
+  utifrån utan att du delar ut ditt lösenord eller service-nyckeln. Du skapar
+  nyckeln under Inställningar → Byråns åtkomst, den visas en enda gång, och du
+  kan återkalla den när som helst — byrån tappar åtkomsten i samma sekund, även
+  om de är inloggade just då. Kräver `SUPABASE_SERVICE_ROLE_KEY` i miljön.
+
+  Nyckeln ger **läsning av sju siffror och ingenting annat**: antal obokförda
+  händelser, omatchade banktransaktioner, verifikat utan underlag, datum för
+  senaste verifikatet, till och med vilket datum bokföringen är låst, nästa
+  momsdeadline och räkenskapsårets start, slut och status. Inga belopp, inga
+  motparter, inga verifikat, inga underlag — och den kan inte bokföra. Det
+  upprätthålls av databasen, inte av gränssnittet. Samma siffror kan du hämta
+  själv på `/api/stats/byra` med din egen inloggning, om du vill räkna efter.
 
 E-faktura via Peppol, attest av leverantörsfakturor och betalfil till banken
 (ISO 20022) ingår inte i community-versionen.
@@ -235,7 +248,9 @@ på två minuter och byter ut den. Det som **inte** går att återskapa är åtk
 till kontona: mejladressen, lösenorden och GitHubs reservkoder. Tappar du dem
 tappar du allt annat på köpet. Ett undantag ska sparas när det skapas, för det
 visas en enda gång: **databaslösenordet** i Supabase (samt Enable Bankings
-PEM-fil, om du använder bankkopplingen).
+PEM-fil, om du använder bankkopplingen, och **byrånyckeln** om du ger en
+redovisningsbyrå åtkomst — tappas den bort återkallar du raden och skapar en ny,
+det finns ingen väg tillbaka till strängen).
 
 **2. Tre sätt att förvara.** Datorns egen hanterare (appen Lösenord, eller den i
 Chrome/Edge) är enklast och räcker för kontona — men den är byggd för

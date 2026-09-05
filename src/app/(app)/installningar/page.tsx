@@ -6,12 +6,13 @@ import { PeriodLocks } from "@/components/period-locks";
 import { OpeningBalances } from "@/components/opening-balances";
 import { SieImport } from "@/components/sie-import";
 import { MigrationImport } from "@/components/migration-import";
+import { ByraAccessSettings, type ByraKeyRow } from "@/components/byra-access-settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
-  const [{ data: settings }, { data: fiscalYears }, { data: locks }, { data: series }, { data: accounts }, { count: verCount }] =
+  const [{ data: settings }, { data: fiscalYears }, { data: locks }, { data: series }, { data: accounts }, { count: verCount }, { data: byraKeys }] =
     await Promise.all([
       supabase.from("settings").select("*").eq("id", 1).single(),
       supabase.from("fiscal_years").select("*").order("year", { ascending: false }),
@@ -19,6 +20,11 @@ export default async function SettingsPage() {
       supabase.from("verification_series").select("*, fiscal_years(year)").order("code"),
       supabase.from("accounts").select("number, name").eq("active", true).order("number"),
       supabase.from("verifications").select("id", { count: "exact", head: true }),
+      // key_hash läses aldrig hit: hashen har inget ärende i en webbläsare.
+      supabase
+        .from("byra_keys")
+        .select("id, agency_name, key_prefix, created_at, last_used_at, revoked_at, note")
+        .order("created_at", { ascending: false }),
     ]);
 
   return (
@@ -73,6 +79,11 @@ export default async function SettingsPage() {
       <OpeningBalances
         accounts={(accounts ?? []).map((a) => ({ number: a.number, name: a.name }))}
         hasVerifications={(verCount ?? 0) > 0}
+      />
+
+      <ByraAccessSettings
+        keys={(byraKeys ?? []) as ByraKeyRow[]}
+        demo={process.env.DEMO_MODE === "1"}
       />
     </div>
   );

@@ -113,6 +113,12 @@ Priser och köp: [debea.se/priser](https://debea.se/priser).
 - **Mobilapp (PWA)** — installera på hemskärmen och fota kvitton rakt in i
   underlagsinkorgen
 - **Arkivexport** — hela räkenskapsåret som zip (SIE + alla underlag)
+- **Byråns åtkomst** — anlitar du en redovisningsbyrå kan de följa läget
+  utifrån med en egen nyckel som du skapar och när som helst återkallar. Den
+  visar sju siffror (obokfört, saknade underlag, senaste verifikatet, låst till
+  och med, nästa momsdeadline, räkenskapsåret) och ingenting mer: inga belopp,
+  inga motparter, inga underlag, och den kan inte bokföra. Byrån kan inte ge
+  sig själv åtkomst, och en återkallelse biter i samma sekund
 
 ### Finns inte här — det är licensversionen
 
