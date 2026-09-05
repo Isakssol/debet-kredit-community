@@ -129,7 +129,7 @@ export async function issueApiKey(input: unknown): Promise<{
   if (rowErr) {
     // Ingen rad, inget konto. Ett maskinkonto utan nyckelrad är en inloggning
     // ingen äger — och i den här utgåvan är det värre än så: spärrarna i
-    // 20260908000002 känner igen maskinkontot PÅ nyckelraden, så ett konto
+    // 20260908000005 känner igen maskinkontot PÅ nyckelraden, så ett konto
     // utan rad hade fallit tillbaka på "authenticated full access".
     await admin.auth.admin.deleteUser(created.user.id);
     return { error: rowErr.message };

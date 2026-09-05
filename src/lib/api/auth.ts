@@ -22,7 +22,7 @@ import {
  *
  * SESSIONSKLIENT, INTE SERVICE-KLIENT. Det är det viktigaste beslutet i hela
  * v1, och i den här utgåvan är det avgörande snarare än bara rätt. Både
- * spärrarna och vakttriggern i 20260908000002 känner igen maskinkontot på
+ * spärrarna och vakttriggern i 20260908000005 känner igen maskinkontot på
  * `auth.uid()`. En service-klient har ingen `auth.uid()` alls: den räknas som
  * betrodd, går förbi RLS och passerar vakten utan att någon scope-kontroll
  * sker. En session mintad för nyckelns eget maskinkonto ger i stället att RLS

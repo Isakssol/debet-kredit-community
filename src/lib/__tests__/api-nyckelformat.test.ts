@@ -47,7 +47,7 @@ describe("nyckelformatet", () => {
     expect(hashApiKey(key)).toBe(hash);
   });
 
-  test("prefixet matchar check-villkoret i 20260908000002", () => {
+  test("prefixet matchar check-villkoret i 20260908000005", () => {
       // key_prefix text not null check (key_prefix ~ '^dk_live_[A-Za-z0-9_-]{6}$')
     const { key, prefix } = generateApiKey();
     expect(prefix).toMatch(/^dk_live_[A-Za-z0-9_-]{6}$/);

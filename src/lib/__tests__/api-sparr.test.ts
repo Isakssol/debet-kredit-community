@@ -22,7 +22,7 @@ import { API_SCOPES } from "@/lib/api/scopes";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const read = (p: string) => fs.readFileSync(path.join(root, p), "utf8");
 
-const nycklar = read("supabase/migrations/20260908000002_api_keys.sql");
+const nycklar = read("supabase/migrations/20260908000005_api_keys.sql");
 
 describe("spärren gäller maskinkontot, inte den levande nyckeln", () => {
   /**
