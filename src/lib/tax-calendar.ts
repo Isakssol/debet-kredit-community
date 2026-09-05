@@ -8,25 +8,56 @@ export type Deadline = {
 };
 
 /**
+ * settings.pays_f_tax — har företaget beslut om debiterad preliminärskatt?
+ * true = ja, false = nej, null/undefined = frågan är inte besvarad ännu.
+ */
+export type FTaxAnswer = boolean | null | undefined;
+
+/** Frågan är obesvarad — Att göra visar en mjuk uppmaning i stället för datum. */
+export function needsFTaxAnswer(paysFTax: FTaxAnswer): boolean {
+  return paysFTax === null || paysFTax === undefined;
+}
+
+/** Den mjuka raden i Att göra när F-skattefrågan är obesvarad. */
+export const F_TAX_PROMPT = {
+  text: "Ange om företaget betalar debiterad preliminärskatt — då visas betalningsdatumen här",
+  href: "/installningar#f-skatt",
+} as const;
+
+/** Källan bakom kalendern, så ingen tror att datumen är inlagd data. */
+export const TAX_CALENDAR_SOURCE =
+  "Skattekalendern härleds ur dina företagsinställningar";
+
+/**
  * Skattekalender för enskild firma med kalenderår.
  * Genereras dynamiskt från inställningarna — momsstatus kollas mot vat_reports.
  */
 export function taxDeadlines(
   year: number,
   vatPeriod: "manad" | "kvartal" | "helar",
-  euTrade: boolean
+  euTrade: boolean,
+  /**
+   * settings.pays_f_tax. Endast ett uttryckligt `true` ger F-skattrader:
+   * betalningsdatumen gäller den som har ett beslut om debiterad
+   * preliminärskatt (55 kap. 2–3 §§ skatteförfarandelagen [2011:1244]), och
+   * programmet gissar inte åt någon. Obesvarat läge hanteras av anroparen via
+   * needsFTaxAnswer/F_TAX_PROMPT.
+   */
+  paysFTax?: FTaxAnswer
 ): Deadline[] {
   const pad = (n: number) => String(n).padStart(2, "0");
   const deadlines: Deadline[] = [];
 
   // Debiterad preliminärskatt: 12:e varje månad (17:e i januari och augusti)
-  for (let m = 1; m <= 12; m++) {
-    const day = m === 1 || m === 8 ? 17 : 12;
-    deadlines.push({
-      type: "f_skatt",
-      title: "F-skatt (debiterad preliminärskatt)",
-      dueDate: `${year}-${pad(m)}-${pad(day)}`,
-    });
+  if (paysFTax === true) {
+    for (let m = 1; m <= 12; m++) {
+      const day = m === 1 || m === 8 ? 17 : 12;
+      deadlines.push({
+        type: "f_skatt",
+        title: "F-skatt (debiterad preliminärskatt)",
+        dueDate: `${year}-${pad(m)}-${pad(day)}`,
+      });
+    }
   }
   // Januari + augusti året efter fångas av nästa års lista
 

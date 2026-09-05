@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { completeOnboarding } from "@/lib/actions/settings";
+import { fTaxFromChoice } from "@/components/settings-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 type StartMode = "fresh" | "sie" | "ib";
 
-const STEPS = ["Företaget", "Moms", "Startläge"];
+const STEPS = ["Företaget", "Moms & F-skatt", "Startläge"];
 
 export function OnboardingWizard({
   defaults,
@@ -26,7 +27,12 @@ export function OnboardingWizard({
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [f, setF] = useState({ ...defaults, eu_trade: false, company_type: "enskild_firma" });
+  // pays_f_tax hålls som "okant" tills användaren svarar — tomt svar är ett
+  // giltigt svar här, och bättre än att programmet antar F-skatt åt någon.
+  const [f, setF] = useState({
+    ...defaults, eu_trade: false, company_type: "enskild_firma",
+    pays_f_tax: "okant" as "okant" | "ja" | "nej",
+  });
   const [startMode, setStartMode] = useState<StartMode>("fresh");
   const set = (k: string, v: string | boolean) => setF((p) => ({ ...p, [k]: v }));
 
@@ -41,6 +47,7 @@ export function OnboardingWizard({
       vat_number: "",
       plusgiro: "", iban: "", bic: "",
       vat_period: f.vat_period as "manad" | "kvartal" | "helar",
+      pays_f_tax: fTaxFromChoice(f.pays_f_tax),
       default_payment_terms: 30,
       reminder_fee: 60,
       late_interest_rate: null,
@@ -180,6 +187,34 @@ export function OnboardingWizard({
               Ditt val ska matcha vad som står i ditt registerutdrag från Skatteverket.
               Går att ändra under Inställningar.
             </p>
+
+            {/* F-skatt frågas här i stället för att antas. Utan svar visar
+                skattekalendern inga betalningsdatum — bara en påminnelse om
+                att svara. "Vet inte" är ett fullgott val. */}
+            <div className="space-y-2 border-t pt-4">
+              <Label>Har företaget beslut om debiterad preliminärskatt från Skatteverket?</Label>
+              <p className="text-xs text-muted-foreground">
+                Kallas F-skatt och betalas varje månad med ett belopp Skatteverket
+                beslutat i förväg. Alla har det inte — den som är godkänd för
+                F-skatt men saknar debiterad preliminärskatt betalar ingenting
+                månadsvis. Står i ditt registerutdrag.
+              </p>
+              {[
+                { value: "ja" as const, title: "Ja", desc: "Skattekalendern lägger in betalningsdatumen (12:e varje månad, 17:e i januari och augusti) i Att göra." },
+                { value: "nej" as const, title: "Nej", desc: "Inga F-skattedatum visas. Byt när Skatteverket beslutar om debiterad preliminärskatt." },
+                { value: "okant" as const, title: "Vet inte", desc: "Helt okej — inga datum visas, och översikten påminner dig om att svara när du kollat registerutdraget." },
+              ].map((opt) => (
+                <button key={opt.value} type="button"
+                  onClick={() => set("pays_f_tax", opt.value)}
+                  className={cn("w-full text-left rounded-lg border p-3 transition-colors",
+                    f.pays_f_tax === opt.value
+                      ? "border-primary bg-accent ring-1 ring-primary"
+                      : "hover:bg-accent/50")}>
+                  <div className="font-medium text-sm">{opt.title}</div>
+                  <div className="text-xs text-muted-foreground">{opt.desc}</div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { taxDeadlines } from "@/lib/tax-calendar";
+import { taxDeadlines, needsFTaxAnswer, F_TAX_PROMPT, TAX_CALENDAR_SOURCE } from "@/lib/tax-calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export default async function DashboardPage() {
       .select("id, verification_date, description, number, verification_series(code)")
       .order("registered_at", { ascending: false }).limit(6),
     supabase.from("settings")
-      .select("vat_period, eu_trade, org_number, bankgiro, dashboard_widgets, dismissed_checklist_steps, checklist_hidden")
+      .select("vat_period, eu_trade, org_number, bankgiro, dashboard_widgets, dismissed_checklist_steps, checklist_hidden, pays_f_tax")
       .eq("id", 1).single(),
     supabase.from("vat_reports").select("period_start, status"),
     supabase.from("invoices").select("id, due_date, total_amount, invoice_payments(amount)")
@@ -137,7 +137,8 @@ export default async function DashboardPage() {
   const upcoming = taxDeadlines(
     fy?.year ?? 2026,
     (settings?.vat_period ?? "kvartal") as "manad" | "kvartal" | "helar",
-    settings?.eu_trade ?? false
+    settings?.eu_trade ?? false,
+    settings?.pays_f_tax
   ).filter((d) => {
     if (d.dueDate < today) return false;
     if (d.type === "moms" && d.periodStart) {
@@ -149,6 +150,10 @@ export default async function DashboardPage() {
 
   const missingAttachments = (attachCheck ?? [])
     .filter((v) => (v.attachments as { id: string }[]).length === 0).length;
+
+  // F-skattefrågan obesvarad: hellre en rad som ber om svaret än tolv datum
+  // som programmet gissat fram åt någon som kanske inte har F-skatt alls.
+  const askFTax = needsFTaxAnswer(settings?.pays_f_tax);
 
   const daysUntil = (date: string) =>
     Math.ceil((new Date(date).getTime() - new Date(today).getTime()) / 86400000);
@@ -266,10 +271,21 @@ export default async function DashboardPage() {
                 </Badge>
               </Link>
             ))}
+            {askFTax && (
+              <Link href={F_TAX_PROMPT.href} className="flex justify-between gap-2 hover:underline">
+                <span className="text-muted-foreground">{F_TAX_PROMPT.text}</span>
+              </Link>
+            )}
             {overdueInvoices.length === 0 && dueSuppliers.length === 0
-              && missingAttachments === 0 && upcoming.length === 0 && (
+              && missingAttachments === 0 && upcoming.length === 0 && !askFTax && (
               <p className="text-muted-foreground">Allt är i fas. 🎉</p>
             )}
+            {/* Skattedatumen är härledda, inte inlagda — säg det, så ingen tror
+                att någon lagt in dem åt dem. */}
+            <p className="pt-1 text-xs text-muted-foreground"
+              title="Momsperioden, EU-handeln och F-skattesvaret under Inställningar avgör vilka datum som visas här.">
+              {TAX_CALENDAR_SOURCE}
+            </p>
           </CardContent>
         </Card>
 

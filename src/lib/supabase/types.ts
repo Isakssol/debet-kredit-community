@@ -962,6 +962,7 @@ export type Database = {
           municipal_tax_rate: number
           onboarded_at: string | null
           org_number: string | null
+          pays_f_tax: boolean | null
           phone: string | null
           plusgiro: string | null
           postal_code: string | null
@@ -987,6 +988,7 @@ export type Database = {
           municipal_tax_rate?: number
           onboarded_at?: string | null
           org_number?: string | null
+          pays_f_tax?: boolean | null
           phone?: string | null
           plusgiro?: string | null
           postal_code?: string | null
@@ -1012,6 +1014,7 @@ export type Database = {
           municipal_tax_rate?: number
           onboarded_at?: string | null
           org_number?: string | null
+          pays_f_tax?: boolean | null
           phone?: string | null
           plusgiro?: string | null
           postal_code?: string | null

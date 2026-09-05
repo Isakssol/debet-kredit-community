@@ -27,11 +27,25 @@ type Settings = {
   bic: string | null;
   vat_period: string;
   eu_trade: boolean;
+  /** Beslut om debiterad preliminärskatt: true = ja, false = nej, null = obesvarad */
+  pays_f_tax: boolean | null;
   default_payment_terms: number;
   reminder_fee: number;
   late_interest_rate: number | null;
   municipal_tax_rate: number;
 };
+
+/**
+ * F-skattesvaret är tre lägen men formulärstate bär strängar. "okant" = frågan
+ * obesvarad; Radix Select tar inte tomma värden, så läget behöver ett eget ord.
+ */
+export const F_TAX_CHOICES = ["okant", "ja", "nej"] as const;
+export function fTaxToChoice(value: boolean | null | undefined): "okant" | "ja" | "nej" {
+  return value === true ? "ja" : value === false ? "nej" : "okant";
+}
+export function fTaxFromChoice(choice: string): boolean | null {
+  return choice === "ja" ? true : choice === "nej" ? false : null;
+}
 
 export function SettingsForm({ settings }: { settings: Settings }) {
   const router = useRouter();
@@ -51,6 +65,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
     bic: settings.bic ?? "",
     vat_period: settings.vat_period,
     eu_trade: settings.eu_trade,
+    pays_f_tax: fTaxToChoice(settings.pays_f_tax),
     default_payment_terms: String(settings.default_payment_terms),
     reminder_fee: String(settings.reminder_fee),
     late_interest_rate: settings.late_interest_rate != null ? String(settings.late_interest_rate) : "",
@@ -69,6 +84,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       late_interest_rate: f.late_interest_rate ? parseFloat(f.late_interest_rate) : null,
       municipal_tax_rate: parseFloat(f.municipal_tax_rate) || 32,
       vat_period: f.vat_period as "manad" | "kvartal" | "helar",
+      pays_f_tax: fTaxFromChoice(f.pays_f_tax),
     });
     setBusy(false);
     if (res.error) toast.error(res.error);
@@ -153,6 +169,22 @@ export function SettingsForm({ settings }: { settings: Settings }) {
                 <SelectItem value="helar">Helår</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div id="f-skatt" className="space-y-1 scroll-mt-20">
+            <Label>Debiterad preliminärskatt (F-skatt)</Label>
+            <Select value={f.pays_f_tax} onValueChange={(v) => set("pays_f_tax", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="okant">Vet inte ännu</SelectItem>
+                <SelectItem value="ja">Ja — vi har beslut från Skatteverket</SelectItem>
+                <SelectItem value="nej">Nej</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              Står i ditt registerutdrag från Skatteverket. Vid ja lägger
+              skattekalendern in betalningsdatumen (12:e varje månad, 17:e i
+              januari och augusti) i Att göra.
+            </p>
           </div>
           <div className="space-y-1">
             <Label>Betalningsvillkor (dagar)</Label>
