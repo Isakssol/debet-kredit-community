@@ -8,6 +8,8 @@ import { SieImport } from "@/components/sie-import";
 import { MigrationImport } from "@/components/migration-import";
 import { ByraAccessSettings, type ByraKeyRow } from "@/components/byra-access-settings";
 import { SecuritySettings } from "@/components/security-settings";
+import { ApiKeysSettings } from "@/components/api-keys-settings";
+import type { ApiKeyListRow } from "@/lib/actions/api-keys";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SettingsToc, SettingsSection, type SettingsGroup } from "@/components/settings-section";
@@ -42,6 +44,21 @@ export default async function SettingsPage() {
         .order("created_at", { ascending: false }),
     ]);
 
+  /**
+   * API-nycklarna hämtas för sig i stället för i uppräkningen ovan. Det är
+   * ett medvetet val för att sektionen ska gå att lyfta in och ut som en
+   * enhet — frågan, komponenten och dess typ hör ihop och ligger bredvid
+   * varandra. `key_hash` hämtas aldrig hit: prefixet räcker för att peka ut
+   * raden, och hashen har ingenting i en klientbundle att göra.
+   */
+  const { data: apiKeys } = await supabase
+    .from("api_keys")
+    .select(
+      "id, name, key_prefix, scopes, rate_limit_per_hour, created_at, last_used_at, last_used_ip, revoked_at, note"
+    )
+    .order("revoked_at", { ascending: true, nullsFirst: true })
+    .order("created_at", { ascending: false });
+
   const companyType = settings?.company_type ?? "enskild_firma";
   // Bucketen är privat: logotypen visas via en signerad länk
   const logoUrl = await logoSignedUrl(supabase, settings?.logo_path);
@@ -75,9 +92,14 @@ export default async function SettingsPage() {
       </SettingsSection>
 
       <SettingsSection id="atkomst" title="Åtkomst"
-        description="Vem utanför företaget som kommer åt bokföringen.">
+        description="Vem och vad utanför företaget som kommer åt bokföringen — din byrå, och dina egna integrationer.">
         <ByraAccessSettings
           keys={(byraKeys ?? []) as ByraKeyRow[]}
+          demo={process.env.DEMO_MODE === "1"}
+        />
+
+        <ApiKeysSettings
+          keys={(apiKeys ?? []) as ApiKeyListRow[]}
           demo={process.env.DEMO_MODE === "1"}
         />
       </SettingsSection>
