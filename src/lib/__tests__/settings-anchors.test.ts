@@ -4,10 +4,11 @@ import { join } from "node:path";
 
 /**
  * Inställningssidan länkas till med ankare från hela programmet: skattekalendern
- * pekar på #f-skatt, attest-notiserna på #attest, ändringsloggen på
- * #sakerhetskopia och #byra, onboardingen på #sie-import. Ett ankare som
- * försvinner vid en omgruppering ger ingen felkod — länken landar bara högst upp
- * på en sida med arton kort, och ingen märker det förrän en användare hör av sig.
+ * pekar på #f-skatt, onboardingen på #sie-import och #ingaende-balanser. Vilka
+ * ankare som finns skiljer sig mellan utgåvorna, så testet letar upp dem i
+ * källkoden i stället för att räkna upp dem här. Ett ankare som försvinner vid en
+ * omgruppering ger ingen felkod — länken landar bara högst upp på sidan, och
+ * ingen märker det förrän en användare hör av sig.
  *
  * Testet läser källkoden i stället för att rendera: målet är att ingen ska kunna
  * flytta ett kort utan att ta med sig dess id.

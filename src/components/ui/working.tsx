@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
  *
  * Regeln: ingen yta som kan ta mer än ett ögonblick får stå stum. En knapp som
  * bara blir grå säger inte om programmet arbetar eller har hängt sig — och de
- * tyngsta ytorna (AI-förslag för tio underlag, SIE-import, arkivexport) kan ta
- * minuter. Formspråket kommer från rådgivarens väntläge: tre studsande prickar
- * plus en rad som säger vad som pågår just nu.
+ * tyngsta ytorna (SIE-import av ett helt år, arkivexporten, rapport-PDF:erna)
+ * kan ta minuter. Formspråket är detsamma överallt: tre studsande prickar plus
+ * en rad som säger vad som pågår just nu.
  *
  * Tre former:
  * - `inline` — prickar + text inuti en knapp eller en rad text.

@@ -3,8 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 
 /**
  * Väntläge vid sidnavigering. Läggs som `loading.tsx` bredvid de sidor som
- * räknar mycket innan de kan rendera (analys, rapporter, körjournal,
- * inställningar, bytesguiden) — alla har `maxDuration = 300`.
+ * räknar mycket innan de kan rendera: analys, rapporter, körjournal, årsavslut
+ * och inställningar.
  *
  * Utan den står den gamla sidan kvar helt orörd medan den nya hämtas, och
  * ingenting säger att klicket gick fram. Rubriken skrivs ut direkt så att
