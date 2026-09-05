@@ -93,7 +93,7 @@ export async function importSieFile(formData: FormData) {
                 .update({ ib_booked: true }).eq("id", targetFy.id).select("id")
             : { data: null, error: null };
           if (ibErr || !marked?.length) {
-            warnings.push(`Ingående balanser är bokförda men räkenskapsåret kunde inte markeras som IB-klart${ibErr ? ` (${ibErr.message})` : ""} — kontrollera under Inställningar → Räkenskapsår.`);
+            warnings.push(`Ingående balanser är bokförda men räkenskapsåret kunde inte markeras som IB-klart${ibErr ? ` (${ibErr.message})` : ""} — kontrollera under Inställningar → Bokföringens ramar → Räkenskapsår & verifikationsserier.`);
           }
         }
       }

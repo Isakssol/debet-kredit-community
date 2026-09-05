@@ -116,6 +116,17 @@ Priser och köp: [debea.se/priser](https://debea.se/priser).
 - **Körjournal, anläggningsregister** med avskrivningar
 - **Översikt med egna nyckeltal** — välj vilka widgets du vill se, teman och
   färgsättning, samt ett läs-API (`/api/stats`) för egna integrationer
+- **Analys** — diagram över det som redan är bokfört, ett räkenskapsår i taget
+  och alltid exklusive moms: omsättning och resultat månad för månad med
+  föregående år nedtonat bakom, kostnaderna fördelade på BAS-kontoklass 4–7,
+  bruttomarginal per månad, de tio största motparterna på kostnadssidan,
+  kundkoncentrationen som Pareto (rubriken säger hur många kunder som står för
+  80 % av omsättningen) och kundfordringarna efter ålder. Under diagrammen
+  ligger tabellerna: kostnader per leverantör och månad, försäljning per kund
+  och per intäktskonto, samt de verifikat som saknar underlag. Sidan läser bara
+  bokföringen — den räknar aldrig fram något du inte redan bokfört, och en
+  månad utan försäljning lämnas tom i marginalen i stället för att ritas som
+  noll
 - **Mobilapp (PWA)** — installera på hemskärmen och fota kvitton rakt in i
   underlagsinkorgen
 - **Arkivexport** — hela räkenskapsåret som zip (SIE + alla underlag)
