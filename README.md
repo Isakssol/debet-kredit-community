@@ -1,18 +1,18 @@
 # Debet & Kredit — Community Edition
 
 > **Det här är den fria Community-versionen** (AGPL-3.0), **fryst i
-> funktioner** per 2026-09-01 — men den räknar alltid rätt. Rättelser av
-> beräkningar och säkerhet följer med, med samma tester mot lagtext som
-> licensen. Vidareutvecklingen — autopiloten och de nya funktionerna — lever
-> i licensen.
+> funktioner** per 2026-09-01. Den delar bokföringsmotor med licensen —
+> samma beräkningar, underhållna med samma automatiska tester mot lagtext
+> och Skatteverkets specifikationer. Vidareutvecklingen — autopiloten och
+> de nya funktionerna — lever i licensen.
 >
-> I klartext: hittas ett räknefel eller ett säkerhetshål i motorn rättas det
-> här också, och rättelsen kommer med det golden test som citerar
-> rättskällan. Nya funktioner kommer inte hit. Nästa års regelvärden
-> (basbelopp, avgiftssatser, momsgränser) hör till licensen — i Community
-> lägger du in dem själv i tabellen `rule_values` med giltighetsdatum, se
-> [CONTRIBUTING.md](CONTRIBUTING.md). Support ingår inte, och driften är din:
-> du får koden som den är, med full rätt att ändra den själv.
+> I klartext: motorn hålls i takt med licensens, och varje beräkning bär
+> ett test som citerar sin rättskälla. Nya funktioner kommer inte hit.
+> Nästa års regelvärden (basbelopp, avgiftssatser, momsgränser) hör till
+> licensen — i Community lägger du in dem själv i tabellen `rule_values`
+> med giltighetsdatum, se [CONTRIBUTING.md](CONTRIBUTING.md). Support
+> ingår inte, och driften är din: du får koden som den är, med full rätt
+> att ändra den själv.
 >
 > Vill du ha autopiloten — AI-bokföraren som läser kvittot och konterar,
 > rådgivaren, bankregler som bokför av sig själva, lön med AGI, offert- och
@@ -273,9 +273,8 @@ ett ärende i repot eller kontakta upphovsrättsinnehavaren, så kommer vi över
 om villkoren.
 
 **Bidrag:** funktionsutvecklingen sker i den licensierade versionen, och det
-här repot tar inte emot pull requests. Rättelser går åt andra hållet: rättas
-en beräkning eller ett säkerhetshål i licensen porteras det hit, med sina
-tester. Hittar du ett räknefel eller ett säkerhetsproblem — öppna ett ärende,
-det är den vägen som är öppen. Villkoren för bidrag står kvar i
+här repot tar inte emot pull requests. Motorn hålls i stället i takt med
+licensens, med sina tester. Har du en fråga eller en iakttagelse om en
+beräkning — öppna ett ärende, det är den vägen som är öppen. Villkoren för bidrag står kvar i
 [CONTRIBUTING.md](CONTRIBUTING.md) för den som forkar och driver vidare på
 egen hand, vilket AGPL uttryckligen tillåter.
