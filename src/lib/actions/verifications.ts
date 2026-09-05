@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { toKronor2, toOre } from "@/lib/money";
 
 const rowSchema = z.object({
   account: z.number().int().min(1000).max(8999),
@@ -27,12 +28,40 @@ export async function bookVerification(input: BookVerificationInput) {
   if (!parsed.success) {
     return { error: "Ogiltiga uppgifter: " + parsed.error.issues[0].message };
   }
-  const { seriesCode, date, description, counterparty, source, rows } = parsed.data;
+  const { seriesCode, date, description, counterparty, source } = parsed.data;
 
-  const totalDebit = rows.reduce((s, r) => s + Math.round(r.debit * 100), 0);
-  const totalCredit = rows.reduce((s, r) => s + Math.round(r.credit * 100), 0);
+  // Bokföringen förs i ören. Raderna avrundas HÄR, med samma exakta
+  // decimalavrundning som databasens numeric(12,2), och det avrundade beloppet
+  // är både det som balanskontrolleras och det som skickas vidare. Förut räknade
+  // förkontrollen med binära flyttal (Math.round(1.005 * 100) = 100) medan
+  // motorn räknade 1,005 → 1,01: appen kunde säga "balanserar" om ett verifikat
+  // som motorn sedan avvisade, och användaren fick ett kryptiskt motorfel på
+  // något gränssnittet just godkänt.
+  const rows = parsed.data.rows.map((r) => ({
+    ...r,
+    debit: toKronor2(r.debit),
+    credit: toKronor2(r.credit),
+  }));
+  const totalDebit = rows.reduce((s, r) => s + toOre(r.debit), 0);
+  const totalCredit = rows.reduce((s, r) => s + toOre(r.credit), 0);
   if (totalDebit !== totalCredit) {
     return { error: "Verifikatet balanserar inte." };
+  }
+  /**
+   * Motorn har TVÅ invarianter efter summeringen, inte en: debet = kredit OCH
+   * ett belopp skilt från noll ("Verifikatet saknar belopp." i book_verification
+   * och i verification_assert_balance). Förkontrollen speglade bara den första,
+   * och rowSchema tillåter debit/credit = 0 — så två nollrader, eller belopp
+   * under ett halvt öre som toKronor2 rundar till noll, passerade här och
+   * avvisades sedan av motorn med exakt det kryptiska motorfel förkontrollen
+   * finns till för att undvika. En bokföringspost utan belopp är ingen
+   * affärshändelse [BFL (1999:1078) 4 kap. 1 §].
+   */
+  if (totalDebit === 0) {
+    return {
+      error: "Verifikatet saknar belopp — alla rader är noll. Ange beloppen, "
+        + "eller ta bort verifikatet om ingen affärshändelse har inträffat.",
+    };
   }
 
   const supabase = await createClient();
@@ -73,14 +102,6 @@ export async function correctVerification(input: {
   if (error) return { error: error.message };
   revalidatePath("/verifikat");
   return { ok: true, data };
-}
-
-export async function deleteLastVerification(id: string) {
-  const supabase = await createClient();
-  const { error } = await supabase.from("verifications").delete().eq("id", id);
-  if (error) return { error: error.message };
-  revalidatePath("/verifikat");
-  return { ok: true };
 }
 
 export async function attachFile(verificationId: string, formData: FormData) {
