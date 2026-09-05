@@ -130,6 +130,13 @@ Priser och köp: [debea.se/priser](https://debea.se/priser).
 - **Mobilapp (PWA)** — installera på hemskärmen och fota kvitton rakt in i
   underlagsinkorgen
 - **Arkivexport** — hela räkenskapsåret som zip (SIE + alla underlag)
+- **Tvåstegsverifiering** — valfritt extra steg vid inloggningen: efter
+  lösenordet en sexsiffrig kod från en app i telefonen, samma metod som din bank
+  och ditt GitHub-konto. Slås på under Inställningar → Säkerhet. Kravet hålls av
+  spärren framför appen, inte av gränssnittet — en inloggning som stannat vid
+  lösenordet når ingen sida alls. Finns i både community och licens; säkerhet
+  säljs inte separat. Se
+  [Tvåstegsverifiering](docs/TVASTEGSVERIFIERING.md)
 - **Byråns åtkomst** — anlitar du en redovisningsbyrå kan de följa läget
   utifrån med en egen nyckel som du skapar och när som helst återkallar. Den
   visar sju siffror (obokfört, saknade underlag, senaste verifikatet, låst till
@@ -265,6 +272,10 @@ vid import — är det den licensierade versionen som gäller.
 - All åtkomst kräver inloggning (Supabase Auth); RLS på samtliga tabeller.
   Självregistrering ska vara avstängd i Supabase — anon-nyckeln är publik och
   appen är single-tenant, så varje konto som kan skapas ser hela bokföringen
+- Tvåstegsverifiering (TOTP) per konto, valfri, via Supabase Auths `aal1`/`aal2`.
+  Kravet upprätthålls i proxyn framför appen — en session som stannat på `aal1`
+  når ingen sida, oavsett vilken adress som skrivs in — och nycklarna ligger i
+  din egen databas. Se [docs/TVASTEGSVERIFIERING.md](docs/TVASTEGSVERIFIERING.md)
 - Verifikat är oföränderliga — bokning och rättelse sker via databas­funktioner
   som upprätthåller balans och nummerserier atomiskt
 - Inga hemligheter i koden — nycklar lever i miljövariabler eller i din databas

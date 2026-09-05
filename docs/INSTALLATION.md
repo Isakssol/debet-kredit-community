@@ -215,6 +215,13 @@ bokför din första händelse.
 
 ## Valfria tillägg (när du vill)
 
+- **Tvåstegsverifiering**: ett extra steg vid inloggningen — efter lösenordet en
+  sexsiffrig kod från en app i telefonen, samma metod som din bank och ditt
+  GitHub-konto. Slås på under Inställningar → Säkerhet, tar ungefär en minut och
+  kräver ingen miljövariabel. Enda förberedelsen: slå på **Multi-Factor
+  Authentication (TOTP)** i Supabase-panelen under Authentication → Sign In /
+  Providers. Hela vägen, och vad du gör om telefonen försvinner, står i
+  [Tvåstegsverifiering](TVASTEGSVERIFIERING.md).
 - **Mejla fakturor**: konto på [resend.com](https://resend.com), verifiera din
   domän, lägg `RESEND_API_KEY` som miljövariabel i Vercel. Fakturor och
   påminnelser skickar du sedan från fakturan med ett klick — det finns ingen
@@ -322,6 +329,9 @@ finns, inte vad de är.
 | Forken syns inte i Vercels lista vid import | Vercels GitHub-app saknar åtkomst — **Adjust GitHub App Permissions** på importsidan, eller Settings → Git → Manage GitHub App Access, och välj **All repositories** |
 | En guide ber mig lägga in `CRON_SECRET` | Den guiden gäller licensversionen. Community-versionen har ingen schemalagd utskicksautomatik och använder bara de två variablerna i steg 6 |
 | `db push` avbryts med "policy ... already exists" | Ett tidigare försök hann halvvägs — kör `npx supabase db push` igen; migrationerna tål numera omkörning |
+| Koden från autentiseringsappen godkänns inte | Koden byts var trettionde sekund — vänta på nästa och skriv in den. Fortsätter det: telefonens klocka ställs inte automatiskt. Tidsbaserade koder räknas ur klockan, och några minuters glapp räcker |
+| "Tvåstegsverifiering är avstängd i projektets inställningar" | TOTP är avslaget i Supabase — slå på **Multi-Factor Authentication (TOTP)** under Authentication → Sign In / Providers. Lokalt: `[auth.mfa.totp]` i `supabase/config.toml` |
+| Utelåst från appen — telefonen med autentiseringsappen är borta | Du löser det själv, ingen support att vänta på: ta bort din faktor under Authentication → Users i din Supabase-panel och logga in med lösenordet som vanligt. Nio steg i [Tvåstegsverifiering](TVASTEGSVERIFIERING.md) |
 | Appen sover när du öppnar den | Supabase free tier pausar projekt efter 7 dagars inaktivitet — logga in på supabase.com och klicka "Restore". Bokför du varje vecka händer det aldrig. Vill du slippa helt: uppgradera projektet till Pro (~25 USD/mån) |
 
 Kört fast ändå? Bokföringsfrågorna hittar du svar på i

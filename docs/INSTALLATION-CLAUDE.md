@@ -111,7 +111,12 @@ GÖR SÅ HÄR:
    kan göras när som helst senare.
 10. Lista vad jag gör härnäst: logga in med kontot jag skapade i panelen och
    gå igenom kom igång-wizarden (bolagstyp, företagsuppgifter, momsperiod,
-   räkenskapsår, eventuell SIE-import från mitt gamla program).
+   räkenskapsår, eventuell SIE-import från mitt gamla program). Nämn också
+   tvåstegsverifieringen som ett valfritt nästa steg: slås på under
+   Inställningar → Säkerhet, kräver att Multi-Factor Authentication (TOTP) är
+   påslaget under Authentication → Sign In / Providers i min Supabase-panel,
+   och står beskriven i docs/TVASTEGSVERIFIERING.md. Slå inte på den åt mig —
+   koden ska hamna i min telefon, inte i din terminal.
 11. Avsluta med en punktlista över allt som är uppsatt, var min data bor och
    var backup-ansvaret ligger (min Supabase, mina konton). Påminn mig till sist
    om att läsa avsnittet "Var du förvarar nycklarna" i docs/INSTALLATION.md och
