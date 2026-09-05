@@ -7,16 +7,23 @@ import { useEffect } from "react";
 import { NavLinks } from "@/components/nav-links";
 import { AppBrand } from "@/components/app-brand";
 import { LogoutButton } from "@/components/logout-button";
+import { ReportBugTrigger } from "@/components/report-bug-button";
+import { BugReportDialog } from "@/components/bug-report-dialog";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 
 /** Mobil topprad med hamburgermeny — sidomenyn i en Sheet */
-export function MobileNav({ companyName, logoUrl }: {
+export function MobileNav({ companyName, logoUrl, appVersion, buildSha }: {
   companyName: string;
   logoUrl?: string | null;
+  appVersion: string;
+  buildSha?: string;
 }) {
   const [open, setOpen] = useState(false);
+  // Felrapporten ligger UTANFÖR menypanelen och stänger den när den öppnas:
+  // en skärmbild ska visa sidan som gick sönder, inte menyn ovanpå den.
+  const [bugOpen, setBugOpen] = useState(false);
   const pathname = usePathname();
 
   // Stäng menyn vid navigering
@@ -41,10 +48,18 @@ export function MobileNav({ companyName, logoUrl }: {
             <NavLinks />
           </div>
           <div className="p-3 border-t border-sidebar-border">
+            <ReportBugTrigger onClick={() => { setOpen(false); setBugOpen(true); }} />
             <LogoutButton />
           </div>
         </SheetContent>
       </Sheet>
+      <BugReportDialog
+        open={bugOpen}
+        onOpenChange={setBugOpen}
+        companyName={companyName}
+        appVersion={appVersion}
+        buildSha={buildSha}
+      />
     </header>
   );
 }

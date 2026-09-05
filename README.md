@@ -137,6 +137,14 @@ Priser och köp: [debea.se/priser](https://debea.se/priser).
   lösenordet når ingen sida alls. Finns i både community och licens; säkerhet
   säljs inte separat. Se
   [Tvåstegsverifiering](docs/TVASTEGSVERIFIERING.md)
+- **Rapportera en bugg** — knappen längst ned i menyn skickar en rapport till
+  utvecklarna med ett klick: din beskrivning, programversion, webbläsare,
+  vilken sida du var på, de senaste felmeddelandena från din webbläsare och
+  (om du vill) en skärmbild. Skärmbilden visas alltid för dig först, med
+  sifferkolumnerna suddade, och går att ta bort. Under "Visa exakt vad som
+  skickas" står varje rad utskriven med sitt verkliga värde innan du trycker
+  skicka. Belopp, personnummer, id:n och e-postadresser maskas automatiskt —
+  även i din egen text
 - **Byråns åtkomst** — anlitar du en redovisningsbyrå kan de följa läget
   utifrån med en egen nyckel som du skapar och när som helst återkallar. Den
   visar sju siffror (obokfört, saknade underlag, senaste verifikatet, låst till
@@ -279,6 +287,13 @@ vid import — är det den licensierade versionen som gäller.
 - Verifikat är oföränderliga — bokning och rättelse sker via databas­funktioner
   som upprätthåller balans och nummerserier atomiskt
 - Inga hemligheter i koden — nycklar lever i miljövariabler eller i din databas
+- Installationen ringer aldrig hem av sig själv. Det enda som lämnar den är en
+  buggrapport du själv skickar, och den går till `debea.se/api/feedback` utan
+  din inloggning. Två saneringslager körs innan posten byggs: ett för
+  hemligheter, ett till för belopp, id:n, kontonummer och adresser. Vill du
+  läsa koden i stället för texten ligger den i `src/lib/feedback.ts` och
+  `src/lib/logging.ts` — och det är samma funktion som bygger posten som
+  fyller rutan "Visa exakt vad som skickas", så de två kan inte glida isär
 
 ## Licens
 
