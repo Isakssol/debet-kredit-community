@@ -19,7 +19,11 @@ const rowSchema = z.object({
   quantity: z.number(),
   unitPrice: z.number(),
   discountPct: z.number().min(0).max(100).default(0),
-  vatRate: z.number(),
+  // Endast 25, 12, 6 och 0 procent är giltiga svenska momssatser (9 kap.
+  // mervärdesskattelagen [2023:200]; Skatteverket, "Fylla i momsdeklarationen",
+  // fält 10/11/12). En annan sats skulle debiteras kunden utan att kunna
+  // bokföras — invoicePostingRows har inget momskonto för den.
+  vatRate: z.number().refine((v) => [0, 6, 12, 25].includes(v), "Momssatsen måste vara 25, 12, 6 eller 0 procent."),
   account: z.number().int(),
   articleId: z.string().nullable().optional(),
   unit: z.string().default("st"),
@@ -188,6 +192,16 @@ export async function registerPayment(input: {
     .eq("id", input.invoiceId).single();
   if (!invoice) return { error: "Fakturan finns inte." };
   if (invoice.status === "draft") return { error: "Bokför fakturan först." };
+  // En krediterad eller makulerad faktura är ingen fordran längre. Bokförs en
+  // inbetalning på den hamnar en kredit på 1510 utan motsvarande öppen post i
+  // kundreskontran, och avstämningen mot balanskontot går inte ihop
+  // (bokföringslagen [1999:1078] 4 kap. 2 §). Har kunden ändå betalat är det en
+  // överbetalning som ska bokföras som skuld till kunden, inte som en betalning
+  // på fakturan.
+  if (invoice.status === "credited") {
+    return { error: "Fakturan är krediterad och är ingen fordran längre. Bokför en inbetalning från kunden som en skuld till kunden i stället." };
+  }
+  if (invoice.status === "cancelled") return { error: "Fakturan är makulerad och kan inte betalas." };
   if (input.amount <= 0) return { error: "Beloppet måste vara positivt." };
 
   const paid = ((invoice.invoice_payments ?? []) as { amount: number }[]).reduce((s, p) => s + Number(p.amount), 0);
@@ -265,16 +279,59 @@ export async function registerPayment(input: {
 export async function createCreditInvoice(originalId: string) {
   const supabase = await createClient();
   const { data: original } = await supabase
-    .from("invoices").select("*, invoice_rows(*)").eq("id", originalId).single();
+    .from("invoices").select("*, invoice_rows(*), invoice_payments(amount)")
+    .eq("id", originalId).single();
   if (!original) return { error: "Originalfakturan finns inte." };
   if (original.status === "draft") return { error: "Fakturan är inte bokförd." };
   if (original.type === "credit") return { error: "Kan inte kreditera en kreditfaktura." };
   if (original.status === "credited") return { error: "Fakturan är redan krediterad." };
 
+  /**
+   * En kreditfaktura vänder HELA originalverifikatet. Är fakturan helt eller
+   * delvis betald skulle krediteringen därför lämna ett belopp kvar på 1510 som
+   * inte motsvaras av något i kundreskontran, och bokslutsavstämningen räknar
+   * varken originalet (status 'credited') eller kreditfakturan (type 'credit')
+   * som en öppen post. Vad som ska hända med pengarna — återbetalning,
+   * tillgodohavande eller kvittning mot en ny faktura — kan programmet inte
+   * avgöra, så krediteringen spärras tills betalningen är hanterad.
+   * Källa: bokföringslagen (1999:1078) 4 kap. 2 § och 5 kap. 2 §;
+   * mervärdesskattelagen (2023:200) 17 kap. 22 §.
+   * Samma kontroll finns i databasen (invoices_credit_guard_insert) så att den
+   * håller även om en betalning registreras samtidigt.
+   */
+  const paidOnOriginal = ((original.invoice_payments ?? []) as { amount: number }[])
+    .reduce((s, p) => s + Number(p.amount), 0);
+  if (Math.abs(paidOnOriginal) >= 0.005) {
+    return {
+      error: `Faktura ${original.invoice_no} har ${paidOnOriginal.toFixed(2)} kr registrerat som betalt. `
+        + "Kreditfakturan vänder hela fakturan, så krediteringen skulle lämna det beloppet kvar på 1510 "
+        + "utan motsvarighet i kundreskontran. Återbetala eller ta bort betalningen först, och kreditera sedan fakturan.",
+    };
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   const { data: fy } = await supabase.from("fiscal_years").select("*")
     .lte("start_date", today).gte("end_date", today).single();
   if (!fy) return { error: "Inget öppet räkenskapsår." };
+
+  /**
+   * Under kontantmetoden bokförs intäkt och utgående moms först vid betalningen.
+   * En obetald faktura har därför inget verifikat att vända, och krediteringen är
+   * enbart en reskontrahändelse — betald är den inte, det är spärrat ovan.
+   * Under faktureringsmetoden MÅSTE originalet ha ett verifikat: saknas det har
+   * fakturan aldrig bokförts, och att markera den krediterad utan att vända
+   * något hade lämnat intäkten och den utgående momsen kvar i bokföringen.
+   * Källa: bokföringslagen (1999:1078) 5 kap. 2 §; Skatteverket, rättslig
+   * vägledning, "Redovisning av kreditnota" (tidigare redovisad utgående skatt
+   * ska minskas).
+   */
+  if (fy.accounting_method === "faktureringsmetoden" && !original.verification_id) {
+    return {
+      error: `Faktura ${original.invoice_no} saknar verifikat och kan inte krediteras automatiskt. `
+        + "Fakturan är registrerad utan bokföring (t.ex. inläst från ett annat program). "
+        + "Bokför krediteringen som ett eget verifikat i stället.",
+    };
+  }
 
   const { data: invoiceNo, error: noErr } = await supabase.rpc("assign_invoice_no");
   if (noErr || invoiceNo == null) return { error: noErr?.message ?? "Numreringsfel." };

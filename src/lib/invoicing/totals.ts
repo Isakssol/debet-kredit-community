@@ -1,4 +1,4 @@
-import { kronorToOre, oreToKronor, roundToKrona, vatOnNet } from "@/lib/money";
+import { kronorToOre, oreToKronor, roundAmount, roundToKrona, vatOnNet } from "@/lib/money";
 
 export type InvoiceRowInput = {
   description: string;
@@ -25,7 +25,7 @@ export function calculateTotals(rows: InvoiceRowInput[], applyVat: boolean): Inv
 
   for (const r of rows) {
     if (r.isTextRow) continue;
-    const lineNetOre = Math.round(
+    const lineNetOre = roundAmount(
       kronorToOre(r.unitPrice) * r.quantity * (1 - r.discountPct / 100)
     );
     const rate = applyVat ? r.vatRate : 0;
@@ -61,39 +61,65 @@ export function invoicePostingRows(
   totals: InvoiceTotals,
   applyVat: boolean
 ): { account: number; debit: number; credit: number; note?: string }[] {
-  const posting: { account: number; debit: number; credit: number; note?: string }[] = [
-    { account: 1510, debit: totals.total, credit: 0, note: "Kundfordran" },
-  ];
+  const posting: { account: number; debit: number; credit: number; note?: string }[] = [];
+
+  /**
+   * Lägg ett belopp på rätt sida av kontot. Ett negativt belopp är en DEBET,
+   * aldrig en negativ kredit: en fakturarad med prisavdrag, en kreditrad eller
+   * en satsgrupp som blivit negativ ska bokföras med omvänt tecken på rätt
+   * sida, annars stämmer varken debet- eller kreditsumman i verifikatet.
+   */
+  const post = (account: number, amount: number, note?: string) => {
+    const row = amount >= 0
+      ? { account, debit: 0, credit: amount }
+      : { account, debit: -amount, credit: 0 };
+    posting.push(note ? { ...row, note } : row);
+  };
+
+  post(1510, -totals.total, "Kundfordran");
 
   // Intäkter per konto
   const perAccount = new Map<number, number>();
   for (const r of rows) {
     if (r.isTextRow) continue;
-    const lineNetOre = Math.round(
+    const lineNetOre = roundAmount(
       kronorToOre(r.unitPrice) * r.quantity * (1 - r.discountPct / 100)
     );
     perAccount.set(r.account, (perAccount.get(r.account) ?? 0) + lineNetOre);
   }
   for (const [account, netOre] of perAccount) {
-    posting.push({ account, debit: 0, credit: oreToKronor(netOre) });
+    post(account, oreToKronor(netOre));
   }
 
-  // Utgående moms per sats
+  // Utgående moms per sats. Villkoret är g.vat !== 0, inte g.vat > 0: en
+  // satsgrupp med negativt underlag (prisavdrag som avser en annan skattesats
+  // än huvudraden) har negativ moms, och den momsen MÅSTE bokföras. Släpps den
+  // blir verifikatet obalanserat och både beskattningsunderlaget i ruta 05 och
+  // den utgående momsen i ruta 10/11/12 fel (17 kap. 24 § mervärdesskattelagen
+  // [2023:200]; Skatteverket, "Fylla i momsdeklarationen", fält 05 och 10–12).
   if (applyVat) {
     const vatAccount: Record<number, number> = { 25: 2611, 12: 2621, 6: 2631 };
     for (const g of totals.vatGroups) {
-      if (g.vat > 0 && vatAccount[g.rate]) {
-        posting.push({ account: vatAccount[g.rate], debit: 0, credit: g.vat });
+      if (g.vat === 0) continue;
+      if (!vatAccount[g.rate]) {
+        throw new Error(
+          `Momssatsen ${g.rate} % saknar utgående momskonto. Endast 25, 12, 6 och 0 procent är giltiga svenska momssatser.`
+        );
       }
+      post(vatAccount[g.rate], g.vat);
     }
   }
 
   // Öresavrundning
-  if (totals.rounding !== 0) {
-    posting.push(
-      totals.rounding > 0
-        ? { account: 3740, debit: 0, credit: totals.rounding }
-        : { account: 3740, debit: -totals.rounding, credit: 0 }
+  if (totals.rounding !== 0) post(3740, totals.rounding);
+
+  // Ett verifikat som inte balanserar får aldrig nå bokföringen. Kontrollen är
+  // sista spärren: den fångar varje framtida ändring som tappar en post.
+  const debit = posting.reduce((s, r) => s + Math.round(r.debit * 100), 0);
+  const credit = posting.reduce((s, r) => s + Math.round(r.credit * 100), 0);
+  if (debit !== credit) {
+    throw new Error(
+      `Fakturans verifikat balanserar inte: debet ${oreToKronor(debit)} kr mot kredit ${oreToKronor(credit)} kr. Kontrollera radernas belopp och momssatser.`
     );
   }
   return posting;
