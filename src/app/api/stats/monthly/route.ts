@@ -1,17 +1,17 @@
 /**
  * GET /api/stats/monthly
  * Resultatserie per månad: intäkter, kostnader, resultat (SEK exkl moms, heltal).
- * Auth: Authorization: Bearer <STATS_API_KEY>.
+ * Auth: Authorization: Bearer <API-nyckel med data:read> eller <STATS_API_KEY>.
  */
 import { NextResponse, type NextRequest } from "next/server";
-import { checkAuth, serviceClient, ANALYTICS_SELECT, noStore } from "../_shared";
+import { checkStatsAuth, serviceClient, ANALYTICS_SELECT, noStore } from "../_shared";
 import { buildAnalytics, type AnalyticsRow } from "@/lib/stats/analytics";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  const unauthorized = checkAuth(request);
+  const unauthorized = await checkStatsAuth(request);
   if (unauthorized) return unauthorized;
 
   const supabase = serviceClient();

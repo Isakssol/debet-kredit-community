@@ -2,7 +2,8 @@
  * GET /api/stats/daily?from=YYYY-MM-DD&to=YYYY-MM-DD
  *
  * Read-only daglig intäktsstatistik för externa system (verkstadens adminpanel).
- * Auth: Authorization: Bearer <STATS_API_KEY>  (miljövariabel, aldrig i källkod)
+ * Auth: Authorization: Bearer <API-nyckel med data:read> eller <STATS_API_KEY>
+ *       (miljönyckeln bor i miljön, aldrig i källkod)
  *
  * Svar: JSON-array med ett objekt per kalenderdag i intervallet (även tomma dagar).
  * Alla belopp i SEK exkl moms, heltal (öresavrundade). Datum = verifikationsdatum
@@ -18,6 +19,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { timingSafeEqual } from "node:crypto";
+import { requireApiKey } from "@/lib/api/auth";
+import { presenterarApiNyckel } from "@/lib/api/legacy-auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -58,18 +61,28 @@ function parseDate(s: string | null): Date | null {
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 export async function GET(request: NextRequest) {
-  // ---- Auth (konstant-tids-jämförelse) ----
-  const expected = process.env.STATS_API_KEY;
-  if (!expected) {
-    return NextResponse.json({ error: "server_misconfigured" }, { status: 503 });
-  }
-  const auth = request.headers.get("authorization") ?? "";
-  const presented = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-  const a = Buffer.from(presented);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return unauthorized();
-  if (rateLimited(presented.slice(0, 8))) {
-    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  // ---- Auth: två vägar in, den gamla oförändrad ----
+  //
+  // En dk_live_-nyckel med data:read går genom requireApiKey() och får
+  // identitet, scope, kvot i databasen och en återkallningsknapp. Allt annat
+  // följer den ursprungliga vägen med STATS_API_KEY, ned till felkropparna:
+  // ett Excel-ark som redan hämtar härifrån ska inte behöva röras.
+  if (presenterarApiNyckel(request)) {
+    const auth = await requireApiKey(request, "data:read");
+    if (!auth.ok) return auth.response as NextResponse;
+  } else {
+    const expected = process.env.STATS_API_KEY;
+    if (!expected) {
+      return NextResponse.json({ error: "server_misconfigured" }, { status: 503 });
+    }
+    const auth = request.headers.get("authorization") ?? "";
+    const presented = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+    const a = Buffer.from(presented);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) return unauthorized();
+    if (rateLimited(presented.slice(0, 8))) {
+      return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    }
   }
 
   // ---- Validera intervall ----
