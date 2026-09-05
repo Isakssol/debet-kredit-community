@@ -512,9 +512,29 @@ $$;
 -- invoice_rows får bara INSERT: rader på en faktura som lämnat utkast är
 -- låsta av invoice_rows_guard(), och ett utkast som API:et vill ändra skrivs
 -- om genom motorns egen väg.
+-- INSERT SKRIVER ETT UTKAST, OCH POLICYN SÄGER DET.
+--
+-- Villkoret på raden är inte prydnad. `invoices` har ingen insert-trigger —
+-- `invoices_guard_update()` fyrar bara på UPDATE — och med enbart ett
+-- scope-villkor kunde en nyckel med ledger:write lägga in en FÄRDIGBOKFÖRD
+-- kundfaktura med självvalt fakturanummer, egna belopp och ett invoice_date i
+-- en låst period, utan verifikat. Utfallet syns i kundreskontran men aldrig i
+-- huvudboken, och det ockuperar ett nummer i fakturaserien. Prövat skarpt:
+-- båda förfalskningarna gick igenom före villkoret, ingen efter.
+--
+-- Villkoret säger ut vad `writeInvoiceDraft` ändå alltid skriver: status, type
+-- och de fyra identitetsbärande kolumnerna sätts inte av utkastvägen utan tar
+-- sina kolumndefaulter. Den legitima vägen är oförändrad — se UPDATE-policyn
+-- nedan, som är steg tre i den här utgåvans bokföring.
 create policy "api bokfor" on public.invoices
   as restrictive for insert to authenticated
-  with check (not is_api_machine() or (select api_has_scope('ledger:write')));
+  with check (
+    not is_api_machine()
+    or ((select api_has_scope('ledger:write'))
+        and status = 'draft' and type = 'debit'
+        and invoice_no is null and ocr is null
+        and verification_id is null and credits_invoice_id is null)
+  );
 
 create policy "api bokfor andring" on public.invoices
   as restrictive for update to authenticated

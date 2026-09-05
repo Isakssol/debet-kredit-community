@@ -7,6 +7,7 @@ import {
 } from "../api/authenticate";
 import { generateApiKey, hashApiKey } from "../api/keys";
 import { apiErrorBody } from "../api/errors";
+import { forMangaAvvisade, raknaAvvisat } from "../api/auth";
 
 /**
  * Autentiseringen av en API-nyckel — kontraktet, prövat utan databas.
@@ -297,5 +298,41 @@ describe("felkroppen", () => {
 
   test("detail utelämnas när det inte finns något strukturerat att säga", () => {
     expect(apiErrorBody("unauthorized", "Nej.")).not.toHaveProperty("detail");
+  });
+});
+
+// ==========================================================================
+// Adressräknaren
+// ==========================================================================
+
+describe("räknaren mot avsändaradress", () => {
+  /**
+   * VARFÖR PROVET FINNS. Kontrollen och uppräkningen låg först i en och samma
+   * funktion, anropad på varje anrop. Den räknade alltså inte avvisade anrop
+   * utan ALLA anrop, och taket på 60 blev i praktiken hela API:ets kvot: en
+   * nyckel med förvalet 600 i timmen stannade på 60 så fort integrationen
+   * ringde från en och samma server — vilket den alltid gör. Prövat skarpt mot
+   * en riktig installation: 60 giltiga anrop gick fram, det 61:a fick 429.
+   */
+  test("att läsa räknaren flyttar den inte", () => {
+    const ip = "203.0.113.10";
+    for (let i = 0; i < 500; i++) expect(forMangaAvvisade(ip)).toBe(false);
+  });
+
+  test("taket slår till först efter 60 avvisade anrop från samma adress", () => {
+    const ip = "203.0.113.11";
+    for (let i = 0; i < 59; i++) {
+      raknaAvvisat(ip);
+      expect(forMangaAvvisade(ip), `slog till redan vid ${i + 1}`).toBe(false);
+    }
+    raknaAvvisat(ip);
+    expect(forMangaAvvisade(ip)).toBe(true);
+  });
+
+  test("adresser räknas var för sig", () => {
+    const bankande = "203.0.113.12";
+    for (let i = 0; i < 60; i++) raknaAvvisat(bankande);
+    expect(forMangaAvvisade(bankande)).toBe(true);
+    expect(forMangaAvvisade("203.0.113.13")).toBe(false);
   });
 });

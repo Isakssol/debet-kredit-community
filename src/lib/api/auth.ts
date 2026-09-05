@@ -62,18 +62,57 @@ function cachadSession(hash: string): string | null {
  * loopar och håller nere trafiken mot databasen — den behövs inte mot
  * gissningar, eftersom 256 bitars entropi inte gissas.
  */
+/**
+ * ATT LÄSA OCH ATT RÄKNA ÄR TVÅ FUNKTIONER, OCH DET ÄR HELA POÄNGEN. En enda
+ * funktion som både prövade taket och räknade upp skulle räkna varje anrop,
+ * inte varje avvisat anrop — och då vore det här taket i praktiken hela API:ets
+ * kvot. En nyckel med förvalet 600 anrop i timmen hade stannat på 60 så fort
+ * integrationen ringer från en och samma server, vilket den alltid gör. Kvoten
+ * i `api_keys.rate_limit_per_hour` hade blivit en siffra utan verkan, och
+ * dokumentationens 600 ett löfte installationen inte håller. Prövat skarpt:
+ * 200 giltiga anrop i rad från en adress går fram nu, mot 60 före.
+ *
+ * Uppräkningen sker på exakt ett ställe: efter ett 401, alltså när anropet
+ * bevisligen inte bar en giltig nyckel. Ett 403 räknas inte — där finns en
+ * giltig nyckel, och den har redan betalat ur sin egen kvot.
+ */
 const AVVISADE_TAK = 60;
+const AVVISADE_FONSTER_MS = 3_600_000;
+/** Taket för hur många adresser som får ligga i minnet innan gamla städas. */
+const AVVISADE_MAX_ADRESSER = 10_000;
 const avvisade = new Map<string, { count: number; windowStart: number }>();
 
-function forMangaAvvisade(ip: string): boolean {
-  const now = Date.now();
+/** Läser räknaren. Rör den aldrig. */
+export function forMangaAvvisade(ip: string): boolean {
   const h = avvisade.get(ip);
-  if (!h || now - h.windowStart > 3_600_000) {
-    avvisade.set(ip, { count: 1, windowStart: now });
+  if (!h) return false;
+  if (Date.now() - h.windowStart > AVVISADE_FONSTER_MS) {
+    avvisade.delete(ip);
     return false;
   }
-  h.count += 1;
-  return h.count > AVVISADE_TAK;
+  return h.count >= AVVISADE_TAK;
+}
+
+/**
+ * Räknar upp ett avvisat anrop.
+ *
+ * Nycklarna i kartan är avsändaradresser, alltså något anroparen väljer. Utan
+ * ett tak kan en spridd källa fylla minnet med adresser som aldrig återkommer,
+ * så en full karta sveps på utgångna fönster innan nästa adress läggs till.
+ */
+export function raknaAvvisat(ip: string): void {
+  const now = Date.now();
+  const h = avvisade.get(ip);
+  if (h && now - h.windowStart <= AVVISADE_FONSTER_MS) {
+    h.count += 1;
+    return;
+  }
+  if (!h && avvisade.size >= AVVISADE_MAX_ADRESSER) {
+    for (const [adress, post] of avvisade) {
+      if (now - post.windowStart > AVVISADE_FONSTER_MS) avvisade.delete(adress);
+    }
+  }
+  avvisade.set(ip, { count: 1, windowStart: now });
 }
 
 export type ApiContext = {
@@ -236,6 +275,11 @@ export async function requireApiKey(
   });
 
   if (!result.ok) {
+    /**
+     * 401 betyder att anropet aldrig kom fram till en giltig nyckel — saknad,
+     * felformad, okänd eller återkallad. Bara de räknas mot adressen.
+     */
+    if (result.status === 401) raknaAvvisat(ip);
     return {
       ok: false,
       response: apiError(result.status, result.body.error, result.body.message, {

@@ -32,7 +32,7 @@
  * med varje schemaändring är inget kontrakt.
  */
 import { type NextRequest } from "next/server";
-import { requireApiKey } from "@/lib/api/auth";
+import { hasScope, requireApiKey } from "@/lib/api/auth";
 import { apiError, apiOk, apiThrown, apiHeaders } from "@/lib/api/errors";
 import { beslutaIdempotens, type IdempotencyDeps } from "@/lib/api/idempotency";
 import { writeInvoiceDraft } from "@/lib/invoicing/draft";
@@ -60,6 +60,27 @@ export async function POST(request: NextRequest) {
   const auth = await requireApiKey(request, "ledger:write");
   if (!auth.ok) return auth.response;
   const { supabase, admin, key, requestId } = auth.ctx;
+
+  /**
+   * ATT SKRIVA EN FAKTURA KRÄVER ATT KUNNA LÄSA. Utkastvägen slår upp kunden
+   * för att veta momstyp, och intäktskontots momskod för att kunna jämföra den
+   * med radens momssats — båda med nyckelns egen session, alltså under
+   * `data:read`. En nyckel med enbart `ledger:write` får därför tomt på kunden
+   * och svarar "Kunden finns inte." om en kund som finns. Felet är sant för
+   * rutten och obegripligt för den som läser det.
+   *
+   * Kontrollen ligger här, före kroppen läses, och säger vad som saknas.
+   */
+  if (!hasScope(auth.ctx, "data:read")) {
+    return apiError(
+      403,
+      "insufficient_scope",
+      'Att skapa en faktura kräver både "Bokföra" och "Läsa". Utkastet slås upp mot '
+        + "kunden och mot intäktskontots momskod innan det skrivs, och den uppslagningen "
+        + 'är en läsning. Kryssa i båda under Inställningar → API-nycklar.',
+      { detail: { required_scope: ["ledger:write", "data:read"], key_scopes: auth.ctx.scopes }, requestId }
+    );
+  }
 
   const raw = await request.text();
   if (raw.length > MAX_BYTES) {

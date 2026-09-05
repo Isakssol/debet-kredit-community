@@ -236,3 +236,36 @@ describe("städningen ersätter det schemalagda jobb utgåvan inte har", () => {
     expect(kvot.slice(0, 1200)).toContain("delete from api_rate_counters");
   });
 });
+
+describe("insert på invoices får bara skriva ett utkast", () => {
+  /**
+   * `invoices` har ingen insert-trigger: `invoices_guard_update()` fyrar bara
+   * på UPDATE. Med enbart ett scope-villkor kunde en nyckel med ledger:write
+   * lägga in en FÄRDIGBOKFÖRD kundfaktura med självvalt fakturanummer, egna
+   * belopp och ett invoice_date i en låst period, utan verifikat — en rad som
+   * syns i kundreskontran men aldrig i huvudboken. Prövat skarpt mot en riktig
+   * installation: båda förfalskningarna gick igenom före villkoret, ingen
+   * efter, och det legitima utkastet skrevs oförändrat i båda lägena.
+   */
+  const pol = /create policy\s+"api bokfor"\s+on\s+public\.invoices([\s\S]*?);/.exec(nycklar)?.[0] ?? "";
+
+  test("policyn står utskriven med sitt villkor", () => {
+    expect(pol, '"api bokfor" på invoices hittades inte').toBeTruthy();
+  });
+
+  test.each([
+    "status = 'draft'",
+    "type = 'debit'",
+    "invoice_no is null",
+    "ocr is null",
+    "verification_id is null",
+    "credits_invoice_id is null",
+  ])("villkoret %s finns", (villkor) => {
+    expect(pol, `${villkor} saknas — raden kan skrivas förbi motorn`).toContain(villkor);
+  });
+
+  test("scopet krävs fortfarande", () => {
+    expect(pol).toContain("ledger:write");
+    expect(pol).toContain("is_api_machine()");
+  });
+});
