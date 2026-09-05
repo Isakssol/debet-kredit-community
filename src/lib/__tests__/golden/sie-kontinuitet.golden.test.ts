@@ -64,7 +64,7 @@ const base: SieData = {
     },
     {
       series: "A", number: 2, date: "2026-09-01",
-      description: 'Hyra "september", autogiro',
+      description: 'Hyra "september", banköverföring',
       registeredDate: "2026-09-01",
       rows: [
         { account: 2440, amount: 12000 },
@@ -128,7 +128,7 @@ describe("B. Citattecken maskeras med bakstreck, byts aldrig ut [SIE 5.7]", () =
     expect(parsed.companyName).toBe('Åkeri & "Bygg" i Västerås AB');
     expect(parsed.accounts.find((a) => a.number === 6072)?.name)
       .toBe('Representation, "ej avdragsgill"');
-    expect(parsed.verifications[1].description).toBe('Hyra "september", autogiro');
+    expect(parsed.verifications[1].description).toBe('Hyra "september", banköverföring');
   });
 
   test("B3: ett maskerat citattecken kapar inte fältet", () => {

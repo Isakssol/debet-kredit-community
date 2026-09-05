@@ -55,13 +55,13 @@ select
   -- Obokfört = det som väntar på en människa. Banktransaktioner som ännu inte
   -- matchats, plus underlag i inkorgen som ännu inte hängts på ett verifikat.
   --
-  -- ANPASSNING. Licensutgåvan räknar här bank + suggestion_queue (AI-förslag)
-  -- och drar bort de förslag som redan hör till en banktransaktion för att
-  -- inte räkna samma affärshändelse två gånger. Den här utgåvan har ingen
-  -- förslagskö; motsvarigheten är underlagsinkorgen, alltså attachments utan
-  -- verification_id (samma villkor som /underlag använder). De kan inte
-  -- dubbelräknas mot banken — attachments har ingen koppling till
-  -- bank_transactions — så avdraget behövs inte här.
+  -- De två termerna kan aldrig räkna samma affärshändelse två gånger:
+  -- attachments har ingen koppling till bank_transactions, så ett underlag i
+  -- inkorgen är alltid en annan post än en omatchad banktransaktion. Summan
+  -- behöver därför inget avdrag för överlapp.
+  --
+  -- Villkoret på underlagen är detsamma som sidan /underlag använder, så
+  -- siffran byrån ser och listan användaren ser kan inte glida isär.
   (select count(*)::int from bank_transactions where status = 'unmatched')
     + (select count(*)::int from attachments where verification_id is null)
                                                        as unbooked_count,
