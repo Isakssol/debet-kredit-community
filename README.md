@@ -115,7 +115,9 @@ Priser och köp: [debea.se/priser](https://debea.se/priser).
   periodiseringsfond, med deadlines i Att göra-listan
 - **Körjournal, anläggningsregister** med avskrivningar
 - **Översikt med egna nyckeltal** — välj vilka widgets du vill se, teman och
-  färgsättning, samt ett läs-API (`/api/stats`) för egna integrationer
+  färgsättning
+- **Eget API** — din installation exponerar sitt eget API, och nyckeln skapar
+  du i appen under Inställningar → Åtkomst. Se [API:et](#apiet) nedan
 - **Analys** — diagram över det som redan är bokfört, ett räkenskapsår i taget
   och alltid exklusive moms: omsättning och resultat månad för månad med
   föregående år nedtonat bakom, kostnaderna fördelade på BAS-kontoklass 4–7,
@@ -152,12 +154,67 @@ Priser och köp: [debea.se/priser](https://debea.se/priser).
   inga motparter, inga underlag, och den kan inte bokföra. Byrån kan inte ge
   sig själv åtkomst, och en återkallelse biter i samma sekund
 
+## API:et
+
+Din installation har ett eget API. Det finns inget centralt API att ansöka
+till: din server, dina nycklar. Du skapar en nyckel i appen under
+**Inställningar → Åtkomst → API-nycklar**, med ett klick — ingen miljövariabel,
+ingen terminal, ingen redeploy. Nyckeln visas exakt en gång och går att
+återkalla när som helst; återkallelsen biter i samma sekund, även mitt i ett
+pågående anrop.
+
+En nyckel bär en eller båda av två behörigheter:
+
+| Behörighet | Vad den kan |
+|---|---|
+| `data:read` | Hämta verifikat, fakturor, kunder och nyckeltal. Ändrar ingenting. |
+| `ledger:write` | Skapa och bokföra kundfakturor. |
+
+Ingen nyckel når dina företagsuppgifter, dina underlag, banken eller dina
+sparade nycklar — det upprätthålls av databasen, inte av gränssnittet. Och en
+nyckel som får bokföra går genom exakt samma spärrar som du själv: periodlås,
+avslutade räkenskapsår, balanskravet och de obrutna verifikationsserierna.
+
+Endpoints i den här utgåvan:
+
+| | |
+|---|---|
+| `GET /api/v1/meta` | Vad installationen är och vad din nyckel får göra |
+| `GET /api/v1/verifikat` | Affärshändelser med sina rader, markörsidindelat |
+| `POST /api/v1/kundfakturor` | Skapa ett fakturautkast, och bokför det om du vill |
+| `GET /api/stats/overview` | Komplett ekonomisk lägesbild |
+| `GET /api/stats/monthly` | Resultatserie per månad |
+| `GET /api/stats/daily` | Daglig intäktsstatistik |
+
+Kom igång med ett anrop:
+
+```bash
+curl https://din-installation.se/api/v1/meta \
+  -H "Authorization: Bearer dk_live_..."
+```
+
+Den fullständiga OpenAPI 3.1-specen ligger i repot som
+[`public/openapi.json`](public/openapi.json) och serveras av din egen
+installation på `/openapi.json` — läs in den i Postman, Insomnia eller en
+kodgenerator. Utförliga guider, kodexempel och recept finns i
+dokumentationen på [debea.se/api-docs](https://debea.se/api-docs).
+
+Har du redan en integration mot `/api/stats` med `STATS_API_KEY` fortsätter
+den fungera oförändrad. Det nya är att samma rutter också tar emot en
+`dk_live_`-nyckel — med identitet, behörighet, taktgräns och en
+återkallningsknapp.
+
 ### Finns inte här — det är licensversionen
 
 AI-bokföraren som läser kvittot och konterar, AI-rådgivaren, förslagskön,
 bankregler som bokför av sig själva vid import, lön med AGI-fil, samt
 säljdelen (pipeline, offert och order). Community-versionen räknar fram och
 föreslår; den agerar aldrig på egen hand.
+
+API:et finns i båda utgåvorna, men speglar det utgåvan har: licensversionen
+har dessutom endpoints för orderintag från e-handel (`/api/inbound/order`) och
+e-faktura in via Peppol (`/api/inbound/peppol`). De saknas här därför att
+funktionerna gör det — inte som en nedskalning av API:et.
 
 ## Det här behöver du
 
@@ -286,6 +343,10 @@ vid import — är det den licensierade versionen som gäller.
   din egen databas. Se [docs/TVASTEGSVERIFIERING.md](docs/TVASTEGSVERIFIERING.md)
 - Verifikat är oföränderliga — bokning och rättelse sker via databas­funktioner
   som upprätthåller balans och nummerserier atomiskt
+- API-nycklar och byrånycklar är egna maskinkonton med scope, taktgräns och
+  återkallning. Behörigheten härleds ur nyckelraden vid varje fråga, aldrig ur
+  en claim i en token. Skrivvägen går genom motorns egna funktioner: en rå
+  skrivning i huvudboken nekas även av en nyckel som får bokföra
 - Inga hemligheter i koden — nycklar lever i miljövariabler eller i din databas
 - Installationen ringer aldrig hem av sig själv. Det enda som lämnar den är en
   buggrapport du själv skickar, och den går till `debea.se/api/feedback` utan

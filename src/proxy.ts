@@ -79,5 +79,10 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // openapi.json är undantagen med flit. Specen beskriver API:ets FORM — inga
+  // siffror, inga namn, ingenting ur installationen — och den ska gå att läsa
+  // in i Postman eller en kodgenerator utan att först logga in. Utan raden
+  // hade proxyn svarat med en omdirigering till /login, och verktyget hade
+  // rapporterat "ogiltig JSON" i stället för att säga varför.
+  matcher: ["/((?!api/|openapi.json|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };
