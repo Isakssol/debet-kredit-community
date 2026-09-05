@@ -18,6 +18,11 @@ import { cn } from "@/lib/utils";
  * Delstegen är till för väntan som består av flera moment: det som är klart
  * bockas av, det som pågår pulserar, resten ligger nedtonat. Då syns det att
  * något rör sig även när ett enskilt steg tar tjugo sekunder.
+ *
+ * Bocka bara av ett steg som verkligen går att observera. Är väntan ett enda
+ * ogenomskinligt serveranrop hör alla steg hemma efter `activeStep = 0`: att
+ * kryssa av det första hade varit en gissning i kryssform, och kryss läses som
+ * fakta.
  */
 export function WorkingDots({ className }: { className?: string }) {
   return (

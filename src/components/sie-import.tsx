@@ -79,7 +79,7 @@ export function SieImport() {
           <Working
             label="Läser SIE-filen…"
             steps={["Läser filen", "Skapar konton som saknas", "Bokför ingående balanser och verifikat"]}
-            activeStep={1}
+            activeStep={0}
             hint="Ett helt räkenskapsår kan ta flera minuter. Lämna fliken öppen — importen fortsätter på servern."
           />
         )}
