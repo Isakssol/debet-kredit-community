@@ -72,14 +72,18 @@ export default async function SettingsPage() {
         }))}
       />
 
-      <SieImport />
+      <div id="sie-import" className="scroll-mt-6">
+        <SieImport />
+      </div>
 
       <MigrationImport />
 
-      <OpeningBalances
-        accounts={(accounts ?? []).map((a) => ({ number: a.number, name: a.name }))}
-        hasVerifications={(verCount ?? 0) > 0}
-      />
+      <div id="ingaende-balanser" className="scroll-mt-6">
+        <OpeningBalances
+          accounts={(accounts ?? []).map((a) => ({ number: a.number, name: a.name }))}
+          hasVerifications={(verCount ?? 0) > 0}
+        />
+      </div>
 
       <ByraAccessSettings
         keys={(byraKeys ?? []) as ByraKeyRow[]}

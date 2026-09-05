@@ -56,7 +56,15 @@ export function OnboardingWizard({
     setBusy(false);
     if (res.error) return toast.error(res.error);
     toast.success("Klart — välkommen!");
-    router.push(startMode === "fresh" ? "/" : "/installningar");
+    // Korten lovar var man hamnar: SIE-importen och rutan för ingående
+    // balanser ligger båda långt ned på inställningssidan, så vi länkar till
+    // rätt avsnitt i stället för till sidans topp. Den som byter program ska
+    // inte behöva leta efter importen.
+    router.push(
+      startMode === "fresh" ? "/"
+        : startMode === "sie" ? "/installningar#sie-import"
+        : "/installningar#ingaende-balanser",
+    );
     router.refresh();
   }
 
