@@ -24,7 +24,7 @@
  * Steg 3 är en vanlig skrivning och passerar därför RLS och
  * `invoices_guard_update()` — samma trigger som fryser en bokförd fakturas
  * innehåll för gränssnittet. Det är också skälet till att `invoices` är öppen
- * för UPDATE med `ledger:write` i 20260908000002, till skillnad från
+ * för UPDATE med `ledger:write` i 20260908000005, till skillnad från
  * licensutgåvan där hela bokföringen ligger i en enda security
  * definer-funktion. Skillnaden står utskriven i migrationen.
  */
