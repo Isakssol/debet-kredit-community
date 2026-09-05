@@ -31,8 +31,11 @@ export default async function InvoiceDetailPage({
     .eq("id", id).single();
   if (!inv) notFound();
 
-  const { data: creditNote } = await supabase.from("invoices")
-    .select("id, invoice_no").eq("credits_invoice_id", id).maybeSingle();
+  const [{ data: creditNote }, { data: settings }] = await Promise.all([
+    supabase.from("invoices")
+      .select("id, invoice_no").eq("credits_invoice_id", id).maybeSingle(),
+    supabase.from("settings").select("reminder_fee").eq("id", 1).single(),
+  ]);
 
   type Payment = { id: string; payment_date: string; amount: number };
   type Reminder = { reminder_no: number; sent_date: string };
@@ -185,6 +188,7 @@ export default async function InvoiceDetailPage({
           type={inv.type}
           remaining={remaining}
           hasCreditNote={!!creditNote}
+          reminderFee={Number(settings?.reminder_fee ?? 60)}
         />
       </div>
     </div>

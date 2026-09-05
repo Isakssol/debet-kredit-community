@@ -119,8 +119,8 @@ export function OnboardingWizard({
               </div>
               {!isEf && (
                 <p className="text-[11px] text-muted-foreground">
-                  Löpande bokföring, moms och rapporter fungerar fullt ut — årsavslutet
-                  (K1/NE) gäller endast enskild firma än så länge.
+                  Årsavslutet följer formen: K2-årsredovisning och INK2 för aktiebolag,
+                  N3A-bilaga per delägare för handelsbolag.
                 </p>
               )}
             </div>

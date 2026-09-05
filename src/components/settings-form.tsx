@@ -48,7 +48,12 @@ export function fTaxFromChoice(choice: string): boolean | null {
   return choice === "ja" ? true : choice === "nej" ? false : null;
 }
 
-export function SettingsForm({ settings }: { settings: Settings }) {
+export function SettingsForm({ settings, companyType = "enskild_firma" }: {
+  settings: Settings;
+  /** Styr vilka fält som visas — kommunalskatten läses bara för enskild firma */
+  companyType?: string;
+}) {
+  const isEf = companyType === "enskild_firma";
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [f, setF] = useState({
@@ -103,7 +108,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
           Uppgifterna hamnar på fakturor och rapporter (momslagens fakturakrav).
           {!invoiceReady && (
             <span className="block text-destructive mt-1">
-              ⚠ Personnummer, adress och betalsätt krävs innan fakturor uppfyller fakturakraven.
+              Obs: Personnummer, adress och betalsätt krävs innan fakturor uppfyller fakturakraven.
             </span>
           )}
         </CardDescription>
@@ -145,18 +150,32 @@ export function SettingsForm({ settings }: { settings: Settings }) {
           <Label>Telefon</Label>
           <Input value={f.phone} onChange={(e) => set("phone", e.target.value)} />
         </div>
-        <div className="space-y-1">
-          <Label>Bankgiro</Label>
-          <Input value={f.bankgiro} onChange={(e) => set("bankgiro", e.target.value)}
-            placeholder="123-4567" />
-        </div>
-        <div className="space-y-1">
-          <Label>IBAN (utlandsfakturor)</Label>
-          <Input value={f.iban} onChange={(e) => set("iban", e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <Label>BIC</Label>
-          <Input value={f.bic} onChange={(e) => set("bic", e.target.value)} />
+        <div className="sm:col-span-2 grid gap-3 sm:grid-cols-2">
+          <p className="text-[11px] text-muted-foreground sm:col-span-2">
+            Minst ett betalsätt krävs för att fakturan ska duga enligt fakturakraven.
+            Bankgiro och plusgiro skrivs ut på svenska fakturor, IBAN och BIC på
+            utlandsfakturor.
+          </p>
+          <div className="space-y-1">
+            <Label>Bankgiro</Label>
+            <Input value={f.bankgiro} onChange={(e) => set("bankgiro", e.target.value)}
+              placeholder="123-4567" />
+          </div>
+          <div className="space-y-1">
+            <Label>Plusgiro</Label>
+            <Input value={f.plusgiro} onChange={(e) => set("plusgiro", e.target.value)}
+              placeholder="12 34 56-7" />
+          </div>
+          <div className="space-y-1">
+            <Label>IBAN (utlandsfakturor)</Label>
+            <Input value={f.iban} onChange={(e) => set("iban", e.target.value)}
+              placeholder="SE45 5000 0000 0583 9825 7466" />
+          </div>
+          <div className="space-y-1">
+            <Label>BIC (bankens SWIFT-kod)</Label>
+            <Input value={f.bic} onChange={(e) => set("bic", e.target.value)}
+              placeholder="ESSESESS" />
+          </div>
         </div>
 
         <div className="sm:col-span-2 border-t pt-3 grid sm:grid-cols-3 gap-3">
@@ -170,6 +189,11 @@ export function SettingsForm({ settings }: { settings: Settings }) {
                 <SelectItem value="helar">Helår</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-[11px] text-muted-foreground">
+              Måste stämma med Skatteverkets beslut för ditt företag — den väljs
+              inte fritt här. Styr deadlines i Att göra och periodindelningen i
+              momsrapporten.
+            </p>
           </div>
           <div id="f-skatt" className="space-y-1 scroll-mt-20">
             <Label>Debiterad preliminärskatt (F-skatt)</Label>
@@ -191,22 +215,38 @@ export function SettingsForm({ settings }: { settings: Settings }) {
             <Label>Betalningsvillkor (dagar)</Label>
             <Input type="number" value={f.default_payment_terms}
               onChange={(e) => set("default_payment_terms", e.target.value)} />
+            <p className="text-[11px] text-muted-foreground">
+              Förval på nya fakturor. Går att ändra per kund och per faktura.
+            </p>
           </div>
           <div className="space-y-1">
             <Label>Påminnelseavgift (kr)</Label>
             <Input type="number" value={f.reminder_fee}
               onChange={(e) => set("reminder_fee", e.target.value)} />
+            <p className="text-[11px] text-muted-foreground">
+              Beloppet som föreslås när du skapar en påminnelse på en faktura.
+              Högst 60 kr enligt lag (1981:739), och bara om avgiften avtalats
+              senast när skulden uppkom.
+            </p>
           </div>
           <div className="space-y-1">
             <Label>Dröjsmålsränta % (tom = referensränta + 8)</Label>
             <Input type="number" step="0.1" value={f.late_interest_rate}
               onChange={(e) => set("late_interest_rate", e.target.value)} />
           </div>
-          <div className="space-y-1">
-            <Label>Kommunalskatt % (uttagssimulatorn)</Label>
-            <Input type="number" step="0.01" value={f.municipal_tax_rate}
-              onChange={(e) => set("municipal_tax_rate", e.target.value)} />
-          </div>
+          {/* Läses bara av /skatt för enskild firma — för AB och HB fanns
+              fältet men styrde ingenting, vilket såg ut som en glömd inställning. */}
+          {isEf && (
+            <div className="space-y-1">
+              <Label>Kommunalskatt %</Label>
+              <Input type="number" step="0.01" value={f.municipal_tax_rate}
+                onChange={(e) => set("municipal_tax_rate", e.target.value)} />
+              <p className="text-[11px] text-muted-foreground">
+                Din hemkommuns skattesats. Används av uttagssimulatorn på Skatt
+                för att räkna fram vad ett eget uttag kostar.
+              </p>
+            </div>
+          )}
           <div className="space-y-1">
             <Label>EU-handel</Label>
             <Select value={f.eu_trade ? "ja" : "nej"} onValueChange={(v) => set("eu_trade", v === "ja")}>

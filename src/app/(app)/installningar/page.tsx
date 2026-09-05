@@ -9,6 +9,18 @@ import { MigrationImport } from "@/components/migration-import";
 import { ByraAccessSettings, type ByraKeyRow } from "@/components/byra-access-settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SettingsToc, SettingsSection, type SettingsGroup } from "@/components/settings-section";
+
+/**
+ * Avsnitten på sidan, i ordning. Innehållsförteckningen och rubrikerna läser
+ * samma lista, så en ny grupp kan aldrig bli osynlig i förteckningen.
+ */
+const GROUPS: SettingsGroup[] = [
+  { id: "foretaget", title: "Företaget" },
+  { id: "atkomst", title: "Åtkomst" },
+  { id: "bokforing", title: "Bokföringens ramar" },
+  { id: "import", title: "Import och migrering" },
+];
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -27,68 +39,93 @@ export default async function SettingsPage() {
         .order("created_at", { ascending: false }),
     ]);
 
+  const companyType = settings?.company_type ?? "enskild_firma";
+
   return (
-    <div className="max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold">Inställningar</h1>
-
-      {/* Kolumnen ai_api_key finns kvar i schemat men används inte här — skala
-          bort den så att en gammal nyckel aldrig når klienten. */}
-      <SettingsForm settings={(({ ai_api_key: _key, ...rest }) => rest)(settings!) as typeof settings & object} />
-
-      <AppearanceSettings
-        accent={settings?.theme_accent ?? null}
-        background={settings?.theme_background ?? null}
-      />
-
-      <CompanySettings companyType={settings?.company_type ?? "enskild_firma"} />
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Räkenskapsår & verifikationsserier</CardTitle>
-          <CardDescription>
-            Enskild firma måste ha kalenderår. Nytt år skapas automatiskt vid årsavslutet.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {fiscalYears?.map((fy) => (
-            <div key={fy.id} className="flex items-center gap-3 text-sm">
-              <span className="font-medium">{fy.year}</span>
-              <Badge variant={fy.status === "open" ? "outline" : "secondary"}>
-                {fy.status === "open" ? "Öppet" : "Avslutat"}
-              </Badge>
-              <Badge variant="outline">{fy.accounting_method}</Badge>
-              <span className="text-muted-foreground">
-                Serier: {series?.filter((s) => s.fiscal_year_id === fy.id).map((s) => s.code).join(", ")}
-              </span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <PeriodLocks
-        fiscalYears={(fiscalYears ?? []).map((fy) => ({ id: fy.id, year: fy.year, status: fy.status }))}
-        locks={(locks ?? []).map((l) => ({
-          fiscalYearId: l.fiscal_year_id, month: l.month, reason: l.reason,
-        }))}
-      />
-
-      <div id="sie-import" className="scroll-mt-6">
-        <SieImport />
+    <div className="max-w-3xl space-y-8">
+      <div>
+        <h1 className="text-2xl font-semibold">Inställningar</h1>
+        <p className="text-sm text-muted-foreground">
+          Allt som gäller hela företaget — identitet, bokföringens ramar och
+          engångsjobben vid byte från ett annat program.
+        </p>
       </div>
 
-      <MigrationImport />
+      <SettingsToc groups={GROUPS} />
 
-      <div id="ingaende-balanser" className="scroll-mt-6">
-        <OpeningBalances
-          accounts={(accounts ?? []).map((a) => ({ number: a.number, name: a.name }))}
-          hasVerifications={(verCount ?? 0) > 0}
+      <SettingsSection id="foretaget" title="Företaget"
+        description="Identitet, bolagsform och utseende — uppgifterna som hamnar på fakturor och rapporter.">
+        {/* Kolumnen ai_api_key finns kvar i schemat men används inte här — skala
+            bort den så att en gammal nyckel aldrig når klienten. */}
+        <SettingsForm settings={(({ ai_api_key: _key, ...rest }) => rest)(settings!) as typeof settings & object}
+          companyType={companyType} />
+
+        <CompanySettings companyType={companyType} />
+
+        <AppearanceSettings
+          accent={settings?.theme_accent ?? null}
+          background={settings?.theme_background ?? null}
         />
-      </div>
+      </SettingsSection>
 
-      <ByraAccessSettings
-        keys={(byraKeys ?? []) as ByraKeyRow[]}
-        demo={process.env.DEMO_MODE === "1"}
-      />
+      <SettingsSection id="atkomst" title="Åtkomst"
+        description="Vem utanför företaget som kommer åt bokföringen.">
+        <ByraAccessSettings
+          keys={(byraKeys ?? []) as ByraKeyRow[]}
+          demo={process.env.DEMO_MODE === "1"}
+        />
+      </SettingsSection>
+
+      <SettingsSection id="bokforing" title="Bokföringens ramar"
+        description="Räkenskapsår, verifikationsserier och vilka perioder som är låsta.">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Räkenskapsår & verifikationsserier</CardTitle>
+            <CardDescription>
+              {companyType === "enskild_firma"
+                ? "Enskild firma måste ha kalenderår. Nytt år skapas automatiskt vid årsavslutet."
+                : "Nytt år skapas automatiskt vid årsavslutet och följer ditt räkenskapsår, även brutet."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {fiscalYears?.map((fy) => (
+              <div key={fy.id} className="flex items-center gap-3 text-sm">
+                <span className="font-medium">{fy.year}</span>
+                <Badge variant={fy.status === "open" ? "outline" : "secondary"}>
+                  {fy.status === "open" ? "Öppet" : "Avslutat"}
+                </Badge>
+                <Badge variant="outline">{fy.accounting_method}</Badge>
+                <span className="text-muted-foreground">
+                  Serier: {series?.filter((s) => s.fiscal_year_id === fy.id).map((s) => s.code).join(", ")}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <PeriodLocks
+          fiscalYears={(fiscalYears ?? []).map((fy) => ({ id: fy.id, year: fy.year, status: fy.status }))}
+          locks={(locks ?? []).map((l) => ({
+            fiscalYearId: l.fiscal_year_id, month: l.month, reason: l.reason,
+          }))}
+        />
+      </SettingsSection>
+
+      <SettingsSection id="import" title="Import och migrering"
+        description="Engångsjobb vid byte från ett annat program. De här behöver du sällan igen.">
+        <div id="sie-import" className="scroll-mt-20">
+          <SieImport />
+        </div>
+
+        <MigrationImport />
+
+        <div id="ingaende-balanser" className="scroll-mt-20">
+          <OpeningBalances
+            accounts={(accounts ?? []).map((a) => ({ number: a.number, name: a.name }))}
+            hasVerifications={(verCount ?? 0) > 0}
+          />
+        </div>
+      </SettingsSection>
     </div>
   );
 }

@@ -57,8 +57,8 @@ export function CompanySettings({ companyType }: { companyType: string }) {
           </select>
           {value !== "enskild_firma" && (
             <p className="text-xs text-muted-foreground">
-              Löpande bokföring, moms och rapporter fungerar fullt ut. Årsavslutet
-              (K1/NE-bilaga) gäller endast enskild firma än så länge.
+              Årsavslutet följer formen: K2-årsredovisning och INK2 för aktiebolag,
+              N3A-bilaga per delägare för handelsbolag.
             </p>
           )}
         </div>
