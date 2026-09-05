@@ -113,7 +113,7 @@ describe("pickTechnical — vitlistning", () => {
       clientErrors: [{ at: "", kind: "error", message: "Bokföring av 12 500,00 kr för anna@kund.se sprack", source: "", count: 1 }],
       appLogExcerpt: [{ at: "", level: "error", source: "cron", message: "orgnr 556677-8899 saknas" }],
     });
-    expect(picked?.clientErrors?.[0].message).toBe("Bokföring av ••• kr för ••••@kund.se sprack");
+    expect(picked?.clientErrors?.[0].message).toBe("Bokföring av ••• kr för ••••@••••.se sprack");
     expect(picked?.appLogExcerpt?.[0].message).toBe("orgnr ••••-•••• saknas");
   });
 

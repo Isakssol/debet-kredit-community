@@ -16,6 +16,8 @@ import {
 import { ScreenshotPreview, formatBytes } from "@/components/screenshot-preview";
 import { cn } from "@/lib/utils";
 import { readClientErrors } from "@/lib/client-errors";
+import { getReportRedactionNames } from "@/lib/actions/support";
+import { buildNameRedactor, REDACT_MASK } from "@/lib/redact-names";
 import { captureScreenshot, SKIP_CAPTURE_ATTR, type Screenshot } from "@/lib/screenshot";
 import {
   FEEDBACK_ENDPOINT, FEEDBACK_HONEYPOT_FIELD, FEEDBACK_LIMITS,
@@ -66,6 +68,9 @@ export function BugReportDialog({
   const [attachTechnical, setAttachTechnical] = useState(true);
   const [honeypot, setHoneypot] = useState("");
 
+  // null = ännu inte hämtad eller misslyckad. Skillnaden mot en tom lista är
+  // hela poängen: transparensrutan får inte lova maskering som inte skedde.
+  const [names, setNames] = useState<string[] | null>(null);
   const [screenshot, setScreenshot] = useState<Screenshot | null>(null);
   const [masked, setMasked] = useState(true);
 
@@ -95,6 +100,19 @@ export function BugReportDialog({
     };
   }, [open, pathname, buildSha]);
 
+  // Registernamnen hämtas när dialogen öppnas och används bara här, för att
+  // maska. De följer aldrig med utskicket.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    getReportRedactionNames()
+      .then((rows) => { if (!cancelled) setNames(rows); })
+      .catch(() => { /* utan listan maskas inga namn — och rutan säger det */ });
+    return () => { cancelled = true; };
+  }, [open]);
+
+  const redact = useMemo(() => buildNameRedactor(names ?? []), [names]);
+
   const payload = useMemo(() => buildFeedbackPayload({
     type: "bug",
     title,
@@ -107,9 +125,10 @@ export function BugReportDialog({
       ? { mimeType: screenshot.mimeType as FeedbackImageType, data: screenshot.data }
       : undefined,
     honeypot,
+    redact,
   }), [
     title, message, email, appVersion, shareCompany, companyName,
-    attachTechnical, technical, screenshot, honeypot,
+    attachTechnical, technical, screenshot, honeypot, redact,
   ]);
 
   const takeScreenshot = useCallback(async (withMask: boolean) => {
@@ -275,6 +294,7 @@ export function BugReportDialog({
         payload={payload}
         attachTechnical={attachTechnical}
         screenshot={screenshot}
+        names={names}
         onRemoveScreenshot={() => setScreenshot(null)}
       />
 
@@ -384,11 +404,14 @@ function TransparencyPanel({
   payload,
   attachTechnical,
   screenshot,
+  names,
   onRemoveScreenshot,
 }: {
   payload: ReturnType<typeof buildFeedbackPayload>;
   attachTechnical: boolean;
   screenshot: Screenshot | null;
+  /** null = registret kunde inte läsas, alltså ingen namnmaskering. */
+  names: string[] | null;
   onRemoveScreenshot: () => void;
 }) {
   const technical = payload.technical;
@@ -410,7 +433,26 @@ function TransparencyPanel({
 
         <Group title="Din text">
           <Row label="Rubrik" value={payload.title || "Skickas inte"} />
-          <Row label="Beskrivning" value={payload.message ? `${payload.message.length} tecken` : "Skickas inte"} />
+          {payload.message ? (
+            /* Beskrivningen står ORDAGRANT, inte som ett teckenantal. Det är
+               det längsta fritextfältet och därmed det som oftast bär ett
+               kundnamn — och sedan maskeringen infördes är det inte längre
+               samma text kunden skrev. Ett antal tecken hade dolt just den
+               skillnaden i den ruta som finns för att visa den. */
+            <details className="py-0.5">
+              <summary className="flex cursor-pointer list-none items-baseline justify-between gap-3 marker:content-none">
+                <span className="text-muted-foreground">Beskrivning</span>
+                <span className="underline underline-offset-2">
+                  {payload.message.length} tecken — visa texten
+                </span>
+              </summary>
+              <p className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-lg bg-muted/60 p-2 font-mono text-[10px] leading-snug">
+                {payload.message}
+              </p>
+            </details>
+          ) : (
+            <Row label="Beskrivning" value="Skickas inte" />
+          )}
           <Row label="E-post" value={payload.email ?? "Skickas inte"} />
           <Row label="Företagsnamn" value={payload.companyName ?? "Skickas inte"} />
         </Group>
@@ -460,11 +502,17 @@ function TransparencyPanel({
 
         <Group title="Skickas aldrig">
           <p className="text-muted-foreground">
-            Belopp, verifikationer, kund- och leverantörsnamn, personnummer, filer och
-            inloggningsuppgifter. Skriver du ett belopp eller ett personnummer i texten
-            ovan maskeras det automatiskt — därför kan rubriken här skilja sig från det
-            du skrev.
+            Belopp, verifikationer, personnummer, kontonummer, filer och
+            inloggningsuppgifter. Namnen i ditt kund- och leverantörsregister byts mot
+            {" "}{REDACT_MASK}. Maskeringen gäller också det du själv skriver — därför
+            kan raderna ovan skilja sig från det du skrev.
           </p>
+          {names === null && (
+            <p className="text-amber-700 dark:text-amber-300">
+              Registret kunde inte läsas just nu, så namn maskeras inte automatiskt
+              den här gången. Läs igenom raderna ovan innan du skickar.
+            </p>
+          )}
         </Group>
       </div>
     </details>

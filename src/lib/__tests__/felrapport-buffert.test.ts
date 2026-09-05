@@ -86,7 +86,7 @@ describe("klientfelbufferten — vitlistad form och sanering", () => {
       T0,
     );
     const [entry] = readClientErrors(T0);
-    expect(entry.message).toBe("Kunde inte bokföra ••• kr för ••••@kund.se");
+    expect(entry.message).toBe("Kunde inte bokföra ••• kr för ••••@••••.se");
   });
 
   it("har exakt fem fält — inget kan slinka med", () => {

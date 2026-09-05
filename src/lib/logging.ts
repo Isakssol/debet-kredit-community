@@ -40,12 +40,36 @@ const SPACE = `[${SPACE_CHARS}]`;
  * sämre om de gällde där: ett verifikations-id är nyttigt för kunden och
  * obehövligt hos oss.
  */
+/**
+ * Domäner som inte pekar ut någon.
+ *
+ * En adress hos en fri e-posttjänst säger bara "privat mejladress", och den
+ * upplysningen är värd något när ett utskick studsat. En adress på ett eget
+ * företagsnamn är något helt annat: bengtssonsbageri.se ÄR kunden, lika mycket
+ * som "Bengtssons Bageri AB" är det. Därför behålls domänen bara här, och
+ * kortas annars till toppdomänen.
+ */
+const PUBLIC_MAIL_DOMAINS = new Set([
+  "gmail.com", "googlemail.com", "hotmail.com", "hotmail.se", "outlook.com",
+  "outlook.se", "live.se", "live.com", "msn.com", "icloud.com", "me.com",
+  "yahoo.com", "yahoo.se", "telia.com", "bredband.net", "comhem.se",
+  "spray.se", "bahnhof.se", "protonmail.com", "proton.me",
+]);
+
+/** "bengtssonsbageri.se" → "••••.se". Toppdomänen räcker för felsökning. */
+function maskDomain(domain: string): string {
+  const lower = domain.toLowerCase();
+  if (PUBLIC_MAIL_DOMAINS.has(lower)) return lower;
+  const tld = lower.slice(lower.lastIndexOf(".") + 1);
+  return `••••.${tld}`;
+}
+
 export function sanitizeOutbound(text: string): string {
   return sanitize(text)
     // IBAN, svensk form: SE + 22 siffror, med eller utan gruppering
     .replace(new RegExp(`\\bSE\\d{2}(?:${SPACE}?\\d{4}){5}\\b`, "gi"), "iban-••••")
-    // E-postadresser — domänen behålls, den säger något utan att peka ut någon
-    .replace(/[\w.+-]+@([\w-]+(?:\.[\w-]+)+)/g, (_m, domain: string) => `••••@${domain}`)
+    // E-postadresser — adressen bort alltid, domänen bara när den är allmän
+    .replace(/[\w.+-]+@([\w-]+(?:\.[\w-]+)+)/g, (_m, domain: string) => `••••@${maskDomain(domain)}`)
     // UUID: bär verifikations-, kund- och fakturaid rakt ut ur installationen
     .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, "uuid-••••")
     // Belopp med valuta — efter respektive före siffran

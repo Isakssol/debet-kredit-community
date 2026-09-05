@@ -207,11 +207,24 @@ const text = (value: unknown, max: number): string | undefined => {
   return s ? s.slice(0, max) : undefined;
 };
 
+/**
+ * Maskering av registernamn.
+ *
+ * Bara AVSÄNDAREN kan ha en sådan här funktion: namnlistan står i kundens
+ * eget register och finns inte hos mottagaren. Routen kör därför alltid utan,
+ * och det är rätt — texten den tar emot är redan maskad, och en andra körning
+ * hade inte kunnat lägga till något.
+ */
+export type NameRedactor = (text: string) => string;
+
+const KEEP: NameRedactor = (value) => value;
+
 /** Som text(), men tvättad — för allt som är fritext och kan bära kunddata. */
-const clean = (value: unknown, max: number): string | undefined => {
-  const s = typeof value === "string" ? sanitizeOutbound(value).trim() : "";
+const clean = (value: unknown, max: number, redact: NameRedactor = KEEP): string | undefined => {
+  const s = typeof value === "string" ? redact(sanitizeOutbound(value)).trim() : "";
   return s ? s.slice(0, max) : undefined;
 };
+
 
 /**
  * Vitlistning av den tekniska bilagan.
@@ -225,8 +238,10 @@ const clean = (value: unknown, max: number): string | undefined => {
  * skäl: klienten och routen kan då aldrig sanera olika, och funktionen är
  * idempotent — en redan tvättad rad ser likadan ut efter en andra tvätt, så
  * en rad som passerar båda sidor tvättas alltid med de nyaste reglerna.
+ *
+ * `redact` maskar registernamn och skickas bara med av avsändaren.
  */
-export function pickTechnical(input: unknown): FeedbackTechnical | undefined {
+export function pickTechnical(input: unknown, redact: NameRedactor = KEEP): FeedbackTechnical | undefined {
   if (!input || typeof input !== "object") return undefined;
   const raw = input as Record<string, unknown>;
   const L = FEEDBACK_ATTACHMENT_LIMITS;
@@ -242,13 +257,13 @@ export function pickTechnical(input: unknown): FeedbackTechnical | undefined {
       .map((row): FeedbackClientError | null => {
         if (!row || typeof row !== "object") return null;
         const r = row as Record<string, unknown>;
-        const message = clean(r.message, L.clientErrorChars);
+        const message = clean(r.message, L.clientErrorChars, redact);
         if (!message) return null;
         return {
           at: text(r.at, 40) ?? "",
           kind: text(r.kind, 20) ?? "error",
           message,
-          source: clean(r.source, L.clientErrorSourceChars) ?? "",
+          source: clean(r.source, L.clientErrorSourceChars, redact) ?? "",
           count: typeof r.count === "number" && r.count > 0 ? Math.min(Math.trunc(r.count), 1_000_000) : 1,
         };
       })
@@ -261,12 +276,12 @@ export function pickTechnical(input: unknown): FeedbackTechnical | undefined {
       .map((row): FeedbackLogLine | null => {
         if (!row || typeof row !== "object") return null;
         const r = row as Record<string, unknown>;
-        const message = clean(r.message, L.appLogChars);
+        const message = clean(r.message, L.appLogChars, redact);
         if (!message) return null;
         return {
           at: text(r.at, 40) ?? "",
           level: text(r.level, 10) ?? "info",
-          source: clean(r.source, L.source) ?? "",
+          source: clean(r.source, L.source, redact) ?? "",
           message,
         };
       })
@@ -326,6 +341,10 @@ export function validateFeedbackAttachment(input: {
  * personnummer och främmande e-postadresser ska inte lämna installationen ens
  * när kunden själv skrivit dem. Kundens EGEN e-postadress i e-postfältet rörs
  * inte — den är hela poängen med fältet.
+ *
+ * `redact` maskar dessutom namnen ur kundens eget register, i fritexten lika
+ * väl som i bilagan. Kunden skriver "Fakturan till Bengtssons Bageri AB blev
+ * fel" utan att tänka på saken, och företagsnamnet är inte vår sak att veta.
  */
 export function buildFeedbackPayload(input: {
   type: FeedbackType;
@@ -337,11 +356,13 @@ export function buildFeedbackPayload(input: {
   technical?: FeedbackTechnical;
   screenshot?: FeedbackScreenshot;
   honeypot?: string;
+  redact?: NameRedactor;
 }): FeedbackPayload {
+  const redact = input.redact ?? KEEP;
   const payload: FeedbackPayload = {
     type: input.type,
-    title: sanitizeOutbound(input.title.trim()).slice(0, FEEDBACK_LIMITS.title),
-    message: sanitizeOutbound(input.message.trim()).slice(0, FEEDBACK_LIMITS.message),
+    title: redact(sanitizeOutbound(input.title.trim())).slice(0, FEEDBACK_LIMITS.title),
+    message: redact(sanitizeOutbound(input.message.trim())).slice(0, FEEDBACK_LIMITS.message),
     [FEEDBACK_HONEYPOT_FIELD]: input.honeypot ?? "",
   };
 
@@ -352,7 +373,7 @@ export function buildFeedbackPayload(input: {
   const companyName = input.companyName?.trim();
   if (companyName) payload.companyName = companyName.slice(0, FEEDBACK_LIMITS.companyName);
 
-  const technical = pickTechnical(input.technical);
+  const technical = pickTechnical(input.technical, redact);
   if (technical) payload.technical = technical;
   if (input.screenshot) payload.screenshot = input.screenshot;
 

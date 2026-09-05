@@ -26,8 +26,9 @@ const GOLDEN: [string, string][] = [
   // Identifierare som pekar ut ett verifikat, en kund eller en faktura
   ["verifikat 9f3a1c2e-4b5d-6e7f-8a9b-0c1d2e3f4a5b saknas", "verifikat uuid-•••• saknas"],
   ["kundnummer 100045782", "kundnummer ••••"],
-  // E-post: adressen bort, domänen kvar
-  ["mejl till anna.ek+bok@foretaget.se studsade", "mejl till ••••@foretaget.se studsade"],
+  // E-post: adressen bort alltid. Domänen bara när den inte är kunden själv.
+  ["mejl till anna.ek+bok@foretaget.se studsade", "mejl till ••••@••••.se studsade"],
+  ["mejl till anna.ek@gmail.com studsade", "mejl till ••••@gmail.com studsade"],
 ];
 
 describe("sanitizeOutbound — golden-fall", () => {
@@ -73,5 +74,19 @@ describe("sanitize — oförändrad", () => {
   it("maskar inte belopp och id i den egna systemloggen", () => {
     expect(sanitize("Betalning 1 234,56 kr bokförd")).toBe("Betalning 1 234,56 kr bokförd");
     expect(sanitize("verifikat 9f3a1c2e-4b5d-6e7f-8a9b-0c1d2e3f4a5b")).toContain("9f3a1c2e");
+  });
+});
+
+/**
+ * Domänen i en e-postadress. Se licensutgåvans motsvarande fall: en egen
+ * domän ÄR kunden, en fri e-posttjänst är det inte.
+ */
+describe("sanitizeOutbound — domänen i en adress", () => {
+  it("kortar en egen domän till toppdomänen", () => {
+    expect(sanitizeOutbound("bengt@bengtssonsbageri.se")).toBe("••••@••••.se");
+  });
+
+  it("behåller en allmän e-posttjänst", () => {
+    expect(sanitizeOutbound("kund@gmail.com")).toBe("••••@gmail.com");
   });
 });

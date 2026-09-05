@@ -163,9 +163,13 @@ export function installClientErrorCapture(): () => void {
 
   const onError = (event: ErrorEvent) => {
     const name = event.error instanceof Error ? event.error.name : "";
+    // Webbläsaren skriver "Uncaught TypeError: …" i event.message. Prefixet
+    // ska bort innan feltypen jämförs, annars blir raden "TypeError: Uncaught
+    // TypeError: …" — samma ord tre gånger i en ruta kunden ska kunna läsa.
+    const raw = event.message.replace(/^Uncaught(?: \(in promise\))?:?\s*/, "");
     recordClientError({
       kind: "error",
-      message: name && !event.message.startsWith(name) ? `${name}: ${event.message}` : event.message,
+      message: name && !raw.startsWith(name) ? `${name}: ${raw}` : raw,
       source: event.filename
         ? `${event.filename.split("/").pop() ?? ""}:${event.lineno}:${event.colno}`
         : "",
