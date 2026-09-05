@@ -378,10 +378,14 @@ describe.skipIf(!live)("skarp växling mot riktig databas", () => {
     // Ett tomt arkiv bevisar ingenting: "byrån ser inga filer" och "det finns
     // inga filer" ser likadana ut. Provet seedar därför ett underlag först och
     // låter kontrollgruppen hämta hem innehållet.
-    const path = `livetest/${crypto.randomUUID()}.txt`;
+    //
+    // Filen läggs upp som PDF eftersom bucketen bara tar emot de format
+    // inkorgen faktiskt hanterar (20260908000003). Innehållet är fortfarande
+    // en textsträng — provet handlar om vem som når filen, inte om formatet.
+    const path = `livetest/${crypto.randomUUID()}.pdf`;
     const { error: upErr } = await admin!.storage
       .from("underlag")
-      .upload(path, new Blob(["kvitto 123 kr"]), { contentType: "text/plain" });
+      .upload(path, new Blob(["kvitto 123 kr"]), { contentType: "application/pdf" });
     expect(upErr).toBeNull();
 
     try {
