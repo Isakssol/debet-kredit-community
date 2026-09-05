@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { importCustomersCsv, importArticlesCsv } from "@/lib/actions/migration";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Working } from "@/components/ui/working";
 import { ArrowRightLeft } from "lucide-react";
 
 export function MigrationImport() {
@@ -61,7 +62,10 @@ export function MigrationImport() {
             sätts till 3011 (ändra per artikel efteråt vid behov).
           </p>
         </div>
-        {pending && <p className="text-sm text-muted-foreground sm:col-span-2">Importerar…</p>}
+        {pending && (
+          <Working className="sm:col-span-2" label="Importerar registren…"
+            hint="Kunder och artiklar läses in en fil i taget. Tar 5–60 sekunder." />
+        )}
       </CardContent>
     </Card>
   );

@@ -12,6 +12,7 @@ import {
 import type { MatchSuggestion, OpenInvoice, OpenSupplierInvoice } from "@/lib/bank/matching";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Working } from "@/components/ui/working";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -86,7 +87,7 @@ export function BankConnect({
           <div className="rounded border bg-accent p-2.5 flex items-center justify-between">
             <span>BankID godkänt — slutför kopplingen:</span>
             <Button size="sm" onClick={finalize} disabled={busy}>
-              {busy ? "Hämtar konton…" : "Slutför"}
+              {busy ? <Working inline label="Hämtar konton…" /> : "Slutför"}
             </Button>
           </div>
         )}
@@ -134,7 +135,7 @@ export function BankConnect({
           </div>
         ) : banks === null ? (
           <Button variant="outline" onClick={loadBanks} disabled={busy}>
-            {busy ? "Hämtar banker…" : "+ Koppla bankkonto"}
+            {busy ? <Working inline label="Hämtar banker…" /> : "+ Koppla bankkonto"}
           </Button>
         ) : (
           <div className="space-y-2">
@@ -194,7 +195,7 @@ export function BankCsvUpload() {
           if (inputRef.current) inputRef.current.value = "";
           router.refresh();
         }}>
-          {busy ? "Importerar…" : "Importera"}
+          {busy ? <Working inline label="Importerar…" /> : "Importera"}
         </Button>
       </CardContent>
     </Card>

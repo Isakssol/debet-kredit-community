@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { saveSettings } from "@/lib/actions/settings";
 import { Button } from "@/components/ui/button";
+import { Working } from "@/components/ui/working";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -220,7 +221,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       </CardContent>
       <CardContent className="pt-0">
         <Button onClick={submit} disabled={busy}>
-          {busy ? "Sparar…" : "Spara inställningar"}
+          {busy ? <Working inline label="Sparar…" /> : "Spara inställningar"}
         </Button>
       </CardContent>
     </Card>

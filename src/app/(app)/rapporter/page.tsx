@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { vatPeriods } from "@/lib/vat/report";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DownloadButton } from "@/components/download-button";
 import { todayISO } from "@/lib/dates";
 
 export default async function ReportsPage() {
@@ -50,13 +51,11 @@ export default async function ReportsPage() {
                 <div className="text-xs text-muted-foreground">{r.desc}</div>
               </div>
               <div className="flex gap-1">
-                <Button variant="outline" size="sm" asChild>
-                  <a href={`/rapporter/pdf?typ=${r.typ}&year=${currentYear}`} target="_blank">PDF</a>
-                </Button>
+                <DownloadButton size="sm" newTab workingLabel="Bygger PDF:en…"
+                  href={`/rapporter/pdf?typ=${r.typ}&year=${currentYear}`}>PDF</DownloadButton>
                 {["resultat", "balans", "huvudbok"].includes(r.typ) && (
-                  <Button variant="ghost" size="sm" asChild>
-                    <a href={`/rapporter/csv?typ=${r.typ}&year=${currentYear}`}>CSV</a>
-                  </Button>
+                  <DownloadButton variant="ghost" size="sm" workingLabel="Bygger CSV:n…"
+                    href={`/rapporter/csv?typ=${r.typ}&year=${currentYear}`}>CSV</DownloadButton>
                 )}
               </div>
             </div>
@@ -68,10 +67,8 @@ export default async function ReportsPage() {
                 Aktuell period: {currentPeriod.label}
               </div>
             </div>
-            <Button variant="outline" size="sm" asChild>
-              <a href={`/rapporter/pdf?typ=moms&from=${currentPeriod.start}&to=${currentPeriod.end}`}
-                target="_blank">PDF</a>
-            </Button>
+            <DownloadButton size="sm" newTab workingLabel="Bygger PDF:en…"
+              href={`/rapporter/pdf?typ=moms&from=${currentPeriod.start}&to=${currentPeriod.end}`}>PDF</DownloadButton>
           </div>
         </CardContent>
       </Card>
@@ -86,9 +83,8 @@ export default async function ReportsPage() {
         </CardHeader>
         <CardContent className="flex gap-2">
           {fy?.map((f) => (
-            <Button key={f.id} variant="outline" asChild>
-              <a href={`/export/sie?year=${f.year}`} download>SIE {f.year}</a>
-            </Button>
+            <DownloadButton key={f.id} href={`/export/sie?year=${f.year}`}
+              workingLabel={`Bygger SIE ${f.year}…`}>SIE {f.year}</DownloadButton>
           ))}
         </CardContent>
       </Card>
@@ -103,9 +99,11 @@ export default async function ReportsPage() {
         </CardHeader>
         <CardContent className="flex gap-2">
           {fy?.map((f) => (
-            <Button key={f.id} variant="outline" asChild>
-              <a href={`/export/arkiv?year=${f.year}`} download>Arkiv {f.year} (zip)</a>
-            </Button>
+            <DownloadButton key={f.id} href={`/export/arkiv?year=${f.year}`}
+              workingLabel={`Packar arkivet för ${f.year}…`}
+              hint="Alla underlag packas ned — kan ta ett par minuter.">
+              Arkiv {f.year} (zip)
+            </DownloadButton>
           ))}
         </CardContent>
       </Card>

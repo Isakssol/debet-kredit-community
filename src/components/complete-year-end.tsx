@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { completeYearEnd } from "@/lib/actions/yearend";
 import { Button } from "@/components/ui/button";
+import { Working } from "@/components/ui/working";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader,
   DialogTitle, DialogTrigger,
@@ -57,7 +58,7 @@ export function CompleteYearEnd({
               router.refresh();
             }
           }}>
-            {busy ? "Avslutar…" : "Avsluta året"}
+            {busy ? <Working inline label="Avslutar året…" /> : "Avsluta året"}
           </Button>
         </DialogFooter>
       </DialogContent>

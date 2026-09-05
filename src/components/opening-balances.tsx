@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { bookOpeningBalances } from "@/lib/actions/settings";
 import { Button } from "@/components/ui/button";
+import { Working } from "@/components/ui/working";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -102,7 +103,7 @@ export function OpeningBalances({
           </span>
         </div>
         <Button onClick={submit} disabled={busy || !balanced}>
-          {busy ? "Bokför…" : "Bokför ingående balanser"}
+          {busy ? <Working inline label="Bokför…" /> : "Bokför ingående balanser"}
         </Button>
       </CardContent>
     </Card>

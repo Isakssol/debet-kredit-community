@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { importSieFile } from "@/lib/actions/sie-import";
 import { Button } from "@/components/ui/button";
+import { Working } from "@/components/ui/working";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -22,8 +23,17 @@ export function SieImport() {
     const fd = new FormData();
     fd.set("file", file);
     fd.set("mode", mode);
-    const res = await importSieFile(fd);
-    setBusy(false);
+    // Utan try/catch fastnade knappen i "Importerar…" för alltid om anropet
+    // kastade — en stor fil eller en bruten anslutning låste kortet tills
+    // sidan laddades om.
+    let res: Awaited<ReturnType<typeof importSieFile>>;
+    try {
+      res = await importSieFile(fd);
+    } catch {
+      return toast.error("Importen avbröts — filen är för stor för en omgång eller anslutningen bröts. Dela upp filen per år och försök igen.");
+    } finally {
+      setBusy(false);
+    }
     if (res.error) return toast.error(res.error);
     const s = res.summary!;
     const lines = [
@@ -60,9 +70,19 @@ export function SieImport() {
             Endast ingående balanser
           </label>
           <Button onClick={run} disabled={busy}>
-            {busy ? "Importerar…" : "Importera"}
+            {busy ? <Working inline label="Importerar…" /> : "Importera"}
           </Button>
         </div>
+        {/* En SIE-fil för ett helt år kan ta minuter. Utan väntläge ser sidan
+            hängd ut och användaren laddar om mitt i importen. */}
+        {busy && (
+          <Working
+            label="Läser SIE-filen…"
+            steps={["Läser filen", "Skapar konton som saknas", "Bokför ingående balanser och verifikat"]}
+            activeStep={1}
+            hint="Ett helt räkenskapsår kan ta flera minuter. Lämna fliken öppen — importen fortsätter på servern."
+          />
+        )}
         {result && (
           <ul className="text-sm rounded border bg-muted/40 p-3 space-y-0.5">
             {result.map((l, i) => <li key={i}>{l}</li>)}

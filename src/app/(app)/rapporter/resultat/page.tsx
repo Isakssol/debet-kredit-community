@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getAccountLines } from "@/lib/reports/data";
 import { Button } from "@/components/ui/button";
+import { DownloadButton } from "@/components/download-button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -52,12 +53,10 @@ export default async function ResultReportPage({
           </p>
         </div>
         <div className="flex gap-1">
-          <Button variant="outline" size="sm" asChild>
-            <a href={`/rapporter/pdf?typ=resultat${from ? `&from=${from}&to=${to}` : ""}`} target="_blank">PDF</a>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <a href="/rapporter/csv?typ=resultat">CSV</a>
-          </Button>
+          <DownloadButton size="sm" newTab workingLabel="Bygger PDF:en…"
+            href={`/rapporter/pdf?typ=resultat${from ? `&from=${from}&to=${to}` : ""}`}>PDF</DownloadButton>
+          <DownloadButton variant="ghost" size="sm" workingLabel="Bygger CSV:n…"
+            href="/rapporter/csv?typ=resultat">CSV</DownloadButton>
         </div>
       </div>
 
