@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { saveSettings } from "@/lib/actions/settings";
+import { LogoSettings } from "@/components/logo-settings";
 import { Button } from "@/components/ui/button";
 import { Working } from "@/components/ui/working";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,10 +49,14 @@ export function fTaxFromChoice(choice: string): boolean | null {
   return choice === "ja" ? true : choice === "nej" ? false : null;
 }
 
-export function SettingsForm({ settings, companyType = "enskild_firma" }: {
+export function SettingsForm({ settings, companyType = "enskild_firma", logoUrl = null, demo = false }: {
   settings: Settings;
   /** Styr vilka fält som visas — kommunalskatten läses bara för enskild firma */
   companyType?: string;
+  /** Signerad länk till företagets logotyp, null när ingen är uppladdad */
+  logoUrl?: string | null;
+  /** Delad demoinstans: logotypen är låst (spärren sitter i server-actionen) */
+  demo?: boolean;
 }) {
   const isEf = companyType === "enskild_firma";
   const router = useRouter();
@@ -114,6 +119,9 @@ export function SettingsForm({ settings, companyType = "enskild_firma" }: {
         </CardDescription>
       </CardHeader>
       <CardContent className="grid sm:grid-cols-2 gap-3">
+        <div className="sm:col-span-2">
+          <LogoSettings logoUrl={logoUrl} demo={demo} />
+        </div>
         <div className="space-y-1">
           <Label>Företagsnamn</Label>
           <Input value={f.company_name} onChange={(e) => set("company_name", e.target.value)} />

@@ -51,6 +51,9 @@ export async function sendInvoiceEmail(invoiceId: string) {
       account: r.account ?? 3011,
     }));
   const totals = calculateTotals(rowInputs, fullInv.vat_type === "SE");
+  // Samma fakturahuvud som PDF-routen, logotypen inkluderad
+  const { logoDataUrl } = await import("@/lib/branding/logo");
+  const logo = await logoDataUrl(supabase, settings.logo_path);
 
   const pdfBuffer = await renderToBuffer(
     React.createElement(InvoicePdf, {
@@ -74,6 +77,7 @@ export async function sendInvoiceEmail(invoiceId: string) {
         rounding: Number(fullInv.rounding),
         total: Number(fullInv.total_amount),
         company: settings,
+        logoDataUrl: logo,
       },
     }) as never
   );

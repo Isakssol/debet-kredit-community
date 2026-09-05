@@ -5,15 +5,19 @@ import { NavLinks } from "@/components/nav-links";
 import { LogoutButton } from "@/components/logout-button";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { MobileNav } from "@/components/mobile-nav";
+import { AppBrand } from "@/components/app-brand";
 import { buildThemeCss } from "@/lib/theme";
+import { logoSignedUrl } from "@/lib/branding/logo";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: settings } = await supabase.from("settings")
-    .select("onboarded_at, company_name, theme_accent, theme_background").eq("id", 1).single();
+    .select("onboarded_at, company_name, theme_accent, theme_background, logo_path").eq("id", 1).single();
   if (settings && !settings.onboarded_at) redirect("/kom-igang");
   const companyName = settings?.company_name?.trim() || "Debet & Kredit";
   const themeCss = buildThemeCss(settings?.theme_accent, settings?.theme_background);
+  // Bucketen "branding" är privat: logotypen visas via en signerad länk
+  const logoUrl = await logoSignedUrl(supabase, settings?.logo_path);
 
   const isDemo = process.env.DEMO_MODE === "1";
 
@@ -31,20 +35,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       )}
       {/* Mobil toppmeny */}
-      <MobileNav companyName={companyName} />
+      <MobileNav companyName={companyName} logoUrl={logoUrl} />
       {/* Desktop-sidomeny */}
       <aside className="hidden md:flex w-60 shrink-0 bg-sidebar text-sidebar-foreground flex-col print:hidden">
         <div className="px-4 py-4 border-b border-sidebar-border">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground font-bold text-lg font-heading">
-              {companyName.charAt(0).toLowerCase()}
-            </span>
-            <span className="font-semibold text-[15px] text-sidebar-accent-foreground">
-              {companyName}
-              <span className="block text-[11px] font-normal leading-tight text-sidebar-foreground/70">
-                Bokföring
-              </span>
-            </span>
+            <AppBrand companyName={companyName} logoUrl={logoUrl} subtitle="Bokföring" />
           </Link>
         </div>
         <NavLinks />

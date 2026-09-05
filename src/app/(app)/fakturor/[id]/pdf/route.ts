@@ -3,6 +3,7 @@ import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import { createClient } from "@/lib/supabase/server";
 import { calculateTotals, type InvoiceRowInput } from "@/lib/invoicing/totals";
 import { InvoicePdf, type InvoicePdfData } from "@/lib/invoicing/invoice-pdf";
+import { logoDataUrl } from "@/lib/branding/logo";
 import React from "react";
 
 export async function GET(
@@ -47,6 +48,9 @@ export async function GET(
     }));
   const totals = calculateTotals(rows as InvoiceRowInput[], applyVat);
 
+  // Egen logotyp i fakturahuvudet. Saknas den blir det företagsnamnet som förut.
+  const logo = await logoDataUrl(supabase, settings.logo_path);
+
   const data: InvoicePdfData = {
     type: invoice.type as "debit" | "credit",
     invoiceNo: invoice.invoice_no,
@@ -67,6 +71,7 @@ export async function GET(
     rounding: Number(invoice.rounding),
     total: Number(invoice.total_amount),
     company: settings,
+    logoDataUrl: logo,
   };
 
   const buffer = await renderToBuffer(

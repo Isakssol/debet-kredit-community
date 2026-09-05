@@ -5,13 +5,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { NavLinks } from "@/components/nav-links";
+import { AppBrand } from "@/components/app-brand";
 import { LogoutButton } from "@/components/logout-button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
 
 /** Mobil topprad med hamburgermeny — sidomenyn i en Sheet */
-export function MobileNav({ companyName }: { companyName: string }) {
+export function MobileNav({ companyName, logoUrl }: {
+  companyName: string;
+  logoUrl?: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -21,10 +25,7 @@ export function MobileNav({ companyName }: { companyName: string }) {
   return (
     <header className="md:hidden sticky top-0 z-40 flex items-center justify-between gap-3 bg-sidebar border-b border-sidebar-border px-4 py-3 print:hidden">
       <Link href="/" className="flex items-center gap-2.5">
-        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground font-bold text-lg font-heading">
-          {companyName.charAt(0).toLowerCase()}
-        </span>
-        <span className="font-semibold text-[15px] text-sidebar-accent-foreground">{companyName}</span>
+        <AppBrand companyName={companyName} logoUrl={logoUrl} />
       </Link>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>

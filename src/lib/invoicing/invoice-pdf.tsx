@@ -1,10 +1,12 @@
 import {
-  Document, Page, Text, View, StyleSheet,
+  Document, Page, Text, View, StyleSheet, Image,
 } from "@react-pdf/renderer";
 
 const s = StyleSheet.create({
   page: { padding: 48, fontSize: 9, fontFamily: "Helvetica", color: "#111" },
   h1: { fontSize: 20, fontFamily: "Helvetica-Bold" },
+  // Rimlig maxhöjd: logotypen ska synas utan att tränga undan adressblocket
+  logo: { height: 38, maxWidth: 190, objectFit: "contain", marginBottom: 6 },
   bold: { fontFamily: "Helvetica-Bold" },
   row: { flexDirection: "row" },
   spaceBetween: { flexDirection: "row", justifyContent: "space-between" },
@@ -72,6 +74,11 @@ export type InvoicePdfData = {
     email?: string | null; phone?: string | null;
     bankgiro?: string | null; plusgiro?: string | null; iban?: string | null; bic?: string | null;
   };
+  /**
+   * Företagets logotyp som data-URL (PNG/JPG). Saknas den, eller är den en
+   * SVG som PDF-motorn inte kan bädda in, skrivs företagsnamnet som förut.
+   */
+  logoDataUrl?: string | null;
 };
 
 export function InvoicePdf({ data }: { data: InvoicePdfData }) {
@@ -86,7 +93,11 @@ export function InvoicePdf({ data }: { data: InvoicePdfData }) {
         {/* Huvud */}
         <View style={s.spaceBetween}>
           <View>
-            <Text style={s.h1}>{d.company.name}</Text>
+            {d.logoDataUrl
+              // @react-pdf:s Image är inget HTML-element och tar inget alt
+              // eslint-disable-next-line jsx-a11y/alt-text
+              ? <Image src={d.logoDataUrl} style={s.logo} />
+              : <Text style={s.h1}>{d.company.name}</Text>}
             <Text>{d.company.address}</Text>
             <Text>{d.company.postal_code} {d.company.city}</Text>
           </View>

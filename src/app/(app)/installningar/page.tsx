@@ -10,6 +10,7 @@ import { ByraAccessSettings, type ByraKeyRow } from "@/components/byra-access-se
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SettingsToc, SettingsSection, type SettingsGroup } from "@/components/settings-section";
+import { logoSignedUrl } from "@/lib/branding/logo";
 
 /**
  * Avsnitten på sidan, i ordning. Innehållsförteckningen och rubrikerna läser
@@ -40,6 +41,9 @@ export default async function SettingsPage() {
     ]);
 
   const companyType = settings?.company_type ?? "enskild_firma";
+  // Bucketen är privat: logotypen visas via en signerad länk
+  const logoUrl = await logoSignedUrl(supabase, settings?.logo_path);
+  const demo = process.env.DEMO_MODE === "1";
 
   return (
     <div className="max-w-3xl space-y-8">
@@ -58,7 +62,7 @@ export default async function SettingsPage() {
         {/* Kolumnen ai_api_key finns kvar i schemat men används inte här — skala
             bort den så att en gammal nyckel aldrig når klienten. */}
         <SettingsForm settings={(({ ai_api_key: _key, ...rest }) => rest)(settings!) as typeof settings & object}
-          companyType={companyType} />
+          companyType={companyType} logoUrl={logoUrl} demo={demo} />
 
         <CompanySettings companyType={companyType} />
 
